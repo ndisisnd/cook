@@ -50,7 +50,7 @@ metadata:
 
 - **Mocking**: Use `jest.Mocked<T>` or `as unknown as T`.
 - **Checklist**: Check method existence, match error constants, satisfy required properties.
-- **References**: See [context/TESTING.md](context/TESTING.md) for common issues/solutions.
+- **References**: See [refs/TESTING.md](refs/TESTING.md) for common issues/solutions.
 
 ## Code
 
@@ -72,4 +72,4 @@ After any type change that crosses module boundaries or involves generics, union
 ## References
 
 For advanced type patterns and utility types:
-See [context/REFERENCE.md](context/REFERENCE.md).
+See [refs/REFERENCE.md](refs/REFERENCE.md).

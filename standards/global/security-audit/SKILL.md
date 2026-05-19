@@ -22,7 +22,7 @@ metadata:
 
 ## 1. Scan for Hardcoded Secrets
 
-See [implementation examples](context/implementation.md) for secrets scanning commands.
+See [implementation examples](refs/implementation.md) for secrets scanning commands.
 
 ## 2. Detect Data Leakage in Logs
 
@@ -37,7 +37,7 @@ Identify sensitive info printed to logs or stdout.
 
 Detect raw string concatenation in queries or system commands.
 
-See [implementation examples](context/implementation.md) for injection surface detection.
+See [implementation examples](refs/implementation.md) for injection surface detection.
 
 ## 4. Measure Auth Coverage vs Exposure
 
@@ -58,7 +58,7 @@ Compare total routes against protected endpoints.
 
 ## 6. Audit Infrastructure Hardening
 
-See [implementation examples](context/implementation.md) for infrastructure hardening checks.
+See [implementation examples](refs/implementation.md) for infrastructure hardening checks.
 
 ## 7. Detect Adversarial Entry Points (RCE/SSRF/Path Traversal)
 
@@ -70,7 +70,7 @@ Identify where user input reaches dangerous sinks without sanitization.
 
 ## 8. Apply Vibe Security Scan
 
-Use [Vibe Security Scan](context/vibe-security-scan.md) for AI-generated or fast-scaffolded code. Verify source -> route -> sink before scoring.
+Use [Vibe Security Scan](refs/vibe-security-scan.md) for AI-generated or fast-scaffolded code. Verify source -> route -> sink before scoring.
 
 ## Scoring Impact
 
@@ -89,5 +89,5 @@ Use [Vibe Security Scan](context/vibe-security-scan.md) for AI-generated or fast
 - **No applying generic patterns over project-specific rules**: Respect existing security constraints.
 - **No ignoring error handling or edge cases**: Audit must cover boundary conditions.
 ## References
-- [Vulnerability Remediation Protocols](context/REMEDIATION.md)
-- [Vibe Security Scan](context/vibe-security-scan.md)
+- [Vulnerability Remediation Protocols](refs/REMEDIATION.md)
+- [Vibe Security Scan](refs/vibe-security-scan.md)

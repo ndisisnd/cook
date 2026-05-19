@@ -32,7 +32,7 @@ metadata:
 
 ## Code Example
 
-See [AppPages Config](context/app-pages.md) for route definition and controller usage patterns.
+See [AppPages Config](refs/app-pages.md) for route definition and controller usage patterns.
 
 ## Anti-Patterns
 
@@ -42,8 +42,8 @@ See [AppPages Config](context/app-pages.md) for route definition and controller 
 
 ## References
 
-- [AppPages Config](context/app-pages.md)
-- [Middleware Implementation](context/middleware-example.md)
+- [AppPages Config](refs/app-pages.md)
+- [Middleware Implementation](refs/middleware-example.md)
 
 ## Related Topics
 

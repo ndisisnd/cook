@@ -30,9 +30,9 @@ metadata:
 
 ### Route Configuration Example
 
-See [implementation examples](context/implementation.md) for GoRouter configuration with parameter validation and redirects.
+See [implementation examples](refs/implementation.md) for GoRouter configuration with parameter validation and redirects.
 
-[Routing Patterns & Examples](context/routing-patterns.md)
+[Routing Patterns & Examples](refs/routing-patterns.md)
 
 ## Anti-Patterns
 

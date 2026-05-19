@@ -30,11 +30,11 @@ metadata:
 
 ### Secure Storage & Release Build Examples
 
-See [implementation examples](context/implementation.md) for secure storage usage and obfuscated release build commands.
+See [implementation examples](refs/implementation.md) for secure storage usage and obfuscated release build commands.
 
 ## Reference & Examples
 
-SSL Pinning & Secure Storage: [context/REFERENCE.md](context/REFERENCE.md).
+SSL Pinning & Secure Storage: [refs/REFERENCE.md](refs/REFERENCE.md).
 
 ## Anti-Patterns
 

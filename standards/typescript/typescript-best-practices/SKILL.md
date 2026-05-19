@@ -44,4 +44,4 @@ metadata:
 
 ## References
 
-See [context/examples.md](context/examples.md) for Immutable Interfaces, Exhaustiveness Checking, Assertion Functions, DI Patterns, and Import Organization.
+See [refs/examples.md](refs/examples.md) for Immutable Interfaces, Exhaustiveness Checking, Assertion Functions, DI Patterns, and Import Organization.

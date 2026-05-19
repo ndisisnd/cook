@@ -51,4 +51,4 @@ metadata:
 
 ## References
 
-- [Optimization Patterns](context/REFERENCE.md)
+- [Optimization Patterns](refs/REFERENCE.md)

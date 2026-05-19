@@ -42,4 +42,4 @@ metadata:
 
 ## References
 
-- [Bug Report Template](context/bug-report-template.md)
+- [Bug Report Template](refs/bug-report-template.md)

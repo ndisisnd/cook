@@ -36,7 +36,7 @@ Mark each item: ✅ not affected | ⚠️ needs review | 🔴 confirmed finding.
 **P0 finding caps Security score at 40/100.**
 
 Apply framework-specific security skills alongside this checklist.
-See [context/owasp-web.md](context/owasp-web.md) and [context/owasp-api.md](context/owasp-api.md) for full detection signals.
+See [refs/owasp-web.md](refs/owasp-web.md) and [refs/owasp-api.md](refs/owasp-api.md) for full detection signals.
 
 ### OWASP Web Application Top 10 (2021)
 
@@ -69,5 +69,5 @@ See [context/owasp-web.md](context/owasp-web.md) and [context/owasp-api.md](cont
 
 ## References
 
-- [OWASP Web App — Full Detection Signals](context/owasp-web.md)
-- [OWASP API — Full Detection Signals](context/owasp-api.md)
+- [OWASP Web App — Full Detection Signals](refs/owasp-web.md)
+- [OWASP API — Full Detection Signals](refs/owasp-api.md)

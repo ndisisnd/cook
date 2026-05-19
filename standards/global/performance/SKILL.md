@@ -44,7 +44,7 @@ metadata:
  - Offload heavy computations to background threads or workers.
  - Memoize pure, expensive functions.
 
-See [implementation examples](context/implementation.md) for memoization and batching patterns.
+See [implementation examples](refs/implementation.md) for memoization and batching patterns.
 
 ## Network & I/O
 
@@ -73,4 +73,4 @@ See [implementation examples](context/implementation.md) for memoization and bat
 
 ## References
 
-- [Implementation Patterns](context/implementation.md) — profiling patterns, benchmark setup
+- [Implementation Patterns](refs/implementation.md) — profiling patterns, benchmark setup

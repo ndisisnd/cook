@@ -25,7 +25,7 @@ metadata:
 
 ## Route Group Example
 
-See [implementation examples](context/implementation.md)
+See [implementation examples](refs/implementation.md)
 
 ## Implementation Guidelines
 
@@ -58,12 +58,12 @@ See [implementation examples](context/implementation.md)
 
 ## Best Practices
 
-- **RSC Boundaries**: Ensure props passed to Client Components serializable. See [RSC Boundaries & Serialization](../nextjs-architecture/context/RSC_BOUNDARIES.md).
+- **RSC Boundaries**: Ensure props passed to Client Components serializable. See [RSC Boundaries & Serialization](../nextjs-architecture/refs/RSC_BOUNDARIES.md).
 - **Parallel Routes (`@folder`)**: Render multiple pages in same layout. Use `default.tsx` for fallback.
 - **Intercepting Routes (`(..)folder`)**: Load routes within current layout context.
 - **Colocation**: Keep component files, styles, and tests inside route folder.
 - **Layouts**: Use Root Layout (`app/layout.tsx`) for `<html>` and `<body>` tags.
-- [**Self-Hosting Standard**](context/SELF_HOSTING.md)
+- [**Self-Hosting Standard**](refs/SELF_HOSTING.md)
 
 
 ## Anti-Patterns

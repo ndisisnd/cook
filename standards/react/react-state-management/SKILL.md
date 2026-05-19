@@ -34,7 +34,7 @@ metadata:
 ## Reference & Examples
 
 For Zustand, Redux Toolkit, and TanStack Query patterns:
-See [context/REFERENCE.md](context/REFERENCE.md).
+See [refs/REFERENCE.md](refs/REFERENCE.md).
 
 ## Anti-Patterns
 

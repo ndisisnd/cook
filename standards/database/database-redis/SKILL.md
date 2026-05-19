@@ -48,5 +48,5 @@ metadata:
 
 ## References
 
-- [Best Practices Guide](context/best-practices.md)
-- [Checklist](context/checklist.md)
+- [Best Practices Guide](refs/best-practices.md)
+- [Checklist](refs/checklist.md)

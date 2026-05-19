@@ -36,7 +36,7 @@ metadata:
 
 ## References
 
-See [context/REFERENCE.md](context/REFERENCE.md) for MSW API mocking, Context testing, form testing, and React Router patterns.
+See [refs/REFERENCE.md](refs/REFERENCE.md) for MSW API mocking, Context testing, form testing, and React Router patterns.
 
 ## Code
 

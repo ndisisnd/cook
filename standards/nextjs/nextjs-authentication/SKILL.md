@@ -32,11 +32,11 @@ Use HttpOnly Cookies for token storage. Never use LocalStorage or sessionStorage
 
 ### Example: Auth Middleware
 
-See [implementation examples](context/implementation.md)
+See [implementation examples](refs/implementation.md)
 
 ### Example: HttpOnly Cookie Setup
 
-See [implementation examples](context/implementation.md)
+See [implementation examples](refs/implementation.md)
 
 ## Anti-Patterns
 
@@ -46,4 +46,4 @@ See [implementation examples](context/implementation.md)
 
 ## References
 
-- [Auth Implementation Examples](context/auth-implementation.md)
+- [Auth Implementation Examples](refs/auth-implementation.md)

@@ -163,7 +163,7 @@ type Query {
 ### Mutations
 - Every mutation takes a **single** input argument named `input` typed as an Input object — not inline scalar args ([Apollo](https://www.apollographql.com/docs/graphos/schema-design/guides/naming-conventions)).
 - Every mutation returns a **Payload** type — never the naked entity. This allows adding fields (errors, clientMutationId) without breaking changes.
-- The Payload type should include the mutated entity on success and be able to express failure (see `context/schema-design.md`).
+- The Payload type should include the mutated entity on success and be able to express failure (see `refs/schema-design.md`).
 
 ```graphql
 type Mutation {
@@ -234,7 +234,7 @@ type User {
 ### Resolvers
 - Keep resolvers thin — delegate data fetching and business logic to a service/model layer.
 - Pass auth context via the `context` argument; never use module-level globals.
-- Always use DataLoader for any resolver that fetches by a foreign key (see `context/performance.md`).
+- Always use DataLoader for any resolver that fetches by a foreign key (see `refs/performance.md`).
 - Authorization belongs in the business logic layer, not in resolvers ([graphql.org](https://graphql.org/learn/authorization/)).
 
 ```typescript
@@ -269,6 +269,6 @@ const resolvers = {
 
 ## References
 
-- [schema-design](context/schema-design.md)
-- [security](context/security.md)
-- [performance](context/performance.md)
+- [schema-design](refs/schema-design.md)
+- [security](refs/security.md)
+- [performance](refs/performance.md)

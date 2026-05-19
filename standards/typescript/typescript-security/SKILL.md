@@ -24,7 +24,7 @@ metadata:
 
 - Use **`Zod`**, **`Joi`**, or **`class-validator`** at **API boundary**. Always **`parse`** and validate **`user-controlled input`** before using. Use **`safeParse`** for error handling without throwing. Return **`400 with structured errors`** on failure.
 
-See [context/REFERENCE.md](context/REFERENCE.md) for Zod validation schemas, secure cookie setup, and JWT auth patterns.
+See [refs/REFERENCE.md](refs/REFERENCE.md) for Zod validation schemas, secure cookie setup, and JWT auth patterns.
 
 ## Prevent Injection and XSS
 
@@ -53,4 +53,4 @@ After typing validation schemas (Zod/joi) or auth guards, call `getDiagnostics` 
 
 ## References
 
-See [context/REFERENCE.md](context/REFERENCE.md) for Zod validation, secure cookie setup, JWT auth, security headers, and RBAC patterns.
+See [refs/REFERENCE.md](refs/REFERENCE.md) for Zod validation, secure cookie setup, JWT auth, security headers, and RBAC patterns.

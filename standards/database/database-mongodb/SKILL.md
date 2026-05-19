@@ -29,7 +29,7 @@ metadata:
 
 - **ESR Rule**: Equality, Sort, Range. Order your index keys `(status, date, price)` if you query `status='A'`, sort by `date`, filter `price > 10`.
 
-See [implementation examples](context/implementation.md) for compound index and pagination patterns.
+See [implementation examples](refs/implementation.md) for compound index and pagination patterns.
 
 - **Text Search**: Use `$text` search instead of `$regex` for keywords. `$regex` slow (linear scan) unless anchored (`^prefix`).
 - **Covered Queries**: Project only indexed fields to avoid fetching document (`PROJECTION` key).
@@ -58,6 +58,6 @@ See [implementation examples](context/implementation.md) for compound index and 
 
 ## References
 
-- [Best Practices Guide](context/best-practices.md)
-- [Anti-Patterns](context/anti-patterns.md)
-- [Postgres vs Mongo Comparison](context/postgres-comparison.md)
+- [Best Practices Guide](refs/best-practices.md)
+- [Anti-Patterns](refs/anti-patterns.md)
+- [Postgres vs Mongo Comparison](refs/postgres-comparison.md)

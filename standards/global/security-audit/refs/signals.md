@@ -1,6 +1,6 @@
 # Security Scan Signals (SAST)
 
-Use these commands to perform a breadth scan of the codebase. Run these against the `$SRC` directory discovered in [detection.md](../../common-architecture-audit/context/detection.md).
+Use these commands to perform a breadth scan of the codebase. Run these against the `$SRC` directory discovered in [detection.md](../../common-architecture-audit/refs/detection.md).
 
 ## 1. Hardcoded Secrets
 

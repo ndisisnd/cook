@@ -29,7 +29,7 @@ metadata:
 
 ## getServerSideProps Example
 
-See [implementation examples](context/implementation.md)
+See [implementation examples](refs/implementation.md)
 
 ## Implementation Guidelines
 
@@ -49,4 +49,4 @@ See [implementation examples](context/implementation.md)
 
 ## References
 
-- [Server-Side Props Example](context/server-side-props.md)
+- [Server-Side Props Example](refs/server-side-props.md)

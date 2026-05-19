@@ -4,7 +4,7 @@ Apply each lens independently when auditing files or reviewing diffs. Focus on o
 
 ## Lens 1: Security (Mandatory)
 
-Follow [signals.md](../../common-security-audit/context/signals.md).
+Follow [signals.md](../../common-security-audit/refs/signals.md).
 
 - **Secrets**: Find `password|apiKey|token` in source.
 - **PII**: Find sensitive fields in `log|print` statements.

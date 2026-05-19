@@ -22,7 +22,7 @@ Automated and manual migration steps for Next.js version upgrades (e.g., v14 to 
 2. Plan incremental path (e.g., v13 -> v14 -> v15; never skip majors)
 3. Run codemods: `npx @next/codemod@latest <transform> <path>`
 4. Update dependencies:
- See [implementation examples](context/example.md)
+ See [implementation examples](refs/example.md)
 5. Verify async APIs: ensure `cookies()`, `headers()`, `params` awaited (v15+)
 6. Audit `fetch` caching: v15 defaults to `no-store`; add `force-cache` where needed
 7. Run `next build` and fix hydration or Turbopack errors

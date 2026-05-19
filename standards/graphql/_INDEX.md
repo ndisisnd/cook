@@ -11,6 +11,6 @@
 | graphql → performance ref | `**/resolvers/**`, `**/context.ts`, `**/dataloader` | DataLoader, N+1, batch, cache, loader, performance |
 
 > Load `<SKILLS>/graphql/SKILL.md` for any `.graphql` / `.gql` file or resolver — it covers naming (P0) and operation conventions (P1).
-> Load `<SKILLS>/graphql/context/schema-design.md` when designing mutations, pagination, error handling, or evolving an existing schema.
-> Load `<SKILLS>/graphql/context/security.md` when touching server configuration, auth middleware, or any security-sensitive resolver.
-> Load `<SKILLS>/graphql/context/performance.md` when writing resolvers that fetch related entities, or when investigating slow queries.
+> Load `<SKILLS>/graphql/refs/schema-design.md` when designing mutations, pagination, error handling, or evolving an existing schema.
+> Load `<SKILLS>/graphql/refs/security.md` when touching server configuration, auth middleware, or any security-sensitive resolver.
+> Load `<SKILLS>/graphql/refs/performance.md` when writing resolvers that fetch related entities, or when investigating slow queries.

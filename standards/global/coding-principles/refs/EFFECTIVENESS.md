@@ -19,7 +19,7 @@ This document outlines the rationale and verified impact of the "High-Density" s
 ## 🛠 Strategic Separation
 
 - **Core (SKILL.md)**: 100% actionable rules. Loaded into active memory.
-- **References (context/)**: Heavy examples. Only read by the agent when deep exploration is required.
+- **References (refs/)**: Heavy examples. Only read by the agent when deep exploration is required.
 
 ## 🧬 Digital DNA Principles
 

@@ -81,4 +81,4 @@ metadata:
 
 ## References
 
-- [URL Examples, Status Codes & Pagination Envelope](context/REFERENCE.md)
+- [URL Examples, Status Codes & Pagination Envelope](refs/REFERENCE.md)

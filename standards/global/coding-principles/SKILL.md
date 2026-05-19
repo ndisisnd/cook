@@ -48,5 +48,5 @@ metadata:
 
 ## References
 
-- [Code Structure Patterns](context/CODE_STRUCTURE.md) — file/function organization
-- [Effectiveness Guide](context/EFFECTIVENESS.md) — practical application examples
+- [Code Structure Patterns](refs/CODE_STRUCTURE.md) — file/function organization
+- [Effectiveness Guide](refs/EFFECTIVENESS.md) — practical application examples

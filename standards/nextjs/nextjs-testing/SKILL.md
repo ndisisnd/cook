@@ -33,7 +33,7 @@ metadata:
 
 ## Component Test Example
 
-See [implementation examples](context/implementation.md)
+See [implementation examples](refs/implementation.md)
 
 ## Implementation Guidelines
 
@@ -54,4 +54,4 @@ See [implementation examples](context/implementation.md)
 
 ## References
 
-- [Next.js Test Patterns](context/implementation.md)
+- [Next.js Test Patterns](refs/implementation.md)

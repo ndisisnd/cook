@@ -42,9 +42,9 @@ metadata:
 
 ## Reference
 
-- [**GitHub Actions Template**](context/github-actions.md) - Standard workflow file.
-- [**Advanced Large-Scale Workflow**](context/advanced-workflow.md) - Parallel jobs, Caching, Strict Mode.
-- [**Fastlane Standards**](context/fastlane.md) - Automated Signing & Deployment.
+- [**GitHub Actions Template**](refs/github-actions.md) - Standard workflow file.
+- [**Advanced Large-Scale Workflow**](refs/advanced-workflow.md) - Parallel jobs, Caching, Strict Mode.
+- [**Fastlane Standards**](refs/fastlane.md) - Automated Signing & Deployment.
 
 ## Anti-Patterns
 

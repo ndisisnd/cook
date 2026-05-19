@@ -33,7 +33,7 @@ App Router uses React Server Components (RSC) by default.
 
 ## Composition Pattern Example
 
-See [implementation examples](context/example.md)
+See [implementation examples](refs/example.md)
 
 ## Implementation Guidelines
 
@@ -42,7 +42,7 @@ See [implementation examples](context/example.md)
 - **Streaming**: Wrap slow async components in `<Suspense>`. Use `loading.tsx` for route-level skeletons.
 - **Hydration**: Server sends HTML + RSC payload; client hydrates only Client Components. Server Components: zero JS in client bundle.
 - **Server-in-Client**: Cannot import Server Component into Client Component.
-- _Fix_: Pass as `children` prop. See [Composition Example](context/composition-security.md).
+- _Fix_: Pass as `children` prop. See [Composition Example](refs/composition-security.md).
 
 ## Anti-Patterns
 
@@ -53,4 +53,4 @@ See [implementation examples](context/example.md)
 
 ## References
 
-- [Server/Client Composition Example](context/composition-security.md)
+- [Server/Client Composition Example](refs/composition-security.md)

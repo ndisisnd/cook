@@ -10,13 +10,13 @@
 | dart → testing ref | `**/*_test.dart`, `test/**`, `integration_test/**` | mocktail, mockito, fake_async, testWidgets |
 
 > Load `<SKILLS>/dart/SKILL.md` for any `.dart` file — it covers language correctness (P0) and style conventions (P1).
-> Load `<SKILLS>/dart/context/tooling.md` when touching tooling/config files.
-> Load `<SKILLS>/dart/context/testing.md` when touching test files. For Flutter widget/golden/integration tests, also load `flutter-testing`.
+> Load `<SKILLS>/dart/refs/tooling.md` when touching tooling/config files.
+> Load `<SKILLS>/dart/refs/testing.md` when touching test files. For Flutter widget/golden/integration tests, also load `flutter-testing`.
 
 ## Deprecated (pending removal)
 
-The following sub-skill folders have been merged into `SKILL.md` and `context/`:
+The following sub-skill folders have been merged into `SKILL.md` and `refs/`:
 
 - `dart-language/` → merged into `SKILL.md` (P0 section)
 - `dart-best-practices/` → merged into `SKILL.md` (P1 section)
-- `dart-tooling/` → superseded by `context/tooling.md`
+- `dart-tooling/` → superseded by `refs/tooling.md`

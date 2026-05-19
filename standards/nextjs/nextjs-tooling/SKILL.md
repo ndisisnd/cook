@@ -20,11 +20,11 @@ metadata:
 
 ## Standalone Docker Config
 
-See [implementation examples](context/implementation.md)
+See [implementation examples](refs/implementation.md)
 
 ## Environment Variable Validation
 
-See [implementation examples](context/implementation.md)
+See [implementation examples](refs/implementation.md)
 
 ## Implementation Guidelines
 
@@ -44,4 +44,4 @@ See [implementation examples](context/implementation.md)
 
 ## References
 
-- [CI/CD & Deployment Guide](context/implementation.md)
+- [CI/CD & Deployment Guide](refs/implementation.md)

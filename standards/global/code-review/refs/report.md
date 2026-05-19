@@ -1,6 +1,6 @@
 # Audit & Review Reporting Templates
 
-Use these templates to structure the final report. Follow the [rubric](../../common-skill-creator/context/rubric.md) for scoring.
+Use these templates to structure the final report. Follow the [rubric](../../common-skill-creator/refs/rubric.md) for scoring.
 
 ## 1. Codebase Review Dashboard
 

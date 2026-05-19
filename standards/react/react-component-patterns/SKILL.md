@@ -40,4 +40,4 @@ metadata:
 
 ## References
 
-See [context/patterns.md](context/patterns.md) for Composition, Compound Components, and Render Props examples.
+See [refs/patterns.md](refs/patterns.md) for Composition, Compound Components, and Render Props examples.

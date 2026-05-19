@@ -30,7 +30,7 @@ metadata:
 - **Never use `dangerouslySetInnerHTML`** without sanitization. Use **`DOMPurify.sanitize(input)`** for all user-provided HTML.
 - Avoid `javascript:` protocols in `href` or `src`.
 
-See [implementation examples](context/REFERENCE.md#xss-prevention-with-dompurify) for DOMPurify sanitization and secure cookie configuration.
+See [implementation examples](refs/REFERENCE.md#xss-prevention-with-dompurify) for DOMPurify sanitization and secure cookie configuration.
 
 ## Secure Authentication
 
@@ -52,4 +52,4 @@ See [implementation examples](context/REFERENCE.md#xss-prevention-with-dompurify
 
 ## References
 
-See [context/REFERENCE.md](context/REFERENCE.md) for DOMPurify usage, CSP headers, OAuth2/JWT auth patterns, and CSRF protection.
+See [refs/REFERENCE.md](refs/REFERENCE.md) for DOMPurify usage, CSP headers, OAuth2/JWT auth patterns, and CSRF protection.

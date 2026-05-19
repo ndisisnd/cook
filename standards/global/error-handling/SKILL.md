@@ -31,7 +31,7 @@ metadata:
 - **Infra Layer**: Wrap 3rd-party exceptions. NOT leak raw DB errors to API.
 - **Standard Shape**: APIs must return standardized JSON envelope:
 
-See [implementation examples](context/implementation.md) for standard error response shape.
+See [implementation examples](refs/implementation.md) for standard error response shape.
 
 ## Error Mechanics
 
@@ -46,4 +46,4 @@ See [implementation examples](context/implementation.md) for standard error resp
 - **Generic 500s**: Use `400` with specific details for validation instead of 500.
 
 ## References
-- [API Error Contract](context/api-error-contract.md)
+- [API Error Contract](refs/api-error-contract.md)

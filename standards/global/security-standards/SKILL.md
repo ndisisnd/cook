@@ -48,7 +48,7 @@ Activate when: implementing auth, encryption, authorization, input handling, or 
 - **Encryption**: AES-256 for data-at-rest; TLS 1.3 for data-in-transit.
 - **PII Logging**: Never log PII (email, phone, names). Mask sensitive fields before logging.
 
-See [implementation examples](context/implementation.md) for parameterized queries and secret management.
+See [implementation examples](refs/implementation.md) for parameterized queries and secret management.
 
 ### Secure Coding
 
@@ -69,5 +69,5 @@ See [implementation examples](context/implementation.md) for parameterized queri
 
 ## References
 
-- [Injection Testing Protocols (SQLi/HTMLi)](context/INJECTION_TESTING.md)
-- [Vulnerability Remediation & Secure Patterns](context/VULNERABILITY_REMEDIATION.md)
+- [Injection Testing Protocols (SQLi/HTMLi)](refs/INJECTION_TESTING.md)
+- [Vulnerability Remediation & Secure Patterns](refs/VULNERABILITY_REMEDIATION.md)

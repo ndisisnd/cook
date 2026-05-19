@@ -42,4 +42,4 @@ metadata:
 
 ## References
 
-See [context/example.md](context/example.md) for typed props, generic components, and hook ref patterns.
+See [refs/example.md](refs/example.md) for typed props, generic components, and hook ref patterns.

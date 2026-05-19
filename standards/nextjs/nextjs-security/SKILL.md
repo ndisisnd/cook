@@ -27,7 +27,7 @@ metadata:
 
 ## Secure Server Action Example
 
-See [implementation examples](context/implementation.md)
+See [implementation examples](refs/implementation.md)
 
 ## Implementation Guidelines
 
@@ -48,4 +48,4 @@ See [implementation examples](context/implementation.md)
 
 ## References
 
-- [Secure App Router Patterns](context/implementation.md)
+- [Secure App Router Patterns](refs/implementation.md)

@@ -200,5 +200,5 @@ Prefer `list.forEach(print)` over `list.forEach((e) => print(e))`.
 
 ## References
 
-- [tooling](context/tooling.md)
-- [testing](context/testing.md)
+- [tooling](refs/tooling.md)
+- [testing](refs/testing.md)

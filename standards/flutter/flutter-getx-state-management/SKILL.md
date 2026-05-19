@@ -53,7 +53,7 @@ lib/app/modules/home/
 
 ## Code Example
 
-See [context/controller-example.md](context/controller-example.md) for controller + view implementation pattern.
+See [refs/controller-example.md](refs/controller-example.md) for controller + view implementation pattern.
 
 ## Related Topics
 

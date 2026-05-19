@@ -24,7 +24,7 @@ metadata:
 
 ## Setup
 
-See [implementation examples](context/example.md#strictmode--why-did-you-render-setup) for StrictMode, why-did-you-render, and custom hook debug label setup.
+See [implementation examples](refs/example.md#strictmode--why-did-you-render-setup) for StrictMode, why-did-you-render, and custom hook debug label setup.
 
 ## Implementation Guidelines
 

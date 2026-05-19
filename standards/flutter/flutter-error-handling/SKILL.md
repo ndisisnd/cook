@@ -32,12 +32,12 @@ metadata:
 
 ### Repository & BLoC Examples
 
-See [implementation examples](context/implementation.md) for repository error mapping and BLoC consumption patterns.
+See [implementation examples](refs/implementation.md) for repository error mapping and BLoC consumption patterns.
 
 ## Reference & Examples
 
 For Failure definitions and API error mapping:
-See [context/REFERENCE.md](context/REFERENCE.md).
+See [refs/REFERENCE.md](refs/REFERENCE.md).
 
 ## Anti-Patterns
 

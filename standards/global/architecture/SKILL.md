@@ -27,7 +27,7 @@ Identify split sources of truth by searching for redundant directory patterns.
 - Compare `Service.ts` vs `ServiceNew.ts` vs `ServiceV2.ts`.
 - Check for `/v1`, `/v2` or "Refactor" folders.
 
-See [implementation examples](context/implementation.md) for detection scripts.
+See [implementation examples](refs/implementation.md) for detection scripts.
 
 ## 2. Detect Logic Leakage (by Ecosystem)
 
@@ -44,7 +44,7 @@ Flag massive files violating Single Responsibility Principle.
 - **UI**: > 500 lines (Medium), > 1,000 lines (Critical).
 - **Backend Services**: > 1,500 lines indicates "God Class".
 
-See [implementation examples](context/implementation.md) for monolith detection scripts.
+See [implementation examples](refs/implementation.md) for monolith detection scripts.
 
 ## 4. Audit Resource Performance
 
@@ -52,7 +52,7 @@ Check for large metadata or constants impacting IDE performance and binary size.
 
 - Resources > 1,000 lines require granulation.
 
-See [implementation examples](context/implementation.md) for resource audit scripts.
+See [implementation examples](refs/implementation.md) for resource audit scripts.
 
 ## Scoring Impact
 
@@ -67,4 +67,4 @@ See [implementation examples](context/implementation.md) for resource audit scri
 
 ## References
 
-- [Architecture Patterns & Remediation Protocols](context/PATTERNS.md)
+- [Architecture Patterns & Remediation Protocols](refs/PATTERNS.md)

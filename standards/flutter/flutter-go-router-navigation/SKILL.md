@@ -39,7 +39,7 @@ core/router/
 
 ## Code
 
-See [context/typed-routes.md](context/typed-routes.md) for GoRouteData + redirect implementation.
+See [refs/typed-routes.md](refs/typed-routes.md) for GoRouteData + redirect implementation.
 
 ## Anti-Patterns
 

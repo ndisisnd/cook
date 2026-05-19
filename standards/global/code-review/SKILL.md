@@ -29,7 +29,7 @@ metadata:
 - [ ] **Logic**: Requirements met. Edge cases handled.
 - [ ] **Clean Code**: DRY/SOLID. Intent-revealing names.
 
-See [context/checklist.md](context/checklist.md).
+See [refs/checklist.md](refs/checklist.md).
 
 ## Output Format (Strict)
 
@@ -47,5 +47,5 @@ Fix: 1-2 line code or action.
 
 ## References
 
-- [Output Templates](context/output-format.md)
-- [Full Checklist](context/checklist.md)
+- [Output Templates](refs/output-format.md)
+- [Full Checklist](refs/checklist.md)

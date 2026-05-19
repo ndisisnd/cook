@@ -29,7 +29,7 @@ metadata:
 - **Zero-Downtime**: Use Expand-Contract pattern (Add -> Backfill -> Drop) for destructive changes.
 - **RLS**: `typeorm migration:generate` cannot detect Row-Level Security. Use raw `queryRunner.query()` SQL for RLS.
 
-See [implementation examples](context/implementation.md) for Expand-Contract migration patterns.
+See [implementation examples](refs/implementation.md) for Expand-Contract migration patterns.
 
 ## Performance & Gotchas
 
@@ -44,4 +44,4 @@ See [implementation examples](context/implementation.md) for Expand-Contract mig
 - **No synchronize in production**: Always run explicit migrations; `synchronize: true` destructive.
 
 ## References
-- [SQL Gotchas (UPDATE FROM)](context/sql-gotchas.md)
+- [SQL Gotchas (UPDATE FROM)](refs/sql-gotchas.md)

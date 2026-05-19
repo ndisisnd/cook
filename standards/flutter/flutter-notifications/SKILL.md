@@ -28,9 +28,9 @@ metadata:
 
 ### Lifecycle Handlers Example
 
-See [implementation examples](context/implementation.md) for foreground, background, and terminated state notification handling.
+See [implementation examples](refs/implementation.md) for foreground, background, and terminated state notification handling.
 
-[Implementation Details](context/implementation.md)
+[Implementation Details](refs/implementation.md)
 
 ## Anti-Patterns
 

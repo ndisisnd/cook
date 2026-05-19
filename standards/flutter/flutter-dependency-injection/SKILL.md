@@ -38,12 +38,12 @@ core/injection/
 
 ### Registration & Test Mock Examples
 
-See [implementation examples](context/implementation.md) for module registration and test mock swap patterns.
+See [implementation examples](refs/implementation.md) for module registration and test mock swap patterns.
 
 ## Reference & Examples
 
 For module configuration and initialization templates:
-See [context/REFERENCE.md](context/REFERENCE.md).
+See [refs/REFERENCE.md](refs/REFERENCE.md).
 
 ## Anti-Patterns
 

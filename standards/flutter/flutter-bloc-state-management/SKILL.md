@@ -60,4 +60,4 @@ metadata:
 
 ## References
 
-- [Templates](context/bloc_templates.md)
+- [Templates](refs/bloc_templates.md)

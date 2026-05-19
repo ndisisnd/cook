@@ -7,7 +7,7 @@ Since you cannot annotate third-party classes (like `Dio` or `SharedPreferences`
 ```dart
 import 'package:injectable/injectable.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_pcontext/shared_preferences.dart';
+import 'package:shared_prefs/shared_preferences.dart';
 
 @module
 abstract class NetworkingModule {

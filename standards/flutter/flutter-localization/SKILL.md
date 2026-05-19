@@ -48,7 +48,7 @@ assets/translations/
 
 ### Bootstrap & Usage Examples
 
-See [implementation examples](context/implementation.md) for bootstrap setup and translation usage patterns.
+See [implementation examples](refs/implementation.md) for bootstrap setup and translation usage patterns.
 
 ## Anti-Patterns
 
@@ -59,7 +59,7 @@ See [implementation examples](context/implementation.md) for bootstrap setup and
 ## Reference & Examples
 
 For setup and Google Sheets automation:
-See [context/REFERENCE.md](context/REFERENCE.md).
+See [refs/REFERENCE.md](refs/REFERENCE.md).
 
 ## Related Topics
 
