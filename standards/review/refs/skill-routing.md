@@ -8,27 +8,26 @@ type: reference
 
 ## Global Review Base
 
-- Always load `standards/global/SKILL.md` first.
+- Always load `standards/global/SKILL.md` first with the appropriate mode flag.
 - If the request is review work, also load `standards/review/SKILL.md`.
-- Load `standards/global/security-standards/SKILL.md` for both frontend and backend review.
 
 ## Review Mode Mapping
 
-| Review mode | Load these standards |
-| --- | --- |
-| Frontend | `standards/global/error-handling/SKILL.md`, `standards/react/*`, `standards/nextjs/*` when file matches, plus language skill such as `standards/typescript/SKILL.md` |
-| Backend | `standards/global/api-design/SKILL.md`, `standards/global/error-handling/SKILL.md`, `standards/typescript/SKILL.md` or other language skill, plus framework or database skills when file matches |
-| Full-stack | Union of frontend and backend standards that match the touched files |
-| Security-sensitive | Add `standards/global/owasp/SKILL.md` and `standards/global/security-audit/SKILL.md` when the change touches auth, access control, injection risk, uploads, redirects, or third-party inputs |
+| Review mode | Mode flag | Additional skills to load |
+| --- | --- | --- |
+| Frontend | `--frontend` | `standards/typescript/SKILL.md` or matching language skill; React/Next.js skills when files match |
+| Backend | `--backend` | `standards/typescript/SKILL.md` or matching language skill; database skills when files match |
+| Full-stack | `--full-stack` | Union of frontend and backend skills that match the touched files |
+| Security-sensitive | `--backend` or `--full-stack` + load `standards/global/refs/security.md` | Activate when change touches auth, access control, injection risk, uploads, redirects, or third-party inputs |
 
 ## Trigger Checks
 
 - Frontend signals: `.tsx`, `.jsx`, `components/`, `pages/`, `app/`, `hooks/`, `styles/`
 - Backend signals: `controllers/`, `routes/`, `handlers/`, `services/`, `repositories/`, `db/`
-- Full-stack signals: both frontend plus backend files in one review target
+- Full-stack signals: both frontend and backend files in one review target
 - Security-sensitive signals: auth, token, session, role, permission, owner scope, upload, redirect, webhook, external URL
 
-## Worked Example
+## Worked Examples
 
-- Reviewing a React checkout form with TypeScript loads `standards/global/SKILL.md`, `standards/review/SKILL.md`, `standards/global/security-standards/SKILL.md`, `standards/typescript/SKILL.md`, plus the matching React skills.
-- Reviewing a new API endpoint with auth loads `standards/global/SKILL.md`, `standards/review/SKILL.md`, `standards/global/api-design/SKILL.md`, `standards/global/error-handling/SKILL.md`, `standards/global/security-standards/SKILL.md`, `standards/global/owasp/SKILL.md`, plus the matching language and framework skills.
+- Reviewing a React checkout form with TypeScript: load `standards/global/SKILL.md --frontend`, `standards/review/SKILL.md`, `standards/typescript/SKILL.md`, plus matching React skills. Load `standards/global/refs/security.md` because the form handles payment input.
+- Reviewing a new API endpoint with auth: load `standards/global/SKILL.md --backend`, `standards/review/SKILL.md`, `standards/global/refs/api-design.md`, `standards/global/refs/security.md`, plus the matching language and framework skills.

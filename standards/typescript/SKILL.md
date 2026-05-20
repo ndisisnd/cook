@@ -1,6 +1,6 @@
 ---
 name: typescript
-description: TypeScript 5.x language standards, code conventions, and security. Use when writing or reviewing any TypeScript code — type safety, generics, classes, async, modules, input validation, and authentication.
+description: TypeScript 5.x language standards for type safety, narrowing, generics, modules, and async code. Use for TypeScript implementation or review work; load refs only for tooling, testing, or security-specific tasks.
 metadata:
   triggers:
     files:
@@ -31,11 +31,13 @@ metadata:
 
 # TypeScript Standards
 
+Default load: this file only. Pull `refs/tooling.md`, `refs/testing.md`, or `refs/security.md` only when the task explicitly needs that depth.
+
 ## Priority: P0 — Type Correctness
 
 ### Type Annotations
 - Explicit params and return types on all public declarations. Infer locals.
-- Never use `any`. Use `unknown` or a specific type.
+- Avoid `any`. Prefer `unknown`, generics, or a narrowly-scoped escape hatch with a comment when interop forces it.
 - Never use the `Function` type. Use a typed signature: `() => void`.
 
 ### Interfaces vs Types
@@ -58,19 +60,20 @@ metadata:
 
 ### Utility Types
 - Prefer built-ins: `Partial`, `Required`, `Pick`, `Omit`, `Record`, `Readonly`, `NonNullable`.
+- Prefer `satisfies` for object literals that must conform to a contract without widening the inferred type.
 
 ### Immutability
 - `readonly` on arrays and object properties. Use `as const` and `satisfies` for const assertions.
 
 ### Discriminated Unions
-- Use a literal `kind` property to narrow type safely. Switch on the discriminant.
+- Use a stable discriminant such as `kind` or `type` to narrow safely. Switch on the discriminant.
 
 ```typescript
 type Result<T> = { kind: 'ok'; data: T } | { kind: 'err'; error: Error };
 ```
 
 ### Branded Types
-- Use brands to prevent mixing structurally identical types at compile time.
+- Use brands only when structurally identical values such as IDs or units are easy to mix up across boundaries.
 
 ```typescript
 type UserId = string & { readonly __brand: 'UserId' };
@@ -82,25 +85,19 @@ function createUserId(id: string): UserId { return id as UserId; }
 
 ---
 
-## Priority: P0 — Security
+## Priority: P0 — Boundary Safety
 
-### Input Validation
-- Use `Zod`, `Joi`, or `class-validator` at every API boundary. Always parse and validate user-controlled input before use.
-- Use `safeParse` for error handling without throwing. Return `400` with structured errors on failure.
+### External Data
+- Treat data from I/O boundaries as untrusted until it is parsed, validated, and narrowed.
+- Prefer schema-based validation at API and persistence boundaries when the project already uses a validator. Load `refs/security.md` for concrete API/auth guidance.
 
-### Injection and XSS
-- **SQL**: Parameterized queries (`pool.query('... WHERE id = $1', [id])`) or type-safe ORMs (Prisma, TypeORM). Use `Prisma.sql` for raw queries.
-- **XSS**: `DOMPurify` for HTML sanitization.
-- **Command injection**: Never interpolate user input or env vars into `execSync`/`spawnSync` strings. Use `execFileSync('git', ['arg1', arg2])` — static command, separate args array.
-- **SSRF**: Validate URL origins against an allowlist before calling `fetch()`/`axios` with any externally-sourced URL.
-
-### Authentication
-- `Argon2id` for password hashing. JWT via `jsonwebtoken` or `jose` with `HttpOnly`/`Secure` cookies. Use `RS256` for public/private key pairs. Implement refresh token rotation.
-- CORS: strict origin whitelisting — never `origin: '*'`.
-- Encryption: Node.js `crypto` or Web Crypto API. Avoid MD5 and SHA1.
+### Dangerous Sinks
+- Never interpolate untrusted input into SQL, shell commands, HTML, filesystem paths, or externally-sourced URLs.
+- Use parameterized queries, safe child-process APIs, output sanitization, and origin allowlists where the sink requires them.
 
 ### Secrets
-- `.env` files or a secret manager. Never commit secrets to Git.
+- Never hardcode secrets, tokens, or credentials in source.
+- Never log secrets or raw auth tokens.
 
 ---
 
@@ -116,16 +113,16 @@ function createUserId(id: string): UserId { return id as UserId; }
 - Always type return values on public API functions.
 
 ### Modules
-- Named exports only — enables better refactoring and auto-imports.
+- Prefer named exports unless a framework or file convention requires a default export.
 - `import type` for interfaces and types — zero runtime overhead.
-- Import order: external packages → internal modules → relative imports. Enforce via `eslint-plugin-import`.
+- Keep import grouping consistent with the repo. Load `refs/tooling.md` when changing lint enforcement.
 
 ### Async
-- `async/await` with `Promise.all()` for parallel execution.
+- Prefer `async/await`. Use `Promise.all()` only for independent work that can safely run in parallel.
 - `try/catch` with `catch (e: unknown)` — narrow before use. Avoid `.then().catch()` chains.
 
 ### Classes
-- Explicit `private`, `protected`, and `public` modifiers on every member.
+- Use explicit visibility when it protects internal state or materially improves readability. Avoid redundant `public` churn unless the repo standard requires it.
 - Favor composition over inheritance. Constructor injection with interfaces — not singletons.
 
 ### Optional Chaining
@@ -137,23 +134,23 @@ function createUserId(id: string): UserId { return id as UserId; }
 
 After editing any `.ts`/`.tsx` file:
 
-1. Call `getDiagnostics` (typescript-lsp MCP tool) — surfaces type errors in real time.
-2. Run `tsc --noEmit` in CI — catches project-wide errors LSP may miss.
-3. Run `eslint --fix` — auto-fix formatting and lint violations.
+1. Use TypeScript diagnostics from the editor, LSP, or MCP tooling when available.
+2. Run the repo's typecheck command (`tsc --noEmit`, `pnpm typecheck`, or equivalent).
+3. Run the repo's lint and test commands for the changed surface. Use auto-fix only when the repo already expects it.
 
-> Fallback when typescript-lsp is unconfigured: run `tsc --noEmit` directly.
+> Fallback when no LSP tooling is configured: run the repo's typecheck command directly.
 
-Use `getHover` to inspect inferred types. Use `getReferences` before renaming symbols.
+Inspect inferred types before adding annotations that may fight the compiler. Check references before large renames or signature changes.
 
 ---
 
 ## Anti-Patterns
 
-- `any` — use `unknown` or a specific type
+- Broad `any` usage when `unknown`, generics, or a local escape hatch would work
 - `Function` type — use a typed signature `() => void`
 - Runtime `enum` — use literal unions or `as const`
 - Non-null assertion `!` — use narrowing
-- Default exports — use named exports
+- Default exports where the framework or file convention does not require them
 - `require()` — use ES6 `import`
 - Empty interfaces — use `type` or a non-empty interface
 - Unsafe mock casts — use `jest.Mocked<T>` or `as unknown as T`
@@ -161,9 +158,9 @@ Use `getHover` to inspect inferred types. Use `getReferences` before renaming sy
 - Global `eslint-disable` — suppress per-line; fix root cause
 - Atomic `strict: true` flip on an existing repo — migrate incrementally starting with `strictNullChecks`
 - `eval`, `Function` constructor, or string literals as timer callbacks
-- Shell string interpolation with user input (`execSync(\`cmd ${userInput}\`)`)
-- Unvalidated externally-sourced URLs passed to `fetch()`/`axios`
-- Plaintext secrets in code or Git
+- Shell string interpolation with untrusted input (`execSync(\`cmd ${userInput}\`)`)
+- Unvalidated externally-sourced URLs passed to network or redirect APIs
+- Plaintext secrets in code, tests, fixtures, or Git
 
 ---
 
@@ -174,3 +171,5 @@ Load only what the current task requires:
 - [tooling](refs/tooling.md) — configuring tsconfig, ESLint, Jest, Vitest, build pipeline, or CI
 - [testing](refs/testing.md) — writing, debugging, or reviewing tests
 - [security](refs/security.md) — input validation, authentication, JWT, secrets, or API security
+
+Do not load refs for ordinary type-shape, refactor, or local implementation tasks.

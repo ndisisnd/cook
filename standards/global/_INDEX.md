@@ -1,78 +1,45 @@
-<!-- Top-level routing for the compressed global skill. -->
+<!-- Top-level routing for the global skill. -->
 # global Skills Index
 
 ## Load Order
 
-1. Always load `<SKILLS>/global/SKILL.md` first.
+1. Load `<SKILLS>/global/SKILL.md`.
 2. If no mode is passed explicitly, infer it from the task summary, mentioned files, and expected change surface.
-3. Load the topic skills mapped to that mode.
-4. Load extra topic skills only when the task explicitly needs them.
+3. Pass the appropriate mode flag (`--frontend`, `--backend`, or `--full-stack`) so the mode-specific rules in SKILL.md apply.
+4. Load refs only when the task explicitly needs them.
 
 ## File Match
 
 | Skill | File pattern | Keywords |
 | ----- | ------------ | -------- |
 | **global** | `**/*.{ts,tsx,js,jsx,go,dart,java,kt,swift,py}` | dry, kiss, solid, refactor, clean code, readability, naming, error handling, security, performance |
-| global -> frontend mode | `**/*.{tsx,jsx,css,scss,less}`, `**/components/**`, `**/pages/**`, `**/app/**`, `**/views/**`, `**/hooks/**` | frontend, ui, form, state, rendering, accessibility, client, browser |
-| global -> backend mode | `**/controllers/**`, `**/routes/**`, `**/handlers/**`, `**/services/**`, `**/repositories/**`, `**/api/**`, `**/db/**`, `**/*.controller.*`, `**/*.service.*`, `**/*.router.*`, `**/*.handler.*` | backend, api, endpoint, auth, authorization, database, query, persistence, queue, cron |
-| global -> full-stack mode | n/a | full-stack, full stack, end-to-end, e2e, wire up, connect ui to api, frontend and backend |
+| global `--frontend` | `**/*.{tsx,jsx,css,scss}`, `**/components/**`, `**/pages/**`, `**/app/**`, `**/hooks/**` | frontend, ui, form, state, rendering, client, browser |
+| global `--backend` | `**/controllers/**`, `**/routes/**`, `**/handlers/**`, `**/services/**`, `**/repositories/**`, `**/api/**`, `**/*.controller.*`, `**/*.service.*` | backend, api, endpoint, auth, database, query, persistence |
+| global `--full-stack` | n/a | full-stack, full stack, end-to-end, connect ui to api |
 
 ## Mode Routing
 
-### Frontend Mode
+All mode-specific rules are inline in `global/SKILL.md`. No additional skill files to load.
 
-Load these topic skills after `global/SKILL.md`:
+- `--frontend` — component structure, UI security, rendering performance
+- `--backend` — API semantics, error architecture, auth/ownership, DB performance
+- `--full-stack` — union of both, plus cross-layer contract rules
 
-- `<SKILLS>/global/security-standards/SKILL.md`
-- `<SKILLS>/global/error-handling/SKILL.md`
-- `<SKILLS>/global/performance/SKILL.md`
+Use `--full-stack` only when the task genuinely spans UI and server concerns.
 
-`security-standards` is part of the default frontend load because secret hygiene, unsafe rendering, token leakage, and input handling are cross-cutting concerns.
+## Ref Loading
 
-### Backend Mode
+Load refs from `global/refs/` only when the task explicitly requires them:
 
-Load these topic skills after `global/SKILL.md`:
-
-- `<SKILLS>/global/api-design/SKILL.md`
-- `<SKILLS>/global/security-standards/SKILL.md`
-- `<SKILLS>/global/error-handling/SKILL.md`
-- `<SKILLS>/global/performance/SKILL.md`
-
-`security-standards` is part of the default backend load because boundary validation, auth, secret management, and data protection are always relevant.
-
-### Full-Stack Mode
-
-Load the union of frontend and backend topic skills:
-
-- `<SKILLS>/global/api-design/SKILL.md`
-- `<SKILLS>/global/security-standards/SKILL.md`
-- `<SKILLS>/global/error-handling/SKILL.md`
-- `<SKILLS>/global/performance/SKILL.md`
-
-Use `full-stack` only when the task genuinely spans UI and server concerns.
-
-## Security-Sensitive Supplement
-
-Load `<SKILLS>/global/owasp/SKILL.md` only when the task is security-sensitive or explicitly requests security review.
-
-Common triggers:
-
-- auth, authorization, roles, sessions, tokens, or permissions
-- exposed endpoints, resource ownership, tenant scoping, or access control
-- untrusted HTML, injection risk, uploads, redirects, or external URLs
-- third-party API consumption or webhook handling
-- explicit requests for security review, audit, or OWASP checks
-
-## Intent-Driven Supplements
-
-Load these only when the task explicitly calls for them:
-
-- `debug/SKILL.md` for debugging and root-cause analysis
-- `architecture/SKILL.md` for structural refactors and architecture reviews
-- `security-audit/SKILL.md` for security audits and vulnerability scans
-- `<SKILLS>/review/SKILL.md` for findings-first code review
+| Ref | Load when |
+| --- | --- |
+| `refs/api-design.md` | designing endpoints, choosing status codes, writing OpenAPI |
+| `refs/error-handling.md` | defining error hierarchies or response envelopes |
+| `refs/security.md` | implementing auth, OWASP checklist, or running a SAST scan |
+| `refs/architecture.md` | auditing structural debt or detecting logic leakage |
+| `refs/performance.md` | profiling or fixing a proven bottleneck |
+| `refs/debug.md` | troubleshooting crashes or filing a bug report |
 
 ## Notes
 
-- `coding-principles/SKILL.md` is superseded by `global/SKILL.md` for normal coding tasks.
-- Topic folders remain separate and are loaded by mode; they are not merged into synthetic mode refs.
+- For findings-first code review, load `<SKILLS>/review/SKILL.md` instead of this skill.
