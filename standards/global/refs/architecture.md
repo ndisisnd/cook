@@ -1,5 +1,12 @@
 # Architecture
 
+## Component & State Structure
+
+- One component per file. No cross-concern mixing in a single component.
+- Keep state as local as possible. Lift only when two or more components need the same state.
+- Extract business logic from components into hooks or services. Components describe UI, not decisions.
+- No business logic leaked from backend services into frontend components — the UI renders results, it does not re-derive them.
+
 ## Detecting Structural Duplication
 
 Search for split sources of truth before refactoring:

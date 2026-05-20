@@ -4,6 +4,15 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [d679bf1] — 2026-05-21 · Add changelog and verify-[6] plan
+
+**Introduced a root changelog and captured the next verification plan as a standalone artifact.**
+
+- Added `CHANGELOG.md` to track notable repository changes in reverse chronological order
+- Added `verify/verify-[6].md` with the verification plan for the latest standards restructuring work
+
+---
+
 ## [93f14d2] — 2026-05-20 · Consolidate standards into domain-based structure
 
 **All skill files and references are now organized by domain — one skill entry point per domain, shared refs in a flat folder.**

@@ -1,5 +1,21 @@
 # Security
 
+## UI Security
+
+- Never use `dangerouslySetInnerHTML` or equivalent without explicit sanitization.
+- Never construct URLs from unsanitized user input.
+- Never store auth tokens in `localStorage` — prefer `httpOnly` cookies or short-lived session memory.
+
+## Auth & Ownership
+
+- Scope every resource query by owner or tenant ID alongside any user-supplied ID.
+- Require auth on all routes by default. Explicit opt-out only.
+- Every role-gated action has a guard. No open admin routes.
+
+## Input Validation
+
+- Validate once at the server boundary. Mirror in the UI for UX only — the server is the source of truth.
+
 ## Secure Coding Patterns
 
 ### Parameterized Queries

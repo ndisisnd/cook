@@ -49,9 +49,16 @@ results = fetch("/users", params={"ids": ",".join(ids)})
 
 ## UI
 
+- Avoid unnecessary re-renders: memoize stable callbacks and computed values only when there is a measured reason.
+- Avoid data waterfalls: fetch in parallel at the highest appropriate boundary.
 - Offload animation and interaction work off the main thread.
 - Virtualize long lists — never render unbounded item counts into the DOM or widget tree.
 - Tree-shake unused code and dependencies at build time.
+
+## Database
+
+- No N+1 queries. Batch or join data access.
+- Index every foreign key and filter column used in hot queries.
 
 ## Monitoring
 
