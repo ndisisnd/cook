@@ -11,6 +11,8 @@ metadata:
 ---
 # Code Review Expert
 
+> Superseded by `standards/review/SKILL.md` as the primary review skill. Keep this file only as legacy source material until the old folder is retired.
+
 ## **Priority: P1 (OPERATIONAL)**
 
 **Role: Principal Engineer.** Focus: logic, security, architecture. constructive.

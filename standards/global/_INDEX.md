@@ -70,7 +70,7 @@ Load these only when the task explicitly calls for them:
 - `debug/SKILL.md` for debugging and root-cause analysis
 - `architecture/SKILL.md` for structural refactors and architecture reviews
 - `security-audit/SKILL.md` for security audits and vulnerability scans
-- `code-review/SKILL.md` only until a separate top-level `review` skill replaces it
+- `<SKILLS>/review/SKILL.md` for findings-first code review
 
 ## Notes
 
