@@ -8,17 +8,20 @@ type: reference
 
 ## Global Review Base
 
-- Always load `standards/global/SKILL.md` first with the appropriate mode flag.
+- Always load `standards/global/SKILL.md` first — its P0 universal rules apply to every review. There are no mode flags.
 - If the request is review work, also load `standards/review/SKILL.md`.
+- Match the review target's keywords and touched-file patterns against the **Concern Match** table in `standards/global/_INDEX.md`, and load every concern ref that matches (`refs/architecture.md`, `refs/api-design.md`, `refs/error-handling.md`, `refs/security.md`, `refs/performance.md`, `refs/debug.md`).
 
-## Review Mode Mapping
+## Surface-to-Skills Mapping
 
-| Review mode | Mode flag | Additional skills to load |
+A review target can touch more than one surface; load the union of everything that matches.
+
+| Review surface | Concern refs to load | Domain skills to load |
 | --- | --- | --- |
-| Frontend | `--frontend` | `standards/typescript/SKILL.md` or matching language skill; React/Next.js skills when files match |
-| Backend | `--backend` | `standards/typescript/SKILL.md` or matching language skill; database skills when files match |
-| Full-stack | `--full-stack` | Union of frontend and backend skills that match the touched files |
-| Security-sensitive | `--backend` or `--full-stack` + load `standards/global/refs/security.md` | Activate when change touches auth, access control, injection risk, uploads, redirects, or third-party inputs |
+| Frontend | `refs/architecture.md`, `refs/performance.md` | `standards/typescript/SKILL.md` or matching language skill; React/Next.js skills when files match |
+| Backend | `refs/api-design.md`, `refs/error-handling.md` | `standards/typescript/SKILL.md` or matching language skill; database/GraphQL skills when files match |
+| Full-stack | union of the frontend and backend rows | union of frontend and backend skills that match the touched files |
+| Security-sensitive | `refs/security.md` (in addition to the above) | matching domain skills; activate when the change touches auth, access control, injection risk, uploads, redirects, or third-party inputs |
 
 ## Trigger Checks
 
@@ -29,5 +32,5 @@ type: reference
 
 ## Worked Examples
 
-- Reviewing a React checkout form with TypeScript: load `standards/global/SKILL.md --frontend`, `standards/review/SKILL.md`, `standards/typescript/SKILL.md`, plus matching React skills. Load `standards/global/refs/security.md` because the form handles payment input.
-- Reviewing a new API endpoint with auth: load `standards/global/SKILL.md --backend`, `standards/review/SKILL.md`, `standards/global/refs/api-design.md`, `standards/global/refs/security.md`, plus the matching language and framework skills.
+- Reviewing a React checkout form with TypeScript: load `standards/global/SKILL.md`, `standards/review/SKILL.md`, `standards/global/refs/architecture.md` and `refs/performance.md`, `standards/typescript/SKILL.md`, plus matching React skills. Add `standards/global/refs/security.md` because the form handles payment input.
+- Reviewing a new API endpoint with auth: load `standards/global/SKILL.md`, `standards/review/SKILL.md`, `standards/global/refs/api-design.md`, `refs/error-handling.md`, and `refs/security.md`, plus the matching language and framework skills.
