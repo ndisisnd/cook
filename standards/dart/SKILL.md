@@ -26,7 +26,8 @@ metadata:
 ## Priority: P0 — Language Correctness
 
 ### Null Safety
-- Never use `!` unless you can prove non-null via a prior `if` or `assert`.
+- Avoid `!`. Prefer local promotion, null-check patterns, and private `final` fields.
+- Use `!` only for documented invariants or framework/external boundaries where non-null is guaranteed but not expressible to the analyzer.
 - Prefer `?.`, `??`, and null-aware patterns over forced unwrapping.
 - `AVOID late` if you need to check whether the variable was initialised — use nullable + null-check instead.
 - `DON'T` explicitly initialise variables to `null`; let the type system express optionality.
@@ -73,6 +74,10 @@ Choose the right modifier to express API intent explicitly:
 | `base` | yes | no | Allow inheritance, prevent external implementation |
 | `interface` | no | yes | Pure contracts — implementation only |
 
+- `sealed` is implicitly abstract; direct subtypes must be in the same library for exhaustive switching.
+- Subclasses of a `sealed` class are not implicitly abstract — mark each subtype intentionally.
+- Use `final` instead of `sealed` when you want to close external subtyping but still add subtypes later without breaking exhaustive switches.
+
 ```dart
 sealed class AuthState {}
 final class Authenticated extends AuthState { final User user; Authenticated(this.user); }
@@ -111,6 +116,8 @@ Use `_` for unused variables in declarations and patterns.
 - `AVOID` using `Completer` directly; prefer `async/await` or `StreamController`.
 - `AVOID` `FutureOr<T>` as a return type.
 - `AVOID` returning nullable `Future`, `Stream`, or collection types from public APIs.
+- Cancel `StreamSubscription`s and close owned `StreamController`s or `Sink`s.
+- Avoid `async void` except for framework callbacks that require `void`.
 
 ### Error Handling
 - Use `on ExceptionType catch (e)` — never bare `catch` without `on` (swallows everything).
@@ -133,6 +140,12 @@ Use `_` for unused variables in declarations and patterns.
 - `DON'T` perform complex calculations or async work inside constructors.
 - Use a getter for pure computations: `int get invoiceTotal =>` not `int calcTotal()`.
 
+### Equality
+- If you override `operator ==`, override `hashCode`.
+- Equality must be reflexive, symmetric, transitive, and stable over time.
+- Avoid custom equality on mutable classes; prefer immutable value types.
+- Use `identical(this, other)` as the fast path before structural comparison.
+
 ---
 
 ## Priority: P1 — Style & Conventions
@@ -142,7 +155,7 @@ Use `_` for unused variables in declarations and patterns.
 - Members, variables, parameters: `lowerCamelCase`
 - Files, packages, directories: `lowercase_with_underscores`
 - Import prefixes: `lowercase_with_underscores`
-- Constants: `lowerCamelCase` (not `SCREAMING_CAPS`)
+- Constants: prefer `lowerCamelCase` (not `SCREAMING_CAPS`) unless matching generated or existing code style.
 - Capitalise acronyms longer than two letters as words: `HttpRequest`, `parseUrl`
 - `DON'T` use a leading `_` on non-private identifiers.
 - Name value-object converters for their target context: `get apiFilterType` not `get filterType`.
@@ -184,10 +197,14 @@ Prefer `list.forEach(print)` over `list.forEach((e) => print(e))`.
 
 ## Anti-Patterns
 
-- `!` without a prior null-proof guard
+- `!` without a documented invariant, local promotion alternative, or framework boundary
+- Overriding `==` without `hashCode`
+- Custom equality on mutable classes
 - `var` for class members
 - `dynamic` anywhere
 - `async` on a function with no `await`
+- `async void` outside framework callbacks
+- Leaked `StreamSubscription`, `StreamController`, or `Sink`
 - Bare `catch` without `on`
 - Global mutable state
 - `new` keyword
@@ -200,5 +217,7 @@ Prefer `list.forEach(print)` over `list.forEach((e) => print(e))`.
 
 ## References
 
-- [tooling](refs/tooling.md)
-- [testing](refs/testing.md)
+Load only what the current task requires:
+
+- [tooling](refs/tooling.md) — setting up or modifying analysis_options, dart format, DCM, build_runner, pubspec, coverage, CI, or pre-commit hooks
+- [testing](refs/testing.md) — writing or reviewing unit tests, mocks (mocktail), stream tests, or fake_async time-dependent tests

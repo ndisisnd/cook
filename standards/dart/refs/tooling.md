@@ -5,8 +5,8 @@
 Use `analysis_options.yaml` to enforce project-wide rules.
 
 ```yaml
-# analysis_options.yaml
-include: package:flutter_lints/flutter.yaml
+# analysis_options.yaml (pure Dart)
+include: package:lints/recommended.yaml
 
 analyzer:
   errors:
@@ -18,9 +18,13 @@ linter:
     - prefer_single_quotes
     - unawaited_futures
     - require_trailing_commas
-    - always_use_package_imports
+    - directives_ordering
+    - prefer_relative_imports
+    - avoid_relative_lib_imports
+    - implementation_imports
 ```
 
+- For Flutter packages, use `include: package:flutter_lints/flutter.yaml` instead.
 - Run `dart analyze` for pure Dart packages; `flutter analyze --fatal-infos --fatal-warnings` for Flutter apps. Don't mix them.
 - Run `dart fix --apply` to auto-apply mechanical lint fixes after updating `analysis_options.yaml`.
 
@@ -52,7 +56,22 @@ dart run build_runner watch --delete-conflicting-outputs
 - Run `dart pub upgrade` to apply non-breaking upgrades within constraints.
 
 ```yaml
-# pubspec.yaml (app package)
+# pubspec.yaml (pure Dart package)
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0
+  mocktail: ^1.0.0
+  fake_async: ^1.3.0
+  coverage: ^1.9.0
+```
+
+For Flutter app packages:
+
+```yaml
+# pubspec.yaml (Flutter app package)
 publish_to: none
 
 environment:

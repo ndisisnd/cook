@@ -26,13 +26,13 @@ void main() {
     });
 
     test('returns null when user not found', () async {
-      when(() => dataSource.fetchUser(any())).thenAnswer((_) async => null);
+      when(() => dataSource.fetchUser('123')).thenAnswer((_) async => null);
       expect(await repo.getUser('123'), isNull);
     });
 
     test('throws StateError on network failure', () async {
-      when(() => dataSource.fetchUser(any())).thenThrow(Exception('timeout'));
-      expect(() => repo.getUser('123'), throwsA(isA<StateError>()));
+      when(() => dataSource.fetchUser('123')).thenThrow(Exception('timeout'));
+      await expectLater(repo.getUser('123'), throwsA(isA<StateError>()));
     });
   });
 }
@@ -48,12 +48,9 @@ Prefer `mocktail` over `mockito` — no code generation required.
 import 'package:mocktail/mocktail.dart';
 
 class MockUserDataSource extends Mock implements UserDataSource {}
-
-// Register fallback values for custom types passed to any()
-setUpAll(() {
-  registerFallbackValue(const UserId('fallback'));
-});
 ```
+
+Prefer explicit values in `when` and `verify`. Avoid broad `any()` / `anyNamed()` unless a test genuinely cannot name the argument; if you use them with custom types, register fallback values in `setUpAll`.
 
 Key mocktail APIs:
 - `when(() => mock.method()).thenReturn(value)` — stub return value
@@ -67,8 +64,8 @@ Key mocktail APIs:
 Use `emitsInOrder`, `emits`, and `emitsDone` matchers from `package:test`:
 
 ```dart
-test('emits loading then data', () {
-  expect(
+test('emits loading then data', () async {
+  await expectLater(
     repo.userStream('123'),
     emitsInOrder([isA<Loading>(), isA<Success>()]),
   );
@@ -97,6 +94,7 @@ test('debounce fires after 300ms', () {
 ## Anti-Patterns
 
 - `mockito` with `@GenerateMocks` for new code — use `mocktail` instead
+- Broad `any()` / `anyNamed()` matchers when explicit values or typed matchers are practical
 - Testing implementation details — test observable behaviour only
 - `Future.delayed` or `sleep` in tests — use `fake_async`
 - Bare `expect(result, anything)` — always assert the actual value or type
