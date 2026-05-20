@@ -4,6 +4,28 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [56c3d70] — 2026-05-21 · Align skill-routing with keyword-driven model
+
+**Fixed a dangling reference left in the review skill routing after the keyword-driven refactor.**
+
+- Rewrote `standards/review/refs/skill-routing.md` to drop the `--frontend`/`--backend`/`--full-stack` mode flags and match concern refs via `standards/global/_INDEX.md` instead
+- Replaced the mode-flag table with a Surface-to-Skills Mapping (concern refs + domain skills, additive union)
+- Updated worked examples to load specific concern refs instead of mode-flag invocations
+- Added §6 "Post-Verification Audit" to `verify-[6].md` and moved it into `verify/done/`
+
+---
+
+## [d290dac] — 2026-05-21 · Make cook a keyword-driven orchestrator
+
+**cook now detects what a task touches by keyword and composes standards from concern refs — mode flags are gone.**
+
+- Rewrote the top-level `SKILL.md` as a keyword-driven orchestrator: receive summary → detect review intent → extract keywords → load global P0 → match concern refs → detect domains → compile
+- Removed the `--frontend`/`--backend`/`--full-stack` mode flags and the P1 mode section from `standards/global/SKILL.md`
+- Converted `standards/global/_INDEX.md` into a Concern Match table (keyword + file pattern → concern ref)
+- Folded the frontend/backend layer rules into concern refs: `architecture.md`, `security.md`, `performance.md`
+
+---
+
 ## [d679bf1] — 2026-05-21 · Add changelog and verify-[6] plan
 
 **Introduced a root changelog and captured the next verification plan as a standalone artifact.**
