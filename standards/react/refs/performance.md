@@ -51,6 +51,18 @@ function Page() {
 }
 ```
 
+### Native Image Lazy-Loading
+
+Defer off-screen images with native browser attributes — no library required:
+
+```tsx
+<img src={src} alt={alt} loading="lazy" decoding="async" />
+```
+
+For Next.js projects, prefer `next/image` (automatic sizing, format negotiation, and
+lazy-loading) — see the nextjs domain. In plain React, the native attributes above are
+the baseline.
+
 Avoid barrel files (`index.ts` that re-exports everything) — they prevent tree-shaking. Import directly from the source file.
 
 Replace heavy libraries with lighter alternatives before shipping: `moment` → `dayjs`, `lodash` → native or `radash`.

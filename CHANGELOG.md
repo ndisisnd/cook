@@ -4,6 +4,30 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-21 · Refine React consolidation audit
+
+**Validated the verify-[10] React ref extraction against the legacy `react-*` sources and tightened the active refs where the migration introduced ambiguity or internal conflicts.**
+
+- `SKILL.md` — softened arbitrary component-size, one-component, and prop-drilling rules into responsibility-based guidance while preserving the original intent
+- `refs/component-patterns.md` — replaced a `key={i}` render-props example with an explicit `getKey` contract so it no longer conflicts with the stable-key rule
+- `refs/hooks.md` — tightened `useLocalStorage`, `useWindowSize`, `useIntersectionObserver`, and `usePrevious` examples for latest-state updates, hydration safety, memoized options, and clearer typing
+- `refs/security.md` — made the safe-link URL validation example exception-safe and SSR-safe
+- `refs/tooling.md` — clarified the `why-did-you-render` snippet as a Vite example and used `import.meta.env.DEV`
+
+---
+
+## [pending] — 2026-05-21 · React ref-extraction gap fix (verify-[10])
+
+**Closed the source-coverage gaps the verify-[10] audit found in the React consolidation, satisfying verify-[8] §3 before the deprecated `react-*/` folders are archived. All changes are additive to the active React skill.**
+
+- Created `standards/react/refs/hooks.md` — a 7th ref with the custom-hooks library extracted from `react-hooks/refs/REFERENCE.md`, rewritten as typed TypeScript: `useLocalStorage`, `useDebounce`, `useWindowSize`, `useOnClickOutside`, `useIntersectionObserver`, `usePrevious`, `useToggle`. Each carries its correctness note (cleanup, exhaustive deps, SSR-safe access) (10-A · HIGH)
+- `SKILL.md` — appended a `hooks` entry to the References list
+- `refs/performance.md` — added a "Native Image Lazy-Loading" note (`loading="lazy"`, `decoding="async"`) in the Reduce Bundle Size section, deferring `next/image` to the nextjs domain (10-C · LOW)
+- `_INDEX.md` — added a `react → hooks ref` File Match row and a Loading Instruction line for the new ref
+- Documented deliberate drop (10-B): `createRateLimiter` ("Rate Limiting on Client") from `react-security/refs/REFERENCE.md` is **not** carried over — client-side rate limiting is not an enforceable security control (trivially bypassed; the server owns rate limits) and would imply false assurance in a security ref
+
+---
+
 ## [pending] — 2026-05-21 · Flutter refs: resolve conflicts and fill gaps
 
 **Fixed two critical conflicts and three gap/cross-reference issues across `standards/flutter/refs/`. No content deleted; all changes are additive edits or priority demotions.**

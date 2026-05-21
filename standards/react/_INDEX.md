@@ -12,6 +12,7 @@
 | react → performance ref | `**/*.tsx`, `**/*.jsx` | waterfall, lazy, Suspense, dynamic, virtualize, react-window, bundle size |
 | react → security ref | `**/*.tsx`, `**/*.jsx` | dangerouslySetInnerHTML, XSS, DOMPurify, JWT, auth, CSP, CSRF, sanitize |
 | react → component-patterns ref | `**/*.tsx`, `**/*.jsx` | compound component, HOC, render prop, composition, controlled, uncontrolled |
+| react → hooks ref | `**/*.tsx`, `**/*.jsx` | useLocalStorage, useDebounce, useWindowSize, useOnClickOutside, useIntersectionObserver, usePrevious, useToggle, custom hook |
 
 ## Loading Instructions
 
@@ -28,6 +29,8 @@
 > Load `<SKILLS>/react/refs/security.md` when touching auth, XSS, CSRF, or CSP concerns.
 >
 > Load `<SKILLS>/react/refs/component-patterns.md` when designing reusable, composable component APIs.
+>
+> Load `<SKILLS>/react/refs/hooks.md` when implementing or reviewing reusable custom hooks.
 
 ## Deprecated (pending removal)
 

@@ -16,9 +16,18 @@ function SafeHtml({ html }: { html: string }) {
 Never allow `javascript:` URIs in `href` or `src`. Validate URL protocols before rendering:
 
 ```tsx
+function isSafeHref(href: string) {
+  try {
+    const base = typeof window === 'undefined' ? 'https://example.com' : window.location.origin;
+    const url = new URL(href, base);
+    return ['https:', 'http:'].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
 function SafeLink({ href, children }: { href: string; children: ReactNode }) {
-  const url = new URL(href, window.location.origin);
-  if (!['https:', 'http:'].includes(url.protocol)) return <span>{children}</span>;
+  if (!isSafeHref(href)) return <span>{children}</span>;
   return <a href={href}>{children}</a>;
 }
 ```

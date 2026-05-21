@@ -49,12 +49,20 @@ Select.Option = function Option({ value, children }: { value: string; children: 
 Invert control of rendering so callers decide how items are displayed.
 
 ```tsx
-function List<T>({ items, renderItem }: { items: T[]; renderItem: (item: T) => ReactNode }) {
-  return <ul>{items.map((item, i) => <li key={i}>{renderItem(item)}</li>)}</ul>;
+function List<T>({
+  items,
+  getKey,
+  renderItem,
+}: {
+  items: T[];
+  getKey: (item: T) => string | number;
+  renderItem: (item: T) => ReactNode;
+}) {
+  return <ul>{items.map((item) => <li key={getKey(item)}>{renderItem(item)}</li>)}</ul>;
 }
 
 // Usage
-<List items={users} renderItem={(u) => <UserCard user={u} />} />
+<List items={users} getKey={(u) => u.id} renderItem={(u) => <UserCard user={u} />} />
 ```
 
 ## Higher-Order Components (HOC)

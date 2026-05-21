@@ -43,10 +43,10 @@ createRoot(document.getElementById('root')!).render(
 Traces unexpected re-renders in development. Remove before production builds.
 
 ```tsx
-// wdyr.ts — import this before React in main.tsx
+// wdyr.ts — Vite example; import this before React in main.tsx
 import React from 'react';
 
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   const whyDidYouRender = await import('@welldone-software/why-did-you-render');
   whyDidYouRender.default(React, { trackAllPureComponents: true });
 }

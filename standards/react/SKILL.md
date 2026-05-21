@@ -43,13 +43,13 @@ Load this file by default for any `.tsx` or `.jsx` task. Pull refs only when the
 ## P0 — Component Basics
 
 - Function components only. No class components.
-- One component per file. Named exports. PascalCase names.
-- Keep components under ~250 lines; split when larger.
+- One exported component per file; keep small helper components module-local when they only serve that file. Prefer named exports. PascalCase names.
+- Treat ~250 lines as a review smell, not a hard rule. Split by responsibility before a component accumulates unrelated state, effects, or rendering branches.
 - No nested component definitions — define at module scope.
 - Use stable IDs as list keys; never use array index.
 - Prefer ternary (`cond ? <A /> : <B />`) over `&&` for conditional rendering — `&&` renders `0` when the left side is falsy.
 - Define event handlers before the return statement; avoid non-trivial inline arrow functions in JSX props.
-- Do not drill props more than two levels — use Context API or a state manager.
+- Do not thread props through components that do not use them — use composition, Context API, or a state manager when state crosses several layers.
 
 ## P0 — Boundary Safety
 
@@ -103,3 +103,4 @@ Load only what the current task requires:
 - [testing](refs/testing.md) — writing RTL tests, MSW mocking, form/context/router testing patterns
 - [security](refs/security.md) — XSS/DOMPurify depth, auth flows, CSRF tokens, CSP headers, OAuth/JWT
 - [tooling](refs/tooling.md) — Vite config, DevTools profiling, bundle analysis, `why-did-you-render`, ESLint setup
+- [hooks](refs/hooks.md) — reusable custom hooks: useLocalStorage, useDebounce, useWindowSize, useOnClickOutside, useIntersectionObserver, usePrevious, useToggle
