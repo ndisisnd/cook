@@ -12,6 +12,7 @@ Use this ref for legacy projects that use the `pages/` directory. Do not apply A
 - Use `InferGetServerSidePropsType<typeof getServerSideProps>` or equivalent typed props.
 - Use `useRouter()` from `next/router` for navigation and query params.
 - Implement API Routes under `pages/api/` for webhooks and server-only endpoints.
+- Standardize API Route responses with appropriate HTTP status codes and consistent JSON error shapes.
 - Scope global CSS to `_app.tsx`; otherwise use CSS Modules, SCSS modules, or Tailwind.
 
 ## SSR Example

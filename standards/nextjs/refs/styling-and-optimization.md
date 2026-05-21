@@ -139,8 +139,9 @@ Use the metadata API, not `_document.tsx`, for SEO metadata.
 ```tsx
 export const metadata: Metadata = { title: 'Dashboard', description: '...' };
 
-export async function generateMetadata({ params }) {
-  const product = await getProduct(params.id);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const product = await getProduct(id);
   return { title: product.name, openGraph: { images: [product.image] } };
 }
 ```

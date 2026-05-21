@@ -44,6 +44,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
 - Dynamic Routes: use `[slug]` or `[...slug]`; use `generateStaticParams` for pre-rendered paths.
 - Parallel Routes: use `@modal` and pass the slot to the parent layout; provide `default.tsx` fallback.
 - Intercepting Routes: use `(.)route` or `(..)route` for advanced flows such as modals inside dashboards.
+- Colocation: keep route-specific components, styles, tests, and private helpers inside the route folder when they are not reused elsewhere.
 
 ## Data And Functions
 

@@ -62,6 +62,8 @@ Use when content updates periodically but not in real time.
 - Fetch-based: `fetch(url, { next: { revalidate: 3600 } })`.
 - On-demand: `revalidatePath('/posts')` or `revalidateTag('posts')` from Server Actions or webhooks.
 
+When using `generateStaticParams`, set `export const dynamicParams = false` when any path not generated at build time should 404. Keep the default `true` when uncached paths may be generated on demand.
+
 ### Streaming
 
 Wrap slow async components in `<Suspense>` so the shell can render before all data is ready.
@@ -152,9 +154,13 @@ export async function createPost(data: FormData) {
   revalidateTag('posts');
 }
 
-// app/posts/page.tsx
+// lib/posts.ts
+import { cacheTag } from 'next/cache';
+
 async function getPosts() {
-  return fetch('/api/posts', { next: { tags: ['posts'], revalidate: 60 } });
+  'use cache';
+  cacheTag('posts');
+  return db.post.findMany({ orderBy: { createdAt: 'desc' } });
 }
 ```
 
@@ -217,18 +223,20 @@ Push fetches down into streamed children or parallelize independent reads.
 // app/product/[id]/page.tsx
 export const revalidate = 3600;
 
-export default function ProductPage({ params }) {
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   return (
     <div>
-      <ProductImages id={params.id} />
-      <ProductDescription id={params.id} />
+      <ProductImages id={id} />
+      <ProductDescription id={id} />
 
       <Suspense fallback={<StockSkeleton />}>
-        <LiveStockInfo id={params.id} />
+        <LiveStockInfo id={id} />
       </Suspense>
 
       <Suspense fallback={<ReviewsSkeleton />}>
-        <RecentReviews id={params.id} />
+        <RecentReviews id={id} />
       </Suspense>
     </div>
   );

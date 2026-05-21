@@ -1,6 +1,6 @@
 ---
 # Allowed values: planned, complete
-status: planned
+status: complete
 ---
 
 # Verification Run [11.1] - Fix Next.js Consolidation Audit Gaps
@@ -18,6 +18,7 @@ Allowed paths:
 - `standards/nextjs/SKILL.md`
 - `standards/nextjs/_INDEX.md`
 - `standards/nextjs/refs/*.md`
+- `SKILL.md` for 11.1-A only
 - `CHANGELOG.md`
 - `verify/verify-[11.1].md`
 
@@ -32,7 +33,7 @@ Guardrails:
 - Do not edit other domains.
 - Do not silently drop any source rule; carry it or record a deliberate drop with reason.
 - Prefer additive, narrow edits over rewrites.
-- If reverting the root `SKILL.md` wording would conflict with later intended orchestrator work, stop and ask before changing it.
+- If reverting the root `SKILL.md` wording would conflict with the consolidated routing model, keep it only with documented user approval.
 
 ---
 
@@ -63,7 +64,7 @@ Guardrails:
    - `archive/nextjs/nextjs-rendering/SKILL.md`
    - `archive/nextjs/nextjs-security/SKILL.md`
 2. Patch only the destination refs needed for 11.1-B through 11.1-I.
-3. Resolve 11.1-A separately: revert the root `SKILL.md` edit unless user approval explicitly expands scope.
+3. Resolve 11.1-A separately: revert the root `SKILL.md` edit unless user approval explicitly expands scope. Result: user approval expanded scope for `SKILL.md`; the corrected domain-skill-plus-refs wording remains because reverting it would restore stale sub-skill routing.
 4. Update `CHANGELOG.md` with a newest-first pending entry for the verify-[11.1] follow-up fixes.
 5. Update this file with audit results and mark completed criteria.
 
@@ -73,34 +74,34 @@ Guardrails:
 
 ### Coverage Fixes
 
-- [ ] 11.1-B: No server/RSC example in active Next.js refs fetches the app's own `/api` route.
-- [ ] 11.1-C: App Router examples that read `params`/`searchParams` use Next 15 async request API style.
-- [ ] 11.1-D: Auth.js/`next-auth` and Clerk library-selection guidance is carried or deliberately dropped with reason.
-- [ ] 11.1-E: `dynamicParams` has guidance in `refs/rendering-and-caching.md`, or `_INDEX.md` no longer advertises it.
-- [ ] 11.1-F: App Router route-folder colocation guidance is present.
-- [ ] 11.1-G: Pages Router API Routes include standardized response/status-code guidance.
-- [ ] 11.1-H: DAL standardized error handling guidance is explicit.
-- [ ] 11.1-I: `X-XSS-Protection` is either carried as legacy guidance or recorded as a deliberate drop.
+- [x] 11.1-B: No server/RSC example in active Next.js refs fetches the app's own `/api` route.
+- [x] 11.1-C: App Router examples that read `params`/`searchParams` use Next 15 async request API style.
+- [x] 11.1-D: Auth.js/`next-auth` and Clerk library-selection guidance is carried or deliberately dropped with reason.
+- [x] 11.1-E: `dynamicParams` has guidance in `refs/rendering-and-caching.md`, or `_INDEX.md` no longer advertises it.
+- [x] 11.1-F: App Router route-folder colocation guidance is present.
+- [x] 11.1-G: Pages Router API Routes include standardized response/status-code guidance.
+- [x] 11.1-H: DAL standardized error handling guidance is explicit.
+- [x] 11.1-I: `X-XSS-Protection` is either carried as legacy guidance or recorded as a deliberate drop.
 
 ### Guardrails
 
-- [ ] 11.1-A is resolved by reverting root `SKILL.md` edits or by documented user approval to keep them.
-- [ ] No archived source files are edited.
-- [ ] No non-Next.js domain files are edited.
-- [ ] `verify/done/verify-[11].md` remains unchanged after the move.
+- [x] 11.1-A is resolved by reverting root `SKILL.md` edits or by documented user approval to keep them.
+- [x] No archived source files are edited.
+- [x] No non-Next.js domain files are edited.
+- [x] `verify/done/verify-[11].md` remains unchanged after the move.
 
 ### Verification Commands
 
-- [ ] `git diff --check`
-- [ ] Grep active Next.js refs for own-API server examples: `fetch('/api`, `fetch("/api`, and localhost API calls.
-- [ ] Grep active Next.js refs for synchronous App Router `params.id` / `params.slug` examples.
-- [ ] Grep active Next.js refs for stale archived-path links.
+- [x] `git diff --check && git diff --cached --check`
+- [x] Grep active Next.js refs for own-API server examples: `fetch('/api`, `fetch("/api`, `localhost/api`, `127.0.0.1`, and `http://localhost`.
+- [x] Grep active Next.js refs for synchronous App Router examples: `params.id`, `params.slug`, `params.` inside App Router examples, and unawaited `searchParams` props.
+- [x] Grep active Next.js refs for stale archived-path links: `standards/nextjs/nextjs-`, `../nextjs-`, and `archive/nextjs`.
 
 ---
 
 ## 5. Audit Result
 
-- Status: pending
-- Gaps fixed: pending
-- Deliberate drops: pending
-- Verification commands: pending
+- Status: pass
+- Gaps fixed: 11.1-B through 11.1-H carried missing source rules or corrected stale examples; 11.1-A resolved by user-approved scope expansion to keep the root router correction.
+- Deliberate drops: `X-XSS-Protection` is documented as legacy source guidance, not an active recommendation, because modern browsers ignore or deprecate it.
+- Verification commands: `git diff --check && git diff --cached --check`; Grep tool found no active own-API server examples; targeted App Router refs had no synchronous `params.id`/`params.slug` examples; Grep tool found no stale archived-path links under active refs.

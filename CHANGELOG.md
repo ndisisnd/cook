@@ -4,6 +4,18 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] - 2026-05-21 - Fix Next.js consolidation verification gaps
+
+**Closed the verify-[11.1] follow-up gaps in the consolidated Next.js standard without changing archived source folders.**
+
+- Replaced a server-side own-API cache example with direct DAL/database access using cache tags
+- Updated App Router examples to use Next 15 async `params` handling
+- Restored dropped source guidance for Auth.js/Clerk selection, `dynamicParams`, route colocation, Pages Router API status codes, and DAL error handling
+- Documented `X-XSS-Protection` as legacy source guidance and kept CSP/output escaping as the active recommendation
+- Kept the root cook router wording that loads matched domain skills plus refs because reverting it would reintroduce stale sub-skill routing after the Next.js consolidation
+
+---
+
 ## [pending] - 2026-05-21 - Consolidate nextjs domain into single-skill structure
 
 **Collapsed 18 Next.js sub-skill folders into one `SKILL.md` + 13 topic refs, matching the single-skill domain shape used by Flutter, React, Dart, TypeScript, Global, Database, and GraphQL. All superseded files are preserved in `archive/nextjs/` for review.**

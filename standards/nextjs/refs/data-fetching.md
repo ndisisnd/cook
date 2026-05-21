@@ -100,6 +100,10 @@ export const getUser = cache(async (id: string) => {
 });
 ```
 
+### Error Handling
+
+Throw standardized errors such as `NotFoundError` and `UnauthorizedError` from DAL functions. Convert them at the route boundary with `notFound()`, a segment `error.tsx`, or the project's centralized error mapper so callers get consistent recovery behavior.
+
 ## Pattern A: API Gateway / BFF
 
 Use when Next.js is a frontend for a separate backend such as NestJS or Go.

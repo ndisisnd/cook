@@ -68,6 +68,10 @@ export async function getSession() {
 }
 ```
 
+## Auth Library Selection
+
+Prefer Auth.js (`next-auth`) or Clerk for social login, session management, and provider-heavy authentication flows. Use a custom cookie/session helper only when the project already owns that auth stack or has requirements the library cannot satisfy.
+
 ## Middleware Auth And RBAC
 
 Use `middleware.ts` for edge-side redirection, role checks, and security headers. Middleware is not a substitute for auth inside DAL functions, Route Handlers, or Server Actions.
@@ -175,6 +179,7 @@ Use experimental taint APIs such as `taintObjectReference` or `taintUniqueValue`
 ## Security Headers And Content
 
 - Set `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, and related headers in middleware or platform config.
+- `X-XSS-Protection` is legacy source guidance; modern browsers ignore or deprecate it, so do not rely on it instead of CSP and output escaping.
 - Escape user-provided content rendered in components.
 - Never use `dangerouslySetInnerHTML` without a sanitizer such as DOMPurify.
 - Do not expose server secrets via `process.env` in client bundles; only `NEXT_PUBLIC_*` values are intentionally public.
