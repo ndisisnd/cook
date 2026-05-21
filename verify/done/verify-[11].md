@@ -1,6 +1,6 @@
 ---
 # Allowed values: planned, complete
-status: planned
+status: complete
 ---
 
 # Verification Run [11] - Consolidate the `nextjs` Domain into a Single Skill
@@ -249,9 +249,9 @@ attention to the orphaned refs and shared ref. Do not archive anything until thi
 
 ### Audit Result
 
-- Status: `pending`
-- Gaps fixed: `pending`
-- Deliberate drops: `pending`
+- Status: `pass` - every §2 source row was carried into `SKILL.md`, one of the 13 refs, or the archive trace before `git mv`.
+- Gaps fixed: carried high-risk refs `data-access-layer/refs/patterns.md`, `rendering/refs/SUSPENSE_BAILOUT.md`, `pages-router/refs/feature-sliced-design-pages.md`, and assigned shared `architecture/refs/RSC_BOUNDARIES.md` to `refs/server-components.md` with an `architecture.md` cross-reference.
+- Deliberate drops: none. `evals/evals.json` files carry no rules and were archived verbatim.
 
 ### Phase 3 - Regenerate `_INDEX.md` and archive the 18 folders
 
@@ -307,52 +307,52 @@ to `archive/nextjs/`. Match the flutter consolidation entry's voice.
 
 ### `SKILL.md`
 
-- [ ] `standards/nextjs/SKILL.md` exists with `name: nextjs`, exemplar-voice description, and union triggers.
-- [ ] It carries a Router Decision preamble and the P0/P1 blocks, each with a `Detail -> refs/...` pointer.
-- [ ] It has one merged, deduplicated Anti-Patterns list.
-- [ ] It has a References section listing all 13 refs, priority-grouped.
+- [x] `standards/nextjs/SKILL.md` exists with `name: nextjs`, exemplar-voice description, and union triggers.
+- [x] It carries a Router Decision preamble and the P0/P1 blocks, each with a `Detail -> refs/...` pointer.
+- [x] It has one merged, deduplicated Anti-Patterns list.
+- [x] It has a References section listing all 13 refs, priority-grouped.
 
 ### `refs/`
 
-- [ ] All 13 refs listed in §1 exist under `standards/nextjs/refs/`, flat with no nested folders.
-- [ ] `security.md` contains the merged authentication and security content.
-- [ ] `data-fetching.md` contains the DAL content, including orphaned `patterns.md` or a recorded drop reason.
-- [ ] `rendering-and-caching.md` contains rendering strategy content, orphaned `SUSPENSE_BAILOUT.md` or a recorded drop reason, and the 4-layer caching content.
-- [ ] `styling-and-optimization.md` contains styling and optimization content with a single owner for `next/font`.
-- [ ] `tooling.md` contains upgrade/codemod content as a section.
-- [ ] `server-components.md` is the single home of RSC_BOUNDARIES; `architecture.md` cross-references it.
-- [ ] `pages-router.md` or `architecture.md` carries orphaned `feature-sliced-design-pages.md` or records a drop reason.
+- [x] All 13 refs listed in §1 exist under `standards/nextjs/refs/`, flat with no nested folders.
+- [x] `security.md` contains the merged authentication and security content.
+- [x] `data-fetching.md` contains the DAL content, including orphaned `patterns.md` or a recorded drop reason.
+- [x] `rendering-and-caching.md` contains rendering strategy content, orphaned `SUSPENSE_BAILOUT.md` or a recorded drop reason, and the 4-layer caching content.
+- [x] `styling-and-optimization.md` contains styling and optimization content with a single owner for `next/font`.
+- [x] `tooling.md` contains upgrade/codemod content as a section.
+- [x] `server-components.md` is the single home of RSC_BOUNDARIES; `architecture.md` cross-references it.
+- [x] `pages-router.md` or `architecture.md` carries orphaned `feature-sliced-design-pages.md` or records a drop reason.
 
 ### Coverage Gate
 
-- [ ] Every §2 source row is confirmed present in its destination or recorded as a deliberate drop with reason.
-- [ ] High-risk rows were read in full and handled explicitly.
-- [ ] The Audit Result subsection records pass/fail, gaps fixed, and deliberate drops.
+- [x] Every §2 source row is confirmed present in its destination or recorded as a deliberate drop with reason.
+- [x] High-risk rows were read in full and handled explicitly.
+- [x] The Audit Result subsection records pass/fail, gaps fixed, and deliberate drops.
 
 ### Archive And Routing
 
-- [ ] `archive/nextjs/` exists at the repo root with all 18 `nextjs-*/` folders verbatim.
-- [ ] No `nextjs-*/` subfolders remain under `standards/nextjs/`.
-- [ ] The move used `git mv`.
-- [ ] `_INDEX.md` is regenerated to AUTO-GENERATED format with File Match table, Loading Instructions, and an Archived note reproducing the §2 trace.
-- [ ] `cook/SKILL.md` Next.js row resolves to `standards/nextjs/_INDEX.md` and has no stale sub-skill loading instruction.
+- [x] `archive/nextjs/` exists at the repo root with all 18 `nextjs-*/` folders verbatim.
+- [x] No `nextjs-*/` subfolders remain under `standards/nextjs/`.
+- [x] The move used `git mv`.
+- [x] `_INDEX.md` is regenerated to AUTO-GENERATED format with File Match table, Loading Instructions, and an Archived note reproducing the §2 trace.
+- [x] `cook/SKILL.md` Next.js row resolves to `standards/nextjs/_INDEX.md` and has no stale sub-skill loading instruction. Follow-up verification corrected the generic orchestrator wording to say matched domain `SKILL.md` plus matched `refs/*.md` entries.
 
 ### Conflict And Gap Fixes
 
-- [ ] `rendering-and-caching.md` has a freshness -> strategy -> cache-directive decision table.
-- [ ] `styling-and-optimization.md` has no duplicated `next/font` or image guidance after merge.
-- [ ] `state-management.md` has a "which state tool" decision note with a default.
-- [ ] Cross-references are added between the interlocking refs listed in Phase 4.
-- [ ] Each merged ref is re-read in full; no dangling links point to archived paths.
+- [x] `rendering-and-caching.md` has a freshness -> strategy -> cache-directive decision table.
+- [x] `styling-and-optimization.md` has no duplicated `next/font` or image guidance after merge.
+- [x] `state-management.md` has a "which state tool" decision note with a default.
+- [x] Cross-references are added between the interlocking refs listed in Phase 4.
+- [x] Each merged ref is re-read in full; no dangling links point to archived paths.
 
 ### No Loss / No Unintended Changes
 
-- [ ] Target files/actions in §1 are complete.
-- [ ] Every §2 source row is accounted for or deliberately dropped with reason.
-- [ ] Required indexes/docs/changelog/routing are updated.
-- [ ] Verification command(s): `pending`.
-- [ ] No unintended files changed; no user changes reverted.
-- [ ] All §4 guardrails held.
+- [x] Target files/actions in §1 are complete.
+- [x] Every §2 source row is accounted for or deliberately dropped with reason.
+- [x] Required indexes/docs/changelog/routing are updated.
+- [x] Verification command(s): `git diff --check`; `setopt null_glob && refs=(standards/nextjs/refs/*.md) && archive_dirs=(archive/nextjs/nextjs-*) && active_old=(standards/nextjs/nextjs-*) && test -f "standards/nextjs/SKILL.md" && test -f "standards/nextjs/_INDEX.md" && test ${#refs[@]} -eq 13 && test ${#archive_dirs[@]} -eq 18 && test ${#active_old[@]} -eq 0 && test -f "archive/nextjs/nextjs-app-router/evals/evals.json" && test -f "archive/nextjs/nextjs-upgrade/evals/evals.json"`; grep for dangling active-ref links under `standards/nextjs/refs`.
+- [x] No unintended files changed; no user changes reverted.
+- [x] All §4 guardrails held.
 
 ---
 

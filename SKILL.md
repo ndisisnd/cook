@@ -58,7 +58,7 @@ Load `standards/global/SKILL.md`. Its P0 universal rules apply to every code tas
 
 Read `standards/global/_INDEX.md` and match the extracted keywords and file patterns against its **Concern Match** table. Load every concern ref (`refs/architecture.md`, `refs/api-design.md`, `refs/error-handling.md`, `refs/security.md`, `refs/performance.md`, `refs/debug.md`) whose patterns or keywords match at least one signal. These refs hold the prescriptive layer rules — UI/component, API, auth, error, and performance — folded in by topic.
 
-### Step 6 — Detect domains and match sub-skills
+### Step 6 — Detect domains and match skills/refs
 
 Map the extracted keywords and file patterns to one or more domains. **Multiple domains may match** — e.g. a feature spanning a Next.js UI and a Postgres schema matches both `nextjs` and `database`.
 
@@ -72,11 +72,11 @@ Map the extracted keywords and file patterns to one or more domains. **Multiple 
 | TypeScript | `standards/typescript/SKILL.md` | `**/*.ts` and no framework signal (load the SKILL directly — no index) |
 | Dart | `standards/dart/_INDEX.md` | `**/*.dart` with non-Flutter Dart terms (sealed, record, pattern, extension) |
 
-For each matched domain index, match the extracted keywords and file patterns against its rows and load every matched sub-skill `SKILL.md`. For `typescript`, load `standards/typescript/SKILL.md` directly.
+For each matched domain index, match the extracted keywords and file patterns against its rows and load the matched domain `SKILL.md` plus any matched `refs/*.md` entries. For `typescript`, load `standards/typescript/SKILL.md` directly.
 
 ### Step 7 — Compile and return
 
-Assemble everything loaded — global P0 + matched global concern refs + matched domain sub-skills — into a single standards payload and return it to the invoking agent.
+Assemble everything loaded — global P0 + matched global concern refs + matched domain skills/refs — into a single standards payload and return it to the invoking agent.
 
 ## Notes
 

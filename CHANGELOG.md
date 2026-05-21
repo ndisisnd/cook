@@ -4,6 +4,20 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] - 2026-05-21 - Consolidate nextjs domain into single-skill structure
+
+**Collapsed 18 Next.js sub-skill folders into one `SKILL.md` + 13 topic refs, matching the single-skill domain shape used by Flutter, React, Dart, TypeScript, Global, Database, and GraphQL. All superseded files are preserved in `archive/nextjs/` for review.**
+
+- Created `standards/nextjs/SKILL.md` with Router Decision guidance, P0 rules for RSC boundaries, data fetching/access, App Router conventions, and security/auth, plus P1 rules for rendering/caching and Server Actions
+- Created 13 flat refs under `standards/nextjs/refs/`: `app-router`, `pages-router`, `server-components`, `data-fetching`, `rendering-and-caching`, `server-actions`, `security`, `state-management`, `styling-and-optimization`, `testing`, `architecture`, `i18n`, `tooling`
+- Merged overlapping domains: authentication + security, data-access-layer + data-fetching, rendering + caching, styling + optimization, and upgrade + tooling
+- Carried forward the high-risk orphan/shared refs: `data-access-layer/refs/patterns.md`, `rendering/refs/SUSPENSE_BAILOUT.md`, `pages-router/refs/feature-sliced-design-pages.md`, and `architecture/refs/RSC_BOUNDARIES.md` as the single `server-components` boundary home
+- Modernized examples where the source already pointed to Next 15/16 behavior: async request APIs, Cache Components / `'use cache'`, `cacheLife()`, `useActionState`, and direct service/DAL calls instead of internal API fetches
+- Regenerated `standards/nextjs/_INDEX.md` to the AUTO-GENERATED format with File Match, Loading Instructions, and archived source trace
+- Moved all 18 `nextjs-<name>/` folders to `archive/nextjs/` using `git mv`, preserving `SKILL.md`, `refs/`, and `evals/` contents verbatim
+
+---
+
 ## [pending] — 2026-05-21 · Refine React consolidation audit
 
 **Validated the verify-[10] React ref extraction against the legacy `react-*` sources and tightened the active refs where the migration introduced ambiguity or internal conflicts.**
