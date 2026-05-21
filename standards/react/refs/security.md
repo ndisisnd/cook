@@ -32,18 +32,24 @@ function SafeLink({ href, children }: { href: string; children: ReactNode }) {
 }
 ```
 
+Treat `data:` URLs as unsafe by default. Allow them only for narrow, non-executable cases such as vetted image previews, and never for navigational links, SVG, HTML, or script-capable content.
+
+Prefer safe DOM sinks such as normal JSX interpolation, text content, `setAttribute` with validated values, and typed URL builders. Dangerous sinks include `dangerouslySetInnerHTML`, direct `innerHTML`, dynamic script/style injection, URL attributes that accept executable protocols, `eval`, and `new Function`. Sanitized HTML must not be mutated afterward; post-sanitization mutation can void the sanitizer's guarantees.
+
+For Chromium-backed apps that render untrusted HTML, consider Trusted Types in report-only first, then enforce once all dangerous sinks are covered by a reviewed policy.
+
 Never execute dynamic strings with `eval()` or `new Function(string)`. Treat remote or user-provided code as remote code execution, not as data.
 
 ## Authentication — Token Storage
 
-Store session tokens in `HttpOnly; Secure; SameSite=Strict` cookies — not in `localStorage` or `sessionStorage`. Tokens in JavaScript-accessible storage are stolen by any XSS.
+Store session tokens in `HttpOnly; Secure; SameSite=Strict` or `Lax` cookies based on the identity flow — not in `localStorage` or `sessionStorage`. Tokens in JavaScript-accessible storage are stolen by any XSS. Use CSRF tokens for cookie-authenticated state-changing requests, especially when `SameSite=Lax` is needed for OAuth or cross-site identity redirects.
 
 ```ts
 // Server — set token in cookie, never return it in JSON body
 res.cookie('session', token, {
   httpOnly: true,
   secure: true,
-  sameSite: 'strict',
+  sameSite: 'lax', // use 'strict' when the flow does not require cross-site redirects
   maxAge: 15 * 60 * 1000, // 15 minutes
 });
 ```
@@ -60,16 +66,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(setUser);
   }, []);
 
-  const logout = () =>
-    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => setUser(null));
+  const logout = useCallback(
+    () => fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => setUser(null)),
+    [],
+  );
 
-  return <AuthCtx.Provider value={{ user, logout }}>{children}</AuthCtx.Provider>;
+  const value = useMemo(() => ({ user, logout }), [user, logout]);
+
+  return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
 ```
 
 ## CSRF Protection
 
-For state-changing requests (POST, PUT, DELETE), include a CSRF token from a `<meta>` tag or a dedicated endpoint:
+For cookie-authenticated state-changing requests (POST, PUT, PATCH, DELETE), include a CSRF token from a `<meta>` tag or a dedicated endpoint:
 
 ```tsx
 function getCsrfToken() {
@@ -101,10 +111,11 @@ import { NextResponse } from 'next/server';
 const CSP = [
   "default-src 'self'",
   "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self'", // prefer nonces/hashes; justify any 'unsafe-inline' fallback
   "img-src 'self' blob: data: https:",
   "font-src 'self'",
   "object-src 'none'",
+  "base-uri 'self'",
   "frame-ancestors 'none'",
   "upgrade-insecure-requests",
 ].join('; ');
@@ -127,13 +138,24 @@ When injecting server-side data into the HTML document, escape it to prevent XSS
 // Never do this — an attacker can close the script tag via the data
 <script>window.__DATA__ = {JSON.stringify(data)}</script>
 
-// Do this — escape closing tags and angle brackets
+// Do this — escape HTML-significant chars and JS line separators
 function escapeJson(data: unknown) {
-  return JSON.stringify(data).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 <script dangerouslySetInnerHTML={{ __html: `window.__DATA__ = ${escapeJson(data)}` }} />
 ```
+
+Prefer a proven serializer when possible. For large or purely data payloads, prefer `<script type="application/json">` plus text extraction over executable inline JavaScript.
+
+## Client Rate Limiting
+
+Client-side debounce/throttle can improve UX, but it is not a security control. Backend rate limits and abuse detection are mandatory because client code is bypassable.
 
 ## Client-Side Permission Checks
 

@@ -2,6 +2,114 @@
 
 Reusable custom hooks, rewritten in typed TypeScript. Each is the canonical implementation a reviewer can point to — the correctness note (cleanup, exhaustive deps, SSR-safe access) is what makes it standards-worthy, not the convenience.
 
+## Hook Correctness Baseline
+
+Hooks must run in the same order on every render. Do not call them inside loops, conditions, nested functions, event handlers, class components, callbacks passed to hooks, `try`/`catch`/`finally`, or after a conditional return. Keep `exhaustive-deps` enabled and fix dependency design instead of suppressing warnings.
+
+Use `useEffect` only to synchronize with external systems. Derived data belongs in render, and event-specific logic belongs in the event handler. For raw async effects, guard stale responses even when the work cannot be aborted:
+
+```tsx
+useEffect(() => {
+  let ignore = false;
+
+  async function load() {
+    const result = await fetchUser(userId);
+    if (!ignore) setUser(result);
+  }
+
+  load();
+  return () => { ignore = true; };
+}, [userId]);
+```
+
+For cancellable fetches, combine this with `AbortController`. Prefer route loaders, framework data APIs, TanStack Query, or SWR when the app already has them.
+
+## useEffectEvent
+
+In React 19+, use `useEffectEvent` for callbacks that are only called from an effect and need the latest committed props/state without re-subscribing the effect. Do not use it to hide real dependencies that should re-run synchronization.
+
+```tsx
+function ChatRoom({ roomId, theme }: { roomId: string; theme: Theme }) {
+  const onConnected = useEffectEvent(() => {
+    showToast('Connected', { theme });
+  });
+
+  useEffect(() => {
+    const connection = createConnection(roomId);
+    connection.on('connected', onConnected);
+    connection.connect();
+    return () => connection.disconnect();
+  }, [roomId]);
+}
+```
+
+When `useEffectEvent` is unavailable, use a latest-ref fallback for effect-local callbacks only:
+
+```tsx
+function useLatest<T>(value: T) {
+  const ref = useRef(value);
+  useEffect(() => { ref.current = value; }, [value]);
+  return ref;
+}
+```
+
+## useSyncExternalStore
+
+Use `useSyncExternalStore` for external subscriptions so React can read a consistent snapshot during concurrent rendering.
+
+```tsx
+function subscribe(callback: () => void) {
+  window.addEventListener('online', callback);
+  window.addEventListener('offline', callback);
+  return () => {
+    window.removeEventListener('online', callback);
+    window.removeEventListener('offline', callback);
+  };
+}
+
+function getSnapshot() {
+  return navigator.onLine;
+}
+
+function getServerSnapshot() {
+  return true;
+}
+
+function useOnlineStatus() {
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+```
+
+## useId And useLayoutEffect
+
+Use `useId` for generated IDs that connect labels, descriptions, and controls. Do not use it for list keys.
+
+```tsx
+function Field({ label }: { label: string }) {
+  const id = useId();
+  return <label htmlFor={id}>{label}<input id={id} /></label>;
+}
+```
+
+Use `useLayoutEffect` only when DOM measurement or synchronous visual adjustment must happen before paint. Default to `useEffect` for subscriptions, data loading, and non-visual work.
+
+```tsx
+function Tooltip({ targetRef }: { targetRef: RefObject<HTMLElement> }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const target = targetRef.current;
+    const tooltip = ref.current;
+    if (!target || !tooltip) return;
+    tooltip.style.top = `${target.getBoundingClientRect().bottom}px`;
+  }, [targetRef]);
+
+  return <div ref={ref} role="tooltip" />;
+}
+```
+
+React 19 can accept `ref` as a prop; older React still needs `forwardRef` for components that pass refs through. Match the project's React version instead of mixing styles.
+
 ## useLocalStorage
 
 Persist state to `localStorage` and keep React in sync with it. Lazy-initialises so the read happens once, wraps every parse and write in `try/catch` (quota limits and private-mode failures must not crash the tree), supports a functional updater against the latest state like `useState`, and is SSR-safe via a `typeof window` guard. Do not use this for tokens or secrets.

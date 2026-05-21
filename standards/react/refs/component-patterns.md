@@ -35,8 +35,10 @@ function useAccordionContext() {
 
 function Accordion({ children }: { children: ReactNode }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const value = useMemo(() => ({ activeIndex, setActiveIndex }), [activeIndex]);
+
   return (
-    <AccordionContext.Provider value={{ activeIndex, setActiveIndex }}>
+    <AccordionContext.Provider value={value}>
       <div>{children}</div>
     </AccordionContext.Provider>
   );
@@ -49,11 +51,20 @@ Accordion.Item = function Item({ index, children }: { index: number; children: R
 Accordion.Header = function Header({ index, children }: { index: number; children: ReactNode }) {
   const { activeIndex, setActiveIndex } = useAccordionContext();
   const isOpen = activeIndex === index;
-  return <button onClick={() => setActiveIndex(isOpen ? null : index)}>{children}</button>;
+  return (
+    <button
+      aria-controls={`accordion-panel-${index}`}
+      aria-expanded={isOpen}
+      onClick={() => setActiveIndex(isOpen ? null : index)}
+    >
+      {children}
+    </button>
+  );
 };
 
 Accordion.Body = function Body({ index, children }: { index: number; children: ReactNode }) {
-  return useAccordionContext().activeIndex === index ? <div>{children}</div> : null;
+  const isOpen = useAccordionContext().activeIndex === index;
+  return isOpen ? <div id={`accordion-panel-${index}`} role="region">{children}</div> : null;
 };
 
 // Usage
@@ -64,6 +75,10 @@ Accordion.Body = function Body({ index, children }: { index: number; children: R
   </Accordion.Item>
 </Accordion>
 ```
+
+Provider values that are objects, arrays, or functions must be memoized or split into separate contexts. Otherwise every consumer re-renders on every provider render even when the meaningful data is unchanged.
+
+Custom compound widgets must meet the platform accessibility contract. Accordions need expanded state and labelled regions; dialogs need focus trap, escape dismissal, labelled title, and focus return; menus and tabs need roving keyboard navigation and correct ARIA roles. Prefer proven accessible primitives when you cannot fully implement the keyboard and focus behavior.
 
 ## Render Props
 

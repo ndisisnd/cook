@@ -10,6 +10,8 @@
 - Cover 100% of P0 user flows. Snapshot testing is acceptable only for small, stable presentational components.
 - Do not use shallow rendering. Render the component tree the user interacts with, including real providers when practical.
 - Mock expensive animation, charting, map, or asset libraries to keep tests fast and deterministic; prefer real router/context wrappers over mocking app infrastructure.
+- Use `queryBy*` only for absence assertions. Do not use `getBy*` for elements that should not exist.
+- Prefer RTL async utilities over manual `act()`. Reach for manual `act()` only when integrating with code RTL cannot observe.
 
 ## Basic Component Test
 
@@ -131,6 +133,19 @@ const heading = await screen.findByRole('heading', { name: /results/i });
 
 // waitFor — assertion that is not about a DOM element
 await waitFor(() => expect(mockOnSave).toHaveBeenCalledTimes(1));
+```
+
+Keep side effects out of `waitFor`; it may run the callback multiple times. Trigger events before `waitFor`, then assert inside it.
+
+```tsx
+expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+```
+
+When using fake timers, configure `userEvent` so delayed interactions advance timers correctly:
+
+```tsx
+vi.useFakeTimers();
+const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 ```
 
 ## Accessibility Check

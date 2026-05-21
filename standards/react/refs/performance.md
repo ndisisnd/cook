@@ -22,6 +22,8 @@ export async function loader() {
 }
 ```
 
+Prefer framework data APIs, route loaders, TanStack Query, or SWR over raw fetch effects when available. If a component-owned effect is unavoidable, use `AbortController` for cancellable fetches and stale-response guards for non-abortable work.
+
 Use Suspense boundaries to stream partial content so the page is not blank while slow data loads:
 
 ```tsx
@@ -63,7 +65,7 @@ For Next.js projects, prefer `next/image` (automatic sizing, format negotiation,
 lazy-loading) — see the nextjs domain. In plain React, the native attributes above are
 the baseline.
 
-Avoid barrel files (`index.ts` that re-exports everything) — they prevent tree-shaking. Import directly from the source file.
+Avoid broad runtime barrels, especially `export *` from large component or utility folders. Explicit curated barrels and type-only barrels are acceptable when bundle analysis proves tree-shaking still works.
 
 Replace heavy libraries with lighter alternatives before shipping: `moment` → `dayjs`, `lodash` → native or `radash`.
 
@@ -89,6 +91,8 @@ const Row = React.memo(function Row({ item }: { item: Item }) {
 });
 ```
 
+Do not add `useMemo`, `useCallback`, or `React.memo` by default. First remove unnecessary effects, move object/function creation closer to where it is used, hoist constants, and measure. React Compiler can remove some manual memoization needs; keep manual memoization where identity is observable or profiling proves value.
+
 Virtualize lists with 500+ items:
 
 ```tsx
@@ -100,9 +104,18 @@ function VirtualList({ items }: { items: Item[] }) {
 
   return (
     <div ref={parentRef} style={{ height: 600, overflow: 'auto' }}>
-      <div style={{ height: virtualizer.getTotalSize() }}>
+      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
         {virtualizer.getVirtualItems().map((vItem) => (
-          <div key={vItem.key} style={{ transform: `translateY(${vItem.start}px)` }}>
+          <div
+            key={vItem.key}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${vItem.start}px)`,
+            }}
+          >
             {items[vItem.index].name}
           </div>
         ))}

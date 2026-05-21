@@ -48,6 +48,15 @@ function AuthProvider({ children }: { children: ReactNode }) {
 }
 ```
 
+## Jotai
+
+Use Jotai for small independent atoms where colocated reads/writes are clearer than a central store. Keep atoms minimal, derive values with derived atoms, and do not put server cache or secrets in atoms.
+
+```tsx
+const filterAtom = atom('all');
+const filteredItemsAtom = atom((get) => filterItems(get(itemsAtom), get(filterAtom)));
+```
+
 ## Zustand
 
 Minimal boilerplate. No Provider required. Subscribe to slices to prevent unnecessary re-renders.
@@ -112,9 +121,27 @@ export const { addItem, removeItem } = cartSlice.actions;
 export const store = configureStore({ reducer: { cart: cartSlice.reducer } });
 ```
 
+Redux Toolkit guardrails:
+
+- Use feature slices and selectors; keep `useSelector` granular so broad object selection does not re-render unrelated UI.
+- Reducers must stay pure. Immer-style mutation is allowed only inside RTK reducers.
+- Do not put non-serializable values in state or actions unless explicitly configured and isolated.
+- Store minimal state; derive filtered/sorted/projected values in selectors.
+- Use RTK Query for Redux-owned server data instead of hand-rolled fetch state.
+
 ## TanStack Query (React Query)
 
 Own the server-state lifecycle: fetching, caching, background revalidation, and mutations.
+
+Important defaults and design rules:
+
+- Queries are stale by default; set `staleTime` intentionally to avoid surprise refetches.
+- Stale queries refetch on mount, window focus, and reconnect by default.
+- Inactive queries remain cached until `gcTime` expires.
+- Failed queries retry by default; override retries for non-idempotent or user-blocking flows.
+- Structural sharing keeps stable references when JSON-compatible data has not changed.
+- Query keys must include every variable that changes the result: `['users', { orgId, page, filters }]`.
+- Mutations must invalidate, update, or remove every affected query key.
 
 ```tsx
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';

@@ -4,6 +4,7 @@ plan.md
 plan-fixes.json
 .compress.md
 */verify
+verify/
 
 # OS
 .DS_Store

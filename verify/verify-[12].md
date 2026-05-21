@@ -1,6 +1,6 @@
 ---
 # Allowed values: planned, complete
-status: planned
+status: complete
 ---
 
 # Verification Run [12] - React Refs Integrity and Best-Practice Fixes
@@ -120,28 +120,107 @@ Use these sources to validate rule updates during execution:
 
 ---
 
-## 5. Execution Plan
+## 5. Three-Phase Execution Plan
 
-1. Read every source row in Section 2 before editing.
-2. Patch active `SKILL.md` first for P0 rules: hooks, effects, memoization, security boundary, TypeScript/ref/accessibility essentials.
-3. Patch `refs/hooks.md` for `useEffectEvent`, `useSyncExternalStore`, stale async cleanup, `useId`, `useLayoutEffect`, and version-aware ref guidance.
-4. Patch `refs/component-patterns.md` for stable provider values, accessible compound widgets, controlled/uncontrolled nuance, and React 19 ref patterns if appropriate.
-5. Patch `refs/performance.md` for the virtualizer bug, compiler-aware memoization, raw fetch effect caveats, and narrowed barrel guidance.
-6. Patch `refs/security.md` for stable auth context, Trusted Types, safe sinks, robust SSR JSON escaping, cookie/CSRF nuance, CSP wording, and deliberate drop of client-only rate limiting.
-7. Patch `refs/state-management.md` for TanStack Query defaults, Redux Toolkit guardrails, Jotai handling, and persisted-store secret rules.
-8. Patch `refs/testing.md` for absence queries, `waitFor`, fake timers with `userEvent`, MSW v2 consistency, and manual `act()` guidance.
-9. Patch `refs/tooling.md` for modern ESLint/React Compiler rules, StrictMode wording, bundle analysis, and production-removal guardrails for debugging tools.
-10. Update `_INDEX.md` keywords/loading notes, especially `useEffectEvent`, `useSyncExternalStore`, `useId`, `useLayoutEffect`, Trusted Types, and accessibility terms if the generator allows manual edits.
-11. Run a coverage audit against Section 2 and record carried rules and deliberate drops.
-12. Archive or otherwise de-activate `standards/react/react-*` only after the coverage audit passes.
-13. Update `CHANGELOG.md` if present in the repo and used for standards changes.
-14. Re-read every edited active ref for coherence, stale links, and contradictions.
+This work is deliberately split into three gates. Do not blend phases. If a phase fails, stop, record the failure in the Audit Result, and do not continue to the next phase.
+
+### Phase 1 — Source Trace And Authority Gate
+
+Goal: prove what must be preserved before changing or archiving anything.
+
+Required work:
+
+1. Read every source row in Section 2 in full, including all old `react-*` `SKILL.md` and `refs/*` files.
+2. Record each old rule/example as one of: carry, update before carrying, deliberate drop, or archive-only historical content.
+3. Identify every active file that currently teaches unsafe, stale, contradictory, or incomplete guidance.
+4. Decide the exact repo-approved deactivation method for old `standards/react/react-*` folders before any move or archive operation. If unclear, stop and ask.
+5. Check whether `_INDEX.md` is generator-owned and identify the generator command or source. If unclear, stop before editing `_INDEX.md` manually.
+
+Hard pass criteria:
+
+- Every Section 2 source row has an explicit disposition.
+- Unsafe old examples are identified before being copied or archived.
+- The archive/non-loadable convention is known, not guessed.
+- Generated-file handling for `_INDEX.md` is known, not guessed.
+
+Hard fail criteria:
+
+- Any old source row is unread or summarized from filename alone.
+- Any unsafe old content is carried because it existed previously.
+- The executor plans to archive old folders before proving coverage.
+- The executor plans to edit generated `_INDEX.md` without knowing the generator path.
+
+### Phase 2 — Active React Remediation Gate
+
+Goal: make the consolidated active React skill and refs correct enough to be the only authority.
+
+Required work:
+
+1. Patch `standards/react/SKILL.md` for P0 rules only: complete Rules of Hooks, effects vs derived/event logic, React 19 `useEffectEvent` with fallback, compiler-era memoization, security boundary, TypeScript/ref/accessibility essentials.
+2. Patch `refs/hooks.md` for `useEffectEvent`, `useSyncExternalStore`, stale async cleanup, `useId`, `useLayoutEffect`, and version-aware ref guidance.
+3. Patch `refs/component-patterns.md` for stable provider values, accessible compound widgets, controlled/uncontrolled nuance, and React 19 ref patterns if appropriate.
+4. Patch `refs/performance.md` for the virtualizer layout bug, compiler-aware memoization, raw fetch effect caveats, and narrowed barrel guidance.
+5. Patch `refs/security.md` for stable auth context, Trusted Types, safe/dangerous sinks, robust SSR JSON escaping, cookie/CSRF nuance, CSP wording, and deliberate drop of client-only rate limiting as a security control.
+6. Patch `refs/state-management.md` for TanStack Query defaults, Redux Toolkit guardrails, Jotai handling, and persisted-store secret rules.
+7. Patch `refs/testing.md` for absence queries, `waitFor` guardrails, fake timers with `userEvent`, MSW v2 consistency, and manual `act()` guidance.
+8. Patch `refs/tooling.md` for modern React Hooks linting, React Compiler-compatible rules where applicable, StrictMode wording, bundle analysis, and production-removal guardrails for debugging tools.
+
+Hard pass criteria:
+
+- Active refs no longer teach unstable provider values, token persistence, unsafe CSP scripts, client-only rate limiting as security, or broken virtualizer layout.
+- Active hook guidance covers current React rules without encouraging dependency suppression.
+- Active effect guidance prefers eliminating unnecessary effects and handles stale async responses.
+- Active state/testing/tooling refs contain enough guardrails to prevent the concrete failures listed in Section 4.
+- Any intentionally omitted old guidance is recorded as a deliberate drop with reason.
+
+Hard fail criteria:
+
+- Any active example persists tokens/JWTs/secrets in JS-accessible storage.
+- Any active example uses `Provider value={{ ... }}` for non-trivial changing context state.
+- Any active guidance tells users to hide real hook dependencies or ignore `exhaustive-deps`.
+- Any active ref keeps stale links to missing old files.
+- The remediation grows `SKILL.md` into a long reference instead of keeping depth in refs.
+
+### Phase 3 — Deactivation, Index, And Final Verification Gate
+
+Goal: remove routing ambiguity only after the active consolidated files are complete.
+
+Required work:
+
+1. Run a coverage audit against Section 2 and update the Audit Result with carried rules and deliberate drops.
+2. Archive or otherwise de-activate `standards/react/react-*` using the Phase 1-approved convention.
+3. Regenerate or update `_INDEX.md` through the approved path, especially keywords/loading notes for `useEffectEvent`, `useSyncExternalStore`, `useId`, `useLayoutEffect`, Trusted Types, accessibility terms, and archived/deactivated old folders.
+4. Update `CHANGELOG.md` if present and used for standards changes.
+5. Re-read every edited active ref for coherence, stale links, contradictions, token economy, and examples that accidentally reintroduce dropped content.
+6. Run the verification commands in Section 7. Treat broad grep matches as prompts for manual review, not automatic failures.
+
+Hard pass criteria:
+
+- There is exactly one authoritative active React `SKILL.md` under `standards/react/`, unless repo policy explicitly documents another non-loadable convention.
+- Deprecated `react-*` folders are no longer discoverable as active peer skills.
+- `_INDEX.md` accurately reflects the final loadable React domain.
+- Verification commands pass, and broad grep findings are manually classified as safe or fixed.
+- No unrelated domains or user changes are modified.
+
+Hard fail criteria:
+
+- Old `react-*` folders remain active/loadable after the consolidated refs are declared authoritative.
+- `_INDEX.md` still says old folders are merely pending removal when they were archived or deactivated.
+- Any final active ref contains stale old-path links or unsafe examples from old refs.
+- Verification relies only on grep counts without manual judgment.
+- The executor cannot explain every deliberate drop.
 
 ### Audit Result
 
-- Status: `pending`
-- Gaps fixed: `pending`
-- Deliberate drops expected: old Zustand token persistence; old client-side rate limiting as security control; old CSP `unsafe-inline`/`unsafe-eval` script guidance; duplicate weak JSX examples; stale missing-ref links.
+- Status: `pass`
+- Phase 1 result: every Section 2 source row was read in full before edits. Repo convention is root-level `archive/<domain>/<old-skill>/` using `git mv`, matching completed Flutter and Next.js consolidations. No generator script is present in this workspace; prior consolidations directly regenerated `_INDEX.md` into the AUTO-GENERATED format.
+- Source dispositions: old `SKILL.md` files are carry/update into active `SKILL.md` and refs; old implementation refs are carry/update only when examples are safe and current; `evals/evals.json` files carry no rule content and are archive-only; stale missing-ref link lists are archive-only historical content.
+- Active risks confirmed: incomplete Rules of Hooks, stale latest-ref-only closure guidance, over-broad memoization, unstable provider values, broken virtualizer layout, shallow TanStack Query/RTK guardrails, missing Testing Library edge rules, weak `exhaustive-deps` tooling language, narrow SSR JSON escaping, and security gaps around Trusted Types/safe sinks/CSP/cookies.
+- Phase 2 result: active `SKILL.md` and `refs/*.md` were remediated. Added complete Rules of Hooks coverage, React 19 `useEffectEvent`, `useSyncExternalStore`, `useId`, `useLayoutEffect`, stale async cleanup, stable provider values, accessible compound-widget requirements, corrected virtualizer layout, Trusted Types/safe sink guidance, robust serialized-state escaping, cookie/CSRF nuance, TanStack Query defaults, Redux Toolkit guardrails, Jotai handling, testing async/absence/timer rules, and stricter hooks linting guidance.
+- Phase 3 result: deprecated `standards/react/react-*` folders were moved with `git mv` to `archive/react/`, `_INDEX.md` was updated to the active React ref map and archived-source trace, and `CHANGELOG.md` records the consolidation hardening.
+- Verification result: `git diff --check && git diff --cached --check` passed; active React layout check passed with 0 old active folders, 8 archived folders, 8 archived eval files, and 7 active refs. Grep checks found no active stale old-path links, no active `Provider value={{ ... }}`, and no active `unsafe-eval` or `script-src.*unsafe-inline` regressions.
+- Broad grep classification: active `token`/`JWT`/`localStorage`/`sessionStorage`/`persist` matches are safe because they are prohibitions, server-cookie examples, non-sensitive settings persistence, or `useLocalStorage` with an explicit no-token/no-secret warning.
+- Deliberate drops: old Zustand token persistence; old client-side rate limiting as security control; old CSP `unsafe-inline`/`unsafe-eval` script guidance; duplicate weak JSX examples; stale missing-ref links.
 
 ---
 
@@ -162,38 +241,38 @@ Use these sources to validate rule updates during execution:
 
 ### Active React Skill And Refs
 
-- [ ] `standards/react/SKILL.md` contains complete Rules of Hooks coverage.
-- [ ] `standards/react/SKILL.md` distinguishes effects from derived render logic and event-specific logic.
-- [ ] `standards/react/SKILL.md` and `refs/hooks.md` include React 19 `useEffectEvent` guidance with a fallback path.
-- [ ] `refs/hooks.md` includes `useSyncExternalStore`, stale async cleanup, `useId`, and `useLayoutEffect` guidance.
-- [ ] `refs/component-patterns.md` examples do not teach unstable context provider values.
-- [ ] `refs/component-patterns.md` includes accessibility requirements for custom compound widgets.
-- [ ] `refs/performance.md` virtualized list example follows a correct layout pattern.
-- [ ] `refs/performance.md` memoization guidance is compatible with React Compiler-era practice.
-- [ ] `refs/security.md` includes Trusted Types, safe sinks, robust serialized-state escaping, and cookie/CSRF nuance.
-- [ ] `refs/security.md` does not carry old `unsafe-eval` script CSP guidance or client-only rate limiting as a security control.
-- [ ] `refs/state-management.md` includes TanStack Query defaults and Redux Toolkit guardrails, or records why they are delegated.
-- [ ] `refs/testing.md` covers absence queries, `waitFor` guardrails, fake timers with `userEvent`, and manual `act()` guidance.
-- [ ] `refs/tooling.md` includes modern React Hooks linting and does not weaken exhaustive deps to an ignorable-only standard.
+- [x] `standards/react/SKILL.md` contains complete Rules of Hooks coverage.
+- [x] `standards/react/SKILL.md` distinguishes effects from derived render logic and event-specific logic.
+- [x] `standards/react/SKILL.md` and `refs/hooks.md` include React 19 `useEffectEvent` guidance with a fallback path.
+- [x] `refs/hooks.md` includes `useSyncExternalStore`, stale async cleanup, `useId`, and `useLayoutEffect` guidance.
+- [x] `refs/component-patterns.md` examples do not teach unstable context provider values.
+- [x] `refs/component-patterns.md` includes accessibility requirements for custom compound widgets.
+- [x] `refs/performance.md` virtualized list example follows a correct layout pattern.
+- [x] `refs/performance.md` memoization guidance is compatible with React Compiler-era practice.
+- [x] `refs/security.md` includes Trusted Types, safe sinks, robust serialized-state escaping, and cookie/CSRF nuance.
+- [x] `refs/security.md` does not carry old `unsafe-eval` script CSP guidance or client-only rate limiting as a security control.
+- [x] `refs/state-management.md` includes TanStack Query defaults and Redux Toolkit guardrails, or records why they are delegated.
+- [x] `refs/testing.md` covers absence queries, `waitFor` guardrails, fake timers with `userEvent`, and manual `act()` guidance.
+- [x] `refs/tooling.md` includes modern React Hooks linting and does not weaken exhaustive deps to an ignorable-only standard.
 
 ### Overlap And Archive
 
-- [ ] Every Section 2 source row is accounted for in active refs or deliberate drops.
-- [ ] Old `standards/react/react-*` folders are archived or made non-loadable after the audit pass.
-- [ ] `_INDEX.md` no longer implies active deprecated sub-skills can be loaded as peers.
-- [ ] Active refs contain no links to missing old ref files.
-- [ ] Active refs contain no examples that persist tokens/JWTs/secrets in JS-accessible storage.
+- [x] Every Section 2 source row is accounted for in active refs or deliberate drops.
+- [x] Old `standards/react/react-*` folders are archived or made non-loadable after the audit pass.
+- [x] `_INDEX.md` no longer implies active deprecated sub-skills can be loaded as peers.
+- [x] Active refs contain no links to missing old ref files.
+- [x] Active refs contain no examples that persist tokens/JWTs/secrets in JS-accessible storage.
 
 ### Verification Commands
 
-- [ ] `git diff --check && git diff --cached --check`
-- [ ] Grep active refs for stale old paths: `standards/react/react-`, `../react-`, `refs/REFERENCE.md`, and old missing file names.
-- [ ] Grep active refs for unsafe token persistence: `token`, `JWT`, `localStorage`, `sessionStorage`, `persist`.
-- [ ] Grep active refs for CSP regressions: `unsafe-eval`, `script-src.*unsafe-inline`.
-- [ ] Grep active refs for hooks coverage: `useEffectEvent`, `useSyncExternalStore`, `useId`, `useLayoutEffect`, `try`, `conditional return`.
-- [ ] Grep active refs for provider value regressions: `Provider value={{`.
-- [ ] Verify active React domain has exactly one authoritative `SKILL.md` under `standards/react/` once archived, unless repo policy intentionally keeps deprecated folders non-loadable.
-- [ ] No unintended files changed; no user changes reverted.
+- [x] `git diff --check && git diff --cached --check`
+- [x] Grep active refs for stale old paths: `standards/react/react-`, `../react-`, `refs/REFERENCE.md`, and old missing file names.
+- [x] Grep active refs for unsafe token persistence: `token`, `JWT`, `localStorage`, `sessionStorage`, `persist`.
+- [x] Grep active refs for CSP regressions: `unsafe-eval`, `script-src.*unsafe-inline`.
+- [x] Grep active refs for hooks coverage: `useEffectEvent`, `useSyncExternalStore`, `useId`, `useLayoutEffect`, `try`, `conditional return`.
+- [x] Grep active refs for provider value regressions: `Provider value={{`.
+- [x] Verify active React domain has exactly one authoritative `SKILL.md` under `standards/react/` once archived, unless repo policy intentionally keeps deprecated folders non-loadable.
+- [x] No unintended files changed; no user changes reverted.
 
 ---
 

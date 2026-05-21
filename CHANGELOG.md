@@ -4,7 +4,32 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] - 2026-05-21 - Fix Next.js consolidation verification gaps
+## [pending] - 2026-05-21 - Harden and archive React consolidation
+
+**Closed verify-[12] by making the consolidated React skill authoritative, hardening active refs, and archiving the deprecated `react-*` sub-skills.**
+
+- Added current React hook guidance for full Rules of Hooks coverage, `useEffectEvent`, `useSyncExternalStore`, `useId`, `useLayoutEffect`, stale async cleanup, and compiler-era memoization
+- Fixed active examples and guardrails for stable context provider values, accessible compound widgets, TanStack Virtual layout, Trusted Types/safe sinks, SSR JSON escaping, cookie/CSRF nuance, TanStack Query defaults, Redux Toolkit, Jotai, RTL async/absence/timer rules, and hooks linting
+- Regenerated `standards/react/_INDEX.md` keywords/loading notes and marked old React sub-skills as archived source trace
+- Moved all deprecated `standards/react/react-*` folders to `archive/react/` using `git mv`, preserving their refs and evals verbatim
+- Deliberately did not carry old Zustand token persistence, client-only rate limiting as a security control, unsafe script CSP guidance, duplicate weak examples, or stale missing-ref links into active refs
+
+---
+
+## [5005e0f] — 2026-05-21 · React refs: improve examples and cross-cutting concerns
+
+**Modernized React ref examples, added missing cross-cutting guidance, and archived verify-[11] to open verify-[12].**
+
+- `refs/component-patterns.md` — replaced the Compound Component example (Select → Accordion) with a factory-function context guard, added `event.preventDefault()` to the uncontrolled form example, added a Boolean Props section warning against impossible-state flag combinations and `&&`-with-zero renders
+- `refs/performance.md` — added `useDeferredValue` example for urgent-vs-deferred inputs, `content-visibility: auto` CSS tip for large off-screen sections, and an RSC `cache()` deduplication pattern for server reads
+- `refs/security.md` — added explicit `eval()`/`new Function` prohibition, added an Input Validation Boundary section (client-side validation is UX only; validate on the server), added `Permissions-Policy` header to the CSP example
+- `refs/state-management.md` — added Jotai to the state-tool decision table, added provider memoization pattern (`useMemo`/`useCallback` on Context value), added rule against persisting tokens or secrets in Zustand/Redux/`localStorage`
+- `refs/testing.md` — added shallow-rendering prohibition and real-provider guidance, added a Mocking Heavy Dependencies section with a framer-motion stub example
+- Archived `verify/verify-[11.1].md` → `verify/done/` and created `verify/verify-[12].md`
+
+---
+
+## [87cc89c] — 2026-05-21 · Fix Next.js consolidation verification gaps
 
 **Closed the verify-[11.1] follow-up gaps in the consolidated Next.js standard without changing archived source folders.**
 
@@ -16,7 +41,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] - 2026-05-21 - Consolidate nextjs domain into single-skill structure
+## [67ab48b] — 2026-05-21 · Consolidate nextjs domain into single-skill structure
 
 **Collapsed 18 Next.js sub-skill folders into one `SKILL.md` + 13 topic refs, matching the single-skill domain shape used by Flutter, React, Dart, TypeScript, Global, Database, and GraphQL. All superseded files are preserved in `archive/nextjs/` for review.**
 
@@ -30,7 +55,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-21 · Refine React consolidation audit
+## [8f4c60c] — 2026-05-21 · Refine React consolidation audit
 
 **Validated the verify-[10] React ref extraction against the legacy `react-*` sources and tightened the active refs where the migration introduced ambiguity or internal conflicts.**
 
@@ -42,7 +67,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-21 · React ref-extraction gap fix (verify-[10])
+## [8f4c60c] — 2026-05-21 · React ref-extraction gap fix (verify-[10])
 
 **Closed the source-coverage gaps the verify-[10] audit found in the React consolidation, satisfying verify-[8] §3 before the deprecated `react-*/` folders are archived. All changes are additive to the active React skill.**
 
@@ -54,7 +79,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-21 · Flutter refs: resolve conflicts and fill gaps
+## [d01640c] — 2026-05-21 · Flutter refs: resolve conflicts and fill gaps
 
 **Fixed two critical conflicts and three gap/cross-reference issues across `standards/flutter/refs/`. No content deleted; all changes are additive edits or priority demotions.**
 
@@ -67,7 +92,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-21 · Consolidate flutter domain into single-skill structure
+## [8995082] — 2026-05-21 · Consolidate flutter domain into single-skill structure
 
 **Collapsed 22 flutter sub-skill folders into one `SKILL.md` + 13 topic refs, matching the dart/graphql exemplar shape. All superseded files are preserved in `archive/flutter/` for review.**
 

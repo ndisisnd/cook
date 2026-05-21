@@ -110,13 +110,15 @@ Mandatory plugins for React projects:
   "plugins": ["react-hooks", "react-refresh"],
   "rules": {
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
+    "react-hooks/exhaustive-deps": "error",
     "react-refresh/only-export-components": "warn"
   }
 }
 ```
 
-`exhaustive-deps` should be `warn`, not `error`, to allow intentional escape hatches when the engineer has verified the dependency is stable by other means (e.g. a ref). Never set it to `off`.
+`exhaustive-deps` must never be disabled. Use `error` in strict repos and CI; `warn` is acceptable only during incremental adoption with tracked cleanup. If the project uses React Compiler-compatible tooling, enable the current `eslint-plugin-react-hooks` recommended rules rather than only the two legacy rules.
+
+Do not silence dependency warnings with comments. Move object/function creation, split effects, use `useEffectEvent` where appropriate, or redesign the synchronization.
 
 ## Environment Variables
 

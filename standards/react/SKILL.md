@@ -18,6 +18,10 @@ metadata:
       - useRef
       - useContext
       - useReducer
+      - useEffectEvent
+      - useSyncExternalStore
+      - useId
+      - useLayoutEffect
       - JSX
       - ReactNode
       - props
@@ -30,15 +34,16 @@ Load this file by default for any `.tsx` or `.jsx` task. Pull refs only when the
 ## P0 — Hook Correctness
 
 - Dependency arrays must be exhaustive (`exhaustive-deps`). Never suppress the linter to silence a warning — fix the logic.
-- Objects and arrays are recreated on every render. Memoize them with `useMemo` before placing them in a dependency array or they will cause infinite re-render loops.
-- `useEffect` is for syncing with external systems only. Return a cleanup function for subscriptions, timers, and event listeners. Use `AbortController` for fetch cleanup to prevent state updates after unmount.
-- Never call hooks inside conditions, loops, or nested functions.
+- Objects, arrays, and functions in dependency arrays: first move creation inside the effect, hoist constants, or remove the effect. Use `useMemo`/`useCallback` only when identity stability is required or measured work is expensive.
+- `useEffect` is for syncing with external systems only. Derived data belongs in render; event-specific logic belongs in event handlers. Prefer framework data APIs, route loaders, TanStack Query, or SWR over raw fetch effects when available.
+- Effects must clean up subscriptions, timers, and event listeners. Use `AbortController` for cancellable fetches and stale-response guards for non-abortable async work.
+- Never call hooks inside conditions, loops, nested functions, event handlers, class components, callbacks passed to hooks, `try`/`catch`/`finally`, or after a conditional return.
 - Do not use `useEffect` to sync derived state — compute it during render instead.
 - Lazy-initialize expensive state: `useState(() => compute())`.
-- `useMemo` and `useCallback`: measure before adding. Use `useCallback` to stabilize function references passed to memoized children; use `useMemo` for genuinely expensive computed values.
+- `useMemo` and `useCallback`: measure before adding. React Compiler may reduce manual memoization; keep manual memoization where identity is observable or profiling proves value.
 - `useRef` for mutable values that must not trigger re-renders (DOM nodes, timers, previous-value tracking).
 - `useTransition` / `useDeferredValue` for non-blocking UI updates that should not block input.
-- Stale closure in a long-lived subscription or event listener: store the latest callback in a ref (`useRef`) and read it inside the effect, so the effect dependency stays stable without capturing an outdated function.
+- React 19+: use `useEffectEvent` for effect-local callbacks that need latest committed values without re-synchronizing the effect. Do not use it to hide real dependencies. For older React or non-effect callbacks, use the latest-ref pattern.
 
 ## P0 — Component Basics
 
@@ -47,9 +52,11 @@ Load this file by default for any `.tsx` or `.jsx` task. Pull refs only when the
 - Treat ~250 lines as a review smell, not a hard rule. Split by responsibility before a component accumulates unrelated state, effects, or rendering branches.
 - No nested component definitions — define at module scope.
 - Use stable IDs as list keys; never use array index.
+- Use `useId` for generated accessibility IDs; never use it for list keys.
 - Prefer ternary (`cond ? <A /> : <B />`) over `&&` for conditional rendering — `&&` renders `0` when the left side is falsy.
 - Define event handlers before the return statement; avoid non-trivial inline arrow functions in JSX props.
 - Do not thread props through components that do not use them — use composition, Context API, or a state manager when state crosses several layers.
+- Custom accordions, dialogs, menus, tabs, and compound widgets must implement keyboard interaction, focus management, and ARIA semantics or use a proven accessible primitive.
 
 ## P0 — Boundary Safety
 
@@ -65,6 +72,7 @@ Load this file by default for any `.tsx` or `.jsx` task. Pull refs only when the
 - Use `ReactNode` for children props. Use `JSX.Element` only when callers must provide a single React element.
 - Type event handlers with specific React types: `React.ChangeEvent<HTMLInputElement>`, `React.FormEvent<HTMLFormElement>`, etc.
 - DOM refs: `useRef<HTMLDivElement>(null)` (nullable). Mutable value refs: `useRef<ReturnType<typeof setTimeout>>(undefined)`.
+- React 19 can accept `ref` as a prop; older React still needs `forwardRef` for ref-passing components. Type refs according to the target React version.
 - State: `useState<User | null>(null)` — use generics for types that cannot be inferred from the initial value.
 - Extend native elements with `ComponentPropsWithoutRef<'button'>` rather than reimplementing their attribute types.
 - Generic components: `function List<T>({ items, render }: ListProps<T>)`.
@@ -83,6 +91,7 @@ Load this file by default for any `.tsx` or `.jsx` task. Pull refs only when the
 
 - Missing or suppressed hook dependency warnings.
 - `useEffect` used to sync derived state.
+- Hooks after conditional returns or inside `try`/`catch`/`finally`.
 - Prop drilling beyond two levels.
 - Array index used as list key.
 - `React.FC` type annotation.
@@ -91,7 +100,7 @@ Load this file by default for any `.tsx` or `.jsx` task. Pull refs only when the
 - `dangerouslySetInnerHTML` without DOMPurify sanitization.
 - Tokens or secrets in `localStorage`.
 - Inline object literals as props on memoized children (`style={{}}`).
-- `export *` barrel files — breaks tree-shaking.
+- Broad runtime `export *` barrel files that break tree-shaking.
 
 ## References
 
