@@ -69,7 +69,7 @@ Map the extracted keywords and file patterns to one or more domains. **Multiple 
 | React | `standards/react/_INDEX.md` | `**/*.tsx`, `**/*.jsx`, React terms (component, hook, useState, useEffect) and no Next.js signal |
 | Database | `standards/database/_INDEX.md` | sql, schema, migration, postgres, prisma, redis, cache, `**/*.entity.ts`, `**/migrations/*.sql` |
 | GraphQL | `standards/graphql/_INDEX.md` | graphql, gql, resolver, mutation, subscription, Apollo, DataLoader, `**/*.graphql` |
-| TypeScript | `standards/typescript/SKILL.md` | `**/*.ts` and no framework signal (load the SKILL directly — no index) |
+| TypeScript | `standards/typescript/SKILL.md` | `**/*.ts` and no framework signal (cook bypasses the auto-generated `_INDEX.md` and loads the SKILL directly; `**/*.tsx` is excluded by design — covered by React or Next.js domains) |
 | Dart | `standards/dart/_INDEX.md` | `**/*.dart` with non-Flutter Dart terms (sealed, record, pattern, extension) |
 
 For each matched domain index, match the extracted keywords and file patterns against its rows and load the matched domain `SKILL.md` plus any matched `refs/*.md` entries. For `typescript`, load `standards/typescript/SKILL.md` directly.

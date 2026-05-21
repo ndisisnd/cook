@@ -4,6 +4,15 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-21 · Fix root SKILL.md TypeScript row accuracy
+
+**Closed verify-[13] by correcting two documentation inaccuracies in the root `SKILL.md` Step 6 TypeScript domain row.**
+
+- Replaced the stale "no index" parenthetical with accurate wording: cook bypasses the auto-generated `_INDEX.md` and loads the SKILL directly
+- Added an explicit inline note that `**/*.tsx` is excluded from the TypeScript domain by design — those files are covered by the React or Next.js domains
+
+---
+
 ## [3f2cc8e] — 2026-05-21 · Harden and archive React consolidation
 
 **Closed verify-[12] by making the consolidated React skill authoritative, hardening active refs, and archiving the deprecated `react-*` sub-skills.**
