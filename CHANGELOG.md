@@ -4,7 +4,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] - 2026-05-21 - Harden and archive React consolidation
+## [3f2cc8e] — 2026-05-21 · Harden and archive React consolidation
 
 **Closed verify-[12] by making the consolidated React skill authoritative, hardening active refs, and archiving the deprecated `react-*` sub-skills.**
 
