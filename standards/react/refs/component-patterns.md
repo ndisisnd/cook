@@ -20,28 +20,49 @@ function Layout({ children, aside }: { children: ReactNode; aside: ReactNode }) 
 Share implicit state between tightly related components without exposing it to callers.
 
 ```tsx
-const SelectContext = createContext<{ val: string; setVal: (v: string) => void } | null>(null);
+type AccordionContextValue = {
+  activeIndex: number | null;
+  setActiveIndex: (index: number | null) => void;
+};
 
-function Select({ children }: { children: ReactNode }) {
-  const [val, setVal] = useState('');
+const AccordionContext = createContext<AccordionContextValue | null>(null);
+
+function useAccordionContext() {
+  const ctx = useContext(AccordionContext);
+  if (!ctx) throw new Error('Accordion components must be used inside <Accordion>');
+  return ctx;
+}
+
+function Accordion({ children }: { children: ReactNode }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   return (
-    <SelectContext.Provider value={{ val, setVal }}>
-      <select value={val} onChange={(e) => setVal(e.target.value)}>
-        {children}
-      </select>
-    </SelectContext.Provider>
+    <AccordionContext.Provider value={{ activeIndex, setActiveIndex }}>
+      <div>{children}</div>
+    </AccordionContext.Provider>
   );
 }
 
-Select.Option = function Option({ value, children }: { value: string; children: ReactNode }) {
-  return <option value={value}>{children}</option>;
+Accordion.Item = function Item({ index, children }: { index: number; children: ReactNode }) {
+  return <section data-open={useAccordionContext().activeIndex === index}>{children}</section>;
+};
+
+Accordion.Header = function Header({ index, children }: { index: number; children: ReactNode }) {
+  const { activeIndex, setActiveIndex } = useAccordionContext();
+  const isOpen = activeIndex === index;
+  return <button onClick={() => setActiveIndex(isOpen ? null : index)}>{children}</button>;
+};
+
+Accordion.Body = function Body({ index, children }: { index: number; children: ReactNode }) {
+  return useAccordionContext().activeIndex === index ? <div>{children}</div> : null;
 };
 
 // Usage
-<Select>
-  <Select.Option value="a">Alpha</Select.Option>
-  <Select.Option value="b">Beta</Select.Option>
-</Select>
+<Accordion>
+  <Accordion.Item index={0}>
+    <Accordion.Header index={0}>Shipping</Accordion.Header>
+    <Accordion.Body index={0}>Ships in 2-3 days.</Accordion.Body>
+  </Accordion.Item>
+</Accordion>
 ```
 
 ## Render Props
@@ -98,7 +119,7 @@ Uncontrolled — component owns its state; parent reads it imperatively via ref:
 function UncontrolledInput({ onSubmit }: { onSubmit: (v: string) => void }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
-    <form onSubmit={() => onSubmit(ref.current?.value ?? '')}>
+    <form onSubmit={(event) => { event.preventDefault(); onSubmit(ref.current?.value ?? ''); }}>
       <input ref={ref} />
     </form>
   );
@@ -106,6 +127,16 @@ function UncontrolledInput({ onSubmit }: { onSubmit: (v: string) => void }) {
 ```
 
 Prefer controlled for forms that need validation, disabled states, or reset behaviour. Uncontrolled is appropriate for file inputs and cases where you only need the value at submit time.
+
+## Boolean Props and Conditional Rendering
+
+Boolean props should read clearly at the call site and use shorthand for `true`:
+
+```tsx
+<Modal isOpen />
+```
+
+Avoid multiple boolean flags that can create impossible states. Prefer a single `variant` prop or a discriminated union. Prefer ternaries or explicit `null` over `&&` when the left side might be `0`, because React renders `0`.
 
 ## Polymorphic `as` Prop
 

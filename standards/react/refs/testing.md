@@ -8,6 +8,8 @@
 - Follow Arrange–Act–Assert (AAA) structure in every test.
 - Mock all network calls with MSW. Never call real APIs in unit or integration tests.
 - Cover 100% of P0 user flows. Snapshot testing is acceptable only for small, stable presentational components.
+- Do not use shallow rendering. Render the component tree the user interacts with, including real providers when practical.
+- Mock expensive animation, charting, map, or asset libraries to keep tests fast and deterministic; prefer real router/context wrappers over mocking app infrastructure.
 
 ## Basic Component Test
 
@@ -107,6 +109,16 @@ test('renders dashboard at /dashboard', () => {
   );
   expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
 });
+```
+
+## Mocking Heavy Dependencies
+
+Mock slow or browser-specific libraries at the module boundary, but keep the component behaviour visible to the test:
+
+```tsx
+vi.mock('framer-motion', () => ({
+  motion: { div: (props: React.HTMLAttributes<HTMLDivElement>) => <div {...props} /> },
+}));
 ```
 
 ## Async Queries

@@ -7,6 +7,7 @@
 | Local UI toggle | `useState` |
 | Complex local state machine | `useReducer` |
 | Low-frequency global (theme, locale, auth) | Context API |
+| Small shared atoms | Jotai |
 | High-frequency or cross-app global | Zustand (small–medium) / Redux Toolkit (large) |
 | Server / async data | TanStack Query or SWR |
 | Shareable URL state | URL Search Params |
@@ -34,6 +35,18 @@ function CountProvider({ children }: { children: ReactNode }) {
 ```
 
 Use Context for low-frequency data (theme, locale, auth session). For state that changes on every keystroke or scroll event, use Zustand or Redux instead.
+
+When a provider passes an object, array, or function as `value`, memoize it or split the context. A recreated provider value re-renders every consumer even when the meaningful data did not change:
+
+```tsx
+function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const logout = useCallback(() => setUser(null), []);
+  const value = useMemo(() => ({ user, logout }), [user, logout]);
+
+  return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
+}
+```
 
 ## Zustand
 
@@ -71,6 +84,8 @@ export const useSettingsStore = create<SettingsStore>()(
   )
 );
 ```
+
+Never persist tokens, JWTs, or secrets in Zustand, Redux, `localStorage`, or `sessionStorage`. Persist non-sensitive preferences only; auth tokens belong in `HttpOnly` cookies.
 
 ## Redux Toolkit
 

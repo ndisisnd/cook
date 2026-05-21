@@ -32,6 +32,8 @@ function SafeLink({ href, children }: { href: string; children: ReactNode }) {
 }
 ```
 
+Never execute dynamic strings with `eval()` or `new Function(string)`. Treat remote or user-provided code as remote code execution, not as data.
+
 ## Authentication — Token Storage
 
 Store session tokens in `HttpOnly; Secure; SameSite=Strict` cookies — not in `localStorage` or `sessionStorage`. Tokens in JavaScript-accessible storage are stolen by any XSS.
@@ -84,9 +86,13 @@ async function apiPost(url: string, body: unknown) {
 }
 ```
 
+## Input Validation Boundary
+
+Client-side validation is for UX only. Validate authorization, ownership, schema, length, type, and allowed values on the server for every request. Sanitize user-provided HTML before storage or rendering; escaping/sanitizing in React does not replace backend validation.
+
 ## Content Security Policy
 
-Configure CSP headers on the server (or via Next.js middleware) to block inline scripts and restrict script sources:
+Configure CSP and security headers on the server (or via Next.js middleware) to block inline scripts, restrict script sources, and reduce browser attack surface:
 
 ```ts
 // Next.js middleware.ts
@@ -108,6 +114,7 @@ export function middleware(req: Request) {
   res.headers.set('Content-Security-Policy', CSP);
   res.headers.set('X-Frame-Options', 'DENY');
   res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   return res;
 }
 ```

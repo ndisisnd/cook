@@ -132,6 +132,31 @@ function Search() {
 }
 ```
 
+Use `useDeferredValue` when an expensive child can lag behind an urgent input value without blocking typing:
+
+```tsx
+function SearchPage() {
+  const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+
+  return (
+    <>
+      <input value={query} onChange={(event) => setQuery(event.target.value)} />
+      <Results query={deferredQuery} />
+    </>
+  );
+}
+```
+
+Use CSS `content-visibility: auto` for large off-screen sections so the browser can skip layout and paint until needed:
+
+```css
+.feed-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 800px;
+}
+```
+
 ## Move Heavy Computation Off the Main Thread (P1)
 
 Use a Web Worker for encryption, image processing, or sorting large datasets:
@@ -155,6 +180,18 @@ function SortedTable({ data }: { data: Row[] }) {
 
   return <Table rows={sorted} />;
 }
+```
+
+## React Server Components (P1)
+
+When the framework supports React Server Components, keep server-only data fetching and heavy dependencies in Server Components. Pass only serializable, minimal props to Client Components; prefer IDs, primitives, and small DTOs over large object graphs.
+
+Use `cache` for request-scoped deduplication of repeated server reads:
+
+```tsx
+import { cache } from 'react';
+
+export const getUser = cache(async (id: string) => db.user.findUnique({ where: { id } }));
 ```
 
 ## Profiling
