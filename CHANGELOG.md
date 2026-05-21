@@ -4,6 +4,19 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-21 · Flutter refs: resolve conflicts and fill gaps
+
+**Fixed two critical conflicts and three gap/cross-reference issues across `standards/flutter/refs/`. No content deleted; all changes are additive edits or priority demotions.**
+
+- `refs/navigation.md` — Added "Router Decision Rule" table at top; demoted GetX Navigation from P0 to P1 (HIGH), resolving the dual-P0 conflict with go_router
+- `refs/state-management.md` — Renamed BLoC state template headings (Union ✅ PREFERRED, Flat ⚠️ LIMITED USE, Equatable ⚠️ LEGACY); inserted "Which to use" guidance block between Union and Flat sections
+- `refs/architecture.md` — Added "Which Architecture to Use" decision table at top with 5 criteria and an explicit default ("Feature-Based for new projects")
+- `refs/design-system.md` — Added idiomatic `Row(spacing:)` note to Spacing section with ✅/⚠️ examples and cross-reference to SKILL.md § P1 Idiomatic Flutter
+- `refs/security.md` — Added `SecurityModule` DI snippet after raw `FlutterSecureStorage()` example; added cross-reference to `refs/dependency-injection.md § Third-Party Modules`
+- `refs/error-handling.md` — Added scoping note to Repository Error Mapping section pointing to `refs/networking.md § Token Refresh Pattern` for global HTTP concerns
+
+---
+
 ## [pending] — 2026-05-21 · Consolidate flutter domain into single-skill structure
 
 **Collapsed 22 flutter sub-skill folders into one `SKILL.md` + 13 topic refs, matching the dart/graphql exemplar shape. All superseded files are preserved in `archive/flutter/` for review.**

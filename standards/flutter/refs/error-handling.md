@@ -53,6 +53,10 @@ extension DioErrorX on DioException {
 
 ## Repository Error Mapping
 
+> **Scope:** This section covers domain-specific failure mapping at the repository layer.
+> For global HTTP concerns (token refresh, 401 handling, auth headers), see
+> `refs/networking.md § Token Refresh Pattern` — those belong in an interceptor, not here.
+
 ```dart
 @override
 Future<Either<Failure, Order>> getOrder(String id) async {

@@ -39,7 +39,7 @@ Role: Design predictable, testable state flows.
 
 ### Templates
 
-#### Freezed State (Union)
+#### Freezed State (Union) ✅ PREFERRED
 
 ```dart
 part of 'feature_bloc.dart';
@@ -53,7 +53,16 @@ abstract class FeatureState with _$FeatureState {
 }
 ```
 
-#### Freezed State (Flat)
+**Which to use:**
+- **Union (preferred):** One named constructor is active at a time — impossible combinations
+  like `isLoading=true` alongside `data!=null` cannot exist. Use this by default.
+- **Flat:** Use only when multiple fields are genuinely orthogonal (e.g., a `searchTerm`
+  string and an `isLoading` bool that coexist independently). Requires a `status` enum
+  if states need disambiguation.
+- **Equatable Alternative:** No code generation required. Use only when `build_runner` is
+  unavailable. Prefer Freezed Union for all new code.
+
+#### Freezed State (Flat) ⚠️ LIMITED USE
 
 ```dart
 part of 'feature_bloc.dart';
@@ -102,7 +111,7 @@ class FeatureBloc extends Bloc<FeatureEvent, FeatureState> {
 }
 ```
 
-#### Equatable Alternative
+#### Equatable Alternative ⚠️ LEGACY
 
 ```dart
 sealed class FeatureState extends Equatable {

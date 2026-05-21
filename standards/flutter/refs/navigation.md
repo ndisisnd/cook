@@ -1,5 +1,20 @@
 # Flutter Navigation
 
+## Router Decision Rule
+
+Choose **one** routing framework per project. This file covers all three.
+
+| Scenario | Framework | Priority in this file |
+|---|---|---|
+| New project | go_router | P0 (CRITICAL) |
+| Existing auto_route project | auto_route | P1 (HIGH) |
+| Existing GetX project | GetX Navigation | P1 (HIGH) — see also state-management.md § GetX |
+
+Do not mix routing frameworks. If a project already uses GetX or auto_route, treat the
+go_router sections as informational only.
+
+---
+
 ## go_router
 
 **Priority: P0 (CRITICAL)**
@@ -210,7 +225,9 @@ class UserProfilePage extends StatelessWidget {
 
 ## GetX Navigation
 
-**Priority: P0 (CRITICAL)**
+**Priority: P1 (HIGH)**
+
+> P1 for existing GetX projects. New projects should use go_router (P0 above).
 
 ### Guidelines
 

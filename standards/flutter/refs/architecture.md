@@ -1,5 +1,21 @@
 # Flutter Architecture
 
+## Which Architecture to Use
+
+| Criterion | Feature-Based | Layer-Based |
+|---|---|---|
+| Team size | Small–medium | Large |
+| Feature ownership | Isolated, per-team | Shared across teams |
+| Domain logic sharing | Minimal cross-feature sharing | Rich shared domain |
+| Onboarding speed | Faster (locality of reference) | Slower (more abstraction) |
+| Codebase scale | Up to ~30 features | 30+ features or complex domain |
+
+**Default for new projects:** Feature-Based Clean Architecture.
+Switch to Layer-Based when shared domain logic grows significantly across feature
+boundaries or when a strict separation-of-concerns policy is required.
+
+---
+
 ## Feature-Based Clean Architecture
 
 **Priority: P0 (CRITICAL)**

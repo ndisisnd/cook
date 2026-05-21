@@ -45,6 +45,24 @@ SizedBox(height: VSpacing.md)
 EdgeInsets.all(VSpacing.lg)
 ```
 
+**Idiomatic spacing (Flutter 3.10+):**
+Prefer the `spacing` parameter on `Row`/`Column` over inserting gap widgets between
+children:
+
+```dart
+// ✅ Preferred
+Row(spacing: VSpacing.md, children: [...])
+
+// ⚠️ Fallback — use only when `spacing` cannot express the layout
+Row(children: [
+  ChildA(),
+  SizedBox(width: VSpacing.md),
+  ChildB(),
+])
+```
+
+See SKILL.md § P1 Idiomatic Flutter for the full preference hierarchy.
+
 ### Typography
 
 ```dart

@@ -30,6 +30,24 @@ await secureStorage.write(key: 'auth_token', value: token);
 final token = await secureStorage.read(key: 'auth_token');
 ```
 
+```dart
+// Preferred: register via DI module so it can be injected and mocked
+@module
+abstract class SecurityModule {
+  @lazySingleton
+  FlutterSecureStorage get secureStorage => const FlutterSecureStorage();
+}
+
+// Inject it via constructor (never call getIt<FlutterSecureStorage>() inline)
+class AuthLocalDataSource {
+  AuthLocalDataSource(this._storage);
+  final FlutterSecureStorage _storage;
+}
+```
+
+> See `refs/dependency-injection.md § Third-Party Modules` for the full module
+> registration pattern.
+
 ## Release Build Command
 
 ```bash
