@@ -6,6 +6,7 @@ plan-fixes.json
 */verify
 verify/
 evals/
+improve/
 
 # OS
 .DS_Store
