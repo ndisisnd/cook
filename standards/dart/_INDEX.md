@@ -13,7 +13,7 @@
 > Load `<SKILLS>/dart/refs/tooling.md` when touching tooling/config files.
 > Load `<SKILLS>/dart/refs/testing.md` when touching test files. For Flutter widget/golden/integration tests, also load `flutter-testing`.
 
-## Deprecated (pending removal)
+## Archived
 
 The following sub-skill folders have been merged into `SKILL.md` and `refs/`:
 

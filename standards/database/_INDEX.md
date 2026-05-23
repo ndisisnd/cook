@@ -1,7 +1,7 @@
-<!-- AUTO-GENERATED from SKILL.md frontmatter — do not edit manually -->
+<!-- AUTO-GENERATED from SKILL.md frontmatters — do not edit manually -->
 # database Skills Index
 
-## File Match
+## File Match (auto-check against the file you are editing)
 
 | Skill | File pattern | Keywords |
 | ----- | ------------ | -------- |

@@ -20,8 +20,6 @@
 | flutter → cicd | `.github/workflows/**.yml`, `fastlane/**` | ci, cd, pipeline, deploy, workflow |
 | flutter → testing | `**/test/**.dart`, `**/integration_test/**.dart`, `**/robots/**.dart` | test, patrol, robot, blocTest, mocktail, WidgetKeys |
 
-## Loading Instructions
-
 > Load `<SKILLS>/flutter/SKILL.md` for any `.dart` file — it covers universal Flutter P0/P1 rules (design system, error handling, widgets, idiomatic patterns, performance).
 > Load `<SKILLS>/flutter/refs/state-management.md` when touching BLoC, Cubit, Riverpod, or GetX state files.
 > Load `<SKILLS>/flutter/refs/navigation.md` when touching router, navigation, or app_pages files.

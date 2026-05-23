@@ -1,7 +1,7 @@
-<!-- AUTO-GENERATED from SKILL.md frontmatter — do not edit manually -->
+<!-- AUTO-GENERATED from SKILL.md frontmatters — do not edit manually -->
 # react Skills Index
 
-## File Match
+## File Match (auto-check against the file you are editing)
 
 | Skill | File pattern | Keywords |
 | ----- | ------------ | -------- |
@@ -13,8 +13,6 @@
 | react → security ref | `**/*.tsx`, `**/*.jsx` | dangerouslySetInnerHTML, XSS, DOMPurify, Trusted Types, JWT, auth, CSP, CSRF, sanitize, SameSite |
 | react → component-patterns ref | `**/*.tsx`, `**/*.jsx` | compound component, HOC, render prop, composition, controlled, uncontrolled, accessibility, ARIA, dialog, tabs, menu |
 | react → hooks ref | `**/*.tsx`, `**/*.jsx` | useEffectEvent, useSyncExternalStore, useId, useLayoutEffect, useLocalStorage, useDebounce, useWindowSize, useOnClickOutside, useIntersectionObserver, usePrevious, useToggle, custom hook |
-
-## Loading Instructions
 
 > Load `<SKILLS>/react/SKILL.md` for any `.tsx` or `.jsx` file — covers hook correctness (P0), component basics (P0), boundary safety (P0), TypeScript conventions (P1), and style conventions (P1).
 >

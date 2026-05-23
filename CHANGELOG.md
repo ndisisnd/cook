@@ -4,6 +4,19 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-23 · Standardise _INDEX.md format
+
+**Closed verify-[14] by applying five formatting rules across five AUTO-GENERATED `_INDEX.md` files.**
+
+- Rule 1: updated comment header from `frontmatter` → `frontmatters` in `database`, `react`, and `nextjs` (the em dash variant in `nextjs` was also corrected from ` - ` to ` — `)
+- Rule 2: added `(auto-check against the file you are editing)` parenthetical to `## File Match` heading in `database` and `react`
+- Rule 3: replaced all `->` table arrows with `→` in `nextjs`
+- Rule 4: removed the `## Loading Instructions` heading line from `flutter`, `nextjs`, and `react` (blockquotes left in place)
+- Rule 5: renamed `## Deprecated (pending removal)` → `## Archived` in `dart`
+- `global` and `review` intentionally untouched (custom formats)
+
+---
+
 ## [pending] — 2026-05-21 · Fix root SKILL.md TypeScript row accuracy
 
 **Closed verify-[13] by correcting two documentation inaccuracies in the root `SKILL.md` Step 6 TypeScript domain row.**

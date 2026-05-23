@@ -1,0 +1,13 @@
+{
+  "id": "eval-1",
+  "summary": "Create database array to store a list of cars that all share the same keys",
+  "keywords": ["database", "array", "store", "list", "keys", "cars"],
+  "issue": "false-negative",
+  "description": "Keyword 'database' is not listed in the database domain's 'Match when' column in cook/SKILL.md (triggers are: sql, schema, migration, postgres, prisma, redis, cache). Despite the explicit 'database' signal, the domain is not matched, so database-specific standards are never loaded for this task.",
+  "status": "planned",
+  "fix_proposal": {
+    "add_database_trigger": "Add 'database' to trigger keywords in database domain row in cook/SKILL.md Step 6 table",
+    "template_design": "Create standards/code-changes-template.md. Cook fills it (task summary + matched standards + protocol) and outputs it as the standalone prompt for any coding subagent. Subagent doesn't know about cook — just follows the template's plain-text Output section which defines a JSON blob format.",
+    "eval_status": "Mark complete when both changes are shipped"
+  }
+}
