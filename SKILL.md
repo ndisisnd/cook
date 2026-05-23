@@ -58,7 +58,16 @@ Classify the invoking agent's intent into one of two modes before proceeding:
 
 **Review mode** — the agent wants to evaluate existing artifacts for correctness, bugs, or design gaps.
 Signals: `review`, `audit`, `check for bugs`, `look for regressions`, `review this PR`, `review this diff`, `critique`, `adversarial review`.
-Action: skip Steps 3–7, load `standards/review/SKILL.md`, and stop. The review skill classifies the code surface itself.
+Action: skip Steps 3–7, detect the review surface, pass it as `code_surface`, load `standards/review/SKILL.md`, and stop.
+
+Surface detection for Review mode:
+
+- Frontend signals: `.tsx`, `.jsx`, `components/`, `pages/`, `app/`, `hooks/`, `styles/`
+- Backend signals: `controllers/`, `routes/`, `handlers/`, `services/`, `repositories/`, `db/`
+- Full-stack signals: both frontend and backend files in one review target
+- Security-sensitive signals: auth, token, session, role, permission, owner scope, upload, redirect, webhook, external URL
+
+Tag the detected surface as `frontend`, `backend`, or `full-stack`. If security-sensitive signals appear, add `security-sensitive` to `code_surface` alongside the base surface, for example `full-stack, security-sensitive`.
 
 **Inform mode** — the agent is about to create or change code/plans and needs compiled standards to guide that work.
 Signals: everything else — feature requests, bug fixes, refactors, new plans, migrations, or any task that will produce new or modified artifacts.

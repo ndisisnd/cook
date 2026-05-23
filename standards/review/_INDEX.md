@@ -10,5 +10,5 @@
 ## Routing Notes
 
 > Load `<SKILLS>/review/SKILL.md` when the primary task is code review rather than code editing.
-> The review skill loads the matching standards skills after it classifies the code surface.
+> Cook detects the code surface and passes it as `code_surface`; the review skill uses it to load the matching standards.
 > Use the review skill for findings and recommendations. Use coding skills for implementation.

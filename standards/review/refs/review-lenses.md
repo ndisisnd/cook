@@ -1,6 +1,6 @@
 ---
 name: Review Lenses
-description: inspection lenses for correctness, security, architecture, and tests
+description: inspection lenses for correctness, security, and reliability
 type: reference
 ---
 
@@ -9,12 +9,13 @@ type: reference
 ## Correctness Lens
 
 - Check whether the code matches the stated requirement.
-- Check null, empty, timeout, retry, and duplicate-submission paths.
-- Check state transitions for missing failure handling.
+- Check null, empty, timeout, retry, race, and duplicate-submission paths.
+- Check state transitions for missing failure handling or invalid intermediate states.
 - Check data mapping for dropped or renamed fields.
+- Treat a missing test on risky behavior as an unverified correctness claim.
 
 Example:
-- A form submit handler updates UI state on success but never resets state on failure. That is a correctness finding.
+- A form submit handler updates UI state on success but never resets state on failure, and no test covers the failure path. That is a correctness finding.
 
 ## Security Lens
 
@@ -26,22 +27,12 @@ Example:
 Example:
 - A backend handler reads `req.params.id` and returns the record without owner scoping. That is a security finding.
 
-## Architecture Lens
+## Reliability Lens
 
-- Check for business logic leaking into controllers, components, or views.
-- Check for duplicated logic across layers.
-- Check for large units that mix unrelated responsibilities.
-- Check whether the new code matches the existing project structure.
-
-Example:
-- A React component performs API orchestration, validation, and formatting in one render path. That is an architecture finding.
-
-## Test Lens
-
-- Check whether the risky path has direct test coverage.
-- Check whether new branches add failure paths without tests.
-- Check whether the tests verify behavior rather than implementation trivia.
-- Check whether the docs or examples now drift from the code.
+- Check error handling and failure paths for silent production breakage.
+- Check partial writes, lock cleanup, retry limits, and timeout behavior.
+- Check observability for failures that operators need to detect.
+- Check structural failure paths, including layer bleed that hides errors or bypasses recovery.
 
 Example:
-- The diff adds retry logic but no test covers the retry limit or final failure path. That is a test gap.
+- Retry logic catches transient errors but never stops retrying or logs the final failure. That is a reliability finding.

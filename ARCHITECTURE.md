@@ -50,10 +50,8 @@ SKILL.md (cook)
 
 ### review
 
-- `refs/finding-severity.md`: Severity taxonomy (P0–P3) for review findings.
-- `refs/report-format.md`: Output format and structure for review reports.
-- `refs/review-lenses.md`: Lenses (correctness, security, design, perf, style) applied during review.
-- `refs/skill-routing.md`: Logic for routing review to the correct domain skill.
+- `refs/report-format.md`: Output format, vibecoder field guidance, and severity reference for review reports.
+- `refs/review-lenses.md`: Correctness, Security, and Reliability lenses applied during review.
 
 ### flutter
 
