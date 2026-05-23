@@ -9,11 +9,6 @@ metadata:
       - '**/*.js'
       - '**/*.jsx'
       - '**/*.dart'
-      - '**/*.go'
-      - '**/*.java'
-      - '**/*.kt'
-      - '**/*.swift'
-      - '**/*.py'
       - '**/*.sql'
       - '**/*.graphql'
     keywords:
@@ -25,6 +20,26 @@ metadata:
       - frontend
       - backend
       - full-stack
+      - critique
+      - regression
+      - diff
+      - react
+      - nextjs
+      - next.js
+      - flutter
+      - graphql
+      - typescript
+      - dart
+      - prisma
+      - apollo
+      - migration
+      - schema
+      - auth
+      - api
+      - endpoint
+      - component
+      - hook
+      - resolver
 ---
 
 # Cook Orchestrator
@@ -37,9 +52,17 @@ Cook is the single entry point for standards. It does not hold rules of its own 
 
 Accept the code-task summary passed by the invoking agent. It describes what is being built, changed, or reviewed, and usually names files, frameworks, and intent.
 
-### Step 2 — Detect review intent
+### Step 2 — Detect mode
 
-If the summary signals review — keywords `review`, `audit`, `check for bugs`, `look for regressions`, `review this PR`, `review this diff` — skip Steps 3–7 and load `standards/review/SKILL.md`. The review skill classifies the code surface itself. Stop here.
+Classify the invoking agent's intent into one of two modes before proceeding:
+
+**Review mode** — the agent wants to evaluate existing artifacts for correctness, bugs, or design gaps.
+Signals: `review`, `audit`, `check for bugs`, `look for regressions`, `review this PR`, `review this diff`, `critique`, `adversarial review`.
+Action: skip Steps 3–7, load `standards/review/SKILL.md`, and stop. The review skill classifies the code surface itself.
+
+**Inform mode** — the agent is about to create or change code/plans and needs compiled standards to guide that work.
+Signals: everything else — feature requests, bug fixes, refactors, new plans, migrations, or any task that will produce new or modified artifacts.
+Action: continue to Steps 3–7 to compile and return a standards payload.
 
 ### Step 3 — Extract keywords
 

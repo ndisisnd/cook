@@ -5,6 +5,7 @@ plan-fixes.json
 .compress.md
 */verify
 verify/
+evals/
 
 # OS
 .DS_Store
