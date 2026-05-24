@@ -73,6 +73,10 @@ the cache. It prints a JSON blob: `status` (`hit` | `miss` | `stale` |
 `fallback`), `fingerprint`, `signals` (`files`, `extensions`, `frameworks`,
 `domain_hints`, `source`), `confidence`, `fallback`.
 
+If the script exits non-zero or its stdout cannot be parsed as JSON, treat this
+as a `miss` with `confidence: low` and empty signals, and continue to Step 1c.
+Do not attempt to read a fingerprint or signals from a failed run.
+
 **1b. Branch on status:**
 
 - **`hit`** — the routing is cached and fresh (vocab + index checksums still
@@ -88,7 +92,8 @@ the cache. It prints a JSON blob: `status` (`hit` | `miss` | `stale` |
   (Step 7). Standards still apply; only the efficiency gain is lost. Do **not**
   call `write` or `heal` while the cache is corrupt.
 
-**1c. Classify (miss path only).** Pick exactly ONE intent label from
+**1c. Classify (miss path only).** Read `vocab/intent-vocabulary.json` and
+`vocab/tag-vocabulary.json`. Pick exactly ONE intent label from
 `vocab/intent-vocabulary.json`. Then canonicalize: map each raw signal
 (`signals` + any prose terms) onto a tag in `vocab/tag-vocabulary.json`. Output
 is **constrained to the vocabulary** — never invent a tag. Drop and note any
@@ -114,8 +119,15 @@ the review surface from `signals`:
 
 Tag the surface as `frontend` / `backend` / `full-stack`, appending
 `security-sensitive` when those signals appear (e.g. `full-stack, security-sensitive`).
-Pass it as `code_surface`, load `standards/review/SKILL.md`, write the cache
-entry (Step 6), and stop.
+Pass it as `code_surface`. Then:
+
+1. Load `standards/global/SKILL.md` (P0 floor — Step 3's invariant applies here
+   too) and `standards/review/SKILL.md`.
+2. Write the cache entry (Step 6) with both skill paths.
+3. Compile both via Step 7 and return the JSON envelope.
+
+Do not skip compilation. The invoking agent expects a compiled payload, not a
+bare file reference.
 
 ### Step 3 — Load global P0 (always, unconditional)
 
