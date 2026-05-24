@@ -169,6 +169,13 @@ Read `review_scope`, `target_type`, and `code_surface`. Produce `review_mode` an
 | Full-stack | union of frontend + backend rows | union of matched skills |
 | Security-sensitive | `refs/security.md` in addition to the detected surface refs | matching domain skills; activate when `code_surface` includes security-sensitive |
 
+- Supabase review targets (`supabase/**`, `row level security`, `auth.uid`,
+  `sb_secret`, `service_role`, `verify_jwt`, `apikey`) load
+  `standards/supabase/SKILL.md` and `standards/supabase/refs/checklist.md` in
+  addition to the surface row above. If the review is about key leakage,
+  client-public env vars, or bearer/API-key misuse, also load
+  `standards/global/refs/security.md`.
+
 - For plan targets: load `standards/global/refs/architecture.md` unconditionally.
 - **Institutional knowledge scan** (run in the project root, not this standards repo):
   - Search for `CLAUDE.md` files (root and `.claude/` directory). Read any found — they carry project coding conventions that override generic standards.

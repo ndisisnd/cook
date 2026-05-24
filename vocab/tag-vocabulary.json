@@ -65,10 +65,12 @@
       "routes_to": ["domain:supabase"],
       "aliases": [
         "supabase", "supabase-js", "row level security", "rls policy", "policy",
-        "auth.uid", "auth.jwt", "service_role", "service role key", "anon key",
-        "edge function", "deno", "postgrest", "gotrue", "realtime", "storage bucket",
-        "supabase cli", "security definer", "security invoker", "search_path",
-        "app_metadata", "user_metadata", "verify_jwt", "with check", "pgvector"
+        "auth.uid", "auth.jwt", "publishable key", "secret key", "sb_publishable",
+        "sb_secret", "SUPABASE_PUBLISHABLE_KEYS", "SUPABASE_SECRET_KEYS", "apikey",
+        "service_role", "service role key", "anon key", "edge function", "deno",
+        "postgrest", "gotrue", "realtime", "storage bucket", "supabase cli",
+        "security definer", "security invoker", "search_path", "app_metadata",
+        "user_metadata", "verify_jwt", "with check", "pgvector"
       ]
     },
     "graphql": {
@@ -159,7 +161,9 @@
       "aliases": [
         "security", "secret", "owasp", "OWASP", "sanitize", "validate", "validation",
         "xss", "XSS", "sql injection", "dangerouslySetInnerHTML", "localStorage",
-        "localstorage", "tenant", "owner", "guard", "cors", "ssrf", "pii", "PII", "CSP"
+        "localstorage", "tenant", "owner", "guard", "cors", "ssrf", "pii", "PII",
+        "CSP", "key leak", "leaked key", "public env", "client-public env",
+        "client bundle secret", "public-prefixed env", "bearer token misuse"
       ]
     },
     "performance": {

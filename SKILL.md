@@ -132,8 +132,14 @@ Pass it as `code_surface`. Then:
 
 1. Load `standards/global/SKILL.md` (P0 floor — Step 3's invariant applies here
    too) and `standards/review/SKILL.md`.
-2. Write the cache entry (Step 6) with both skill paths.
-3. Compile both via Step 7 and return the JSON envelope.
+2. If `signals.domain_hints` includes `supabase` or the review target mentions
+   Supabase-specific terms (`supabase`, `row level security`, `auth.uid`,
+   `sb_secret`, `service_role`, `verify_jwt`, `apikey`), also load
+   `standards/supabase/SKILL.md` and `standards/supabase/refs/checklist.md`.
+   This keeps Supabase pre-deploy reviews from losing the platform checklist on
+   the review fast path.
+3. Write the cache entry (Step 6) with the full skill path list.
+4. Compile via Step 7 and return the JSON envelope.
 
 Do not skip compilation. The invoking agent expects a compiled payload, not a
 bare file reference.
@@ -152,6 +158,13 @@ matching concern ref under `standards/global/refs/` (`architecture.md`,
 `debug.md`). The tag-vocabulary `routes_to` is the matching surface; the
 `standards/global/_INDEX.md` Concern Match table remains the within-file route
 target. On `fallback: true`, load the broad concern set.
+
+Supabase key-boundary work stacks with security: when `domain:supabase` is
+matched from secret-key / `service_role` / client-public-env / key-leak language,
+also load `standards/global/refs/security.md`. API-key service-to-service
+language may also load `standards/global/refs/auth.md`; the Supabase refs own the
+platform-specific key boundary, while auth/security own the generic trust-boundary
+rules.
 
 ### Step 5 — Match domains (via canonical_tags)
 

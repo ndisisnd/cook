@@ -18,20 +18,25 @@ line is something a reviewer (or review mode) can confirm against the diff.
 
 ## Keys & clients
 
-- [ ] No `service_role` / `SUPABASE_SERVICE_ROLE_KEY` in client-bundled code or a
-      `NEXT_PUBLIC_*` / `EXPO_PUBLIC_*` / `VITE_*` env var.
-- [ ] The `anon` key is only used against tables that have RLS enabled.
-- [ ] The user-session client and the `service_role` admin client are separate
-      instances; no user session is attached to the admin client.
+- [ ] Public clients use `sb_publishable_...` keys (or legacy `anon` only for
+      compatibility) and only access tables that have RLS enabled.
+- [ ] No `sb_secret`, `SUPABASE_SECRET_KEYS`, `service_role`, or
+      `SUPABASE_SERVICE_ROLE_KEY` in client-bundled code, a `NEXT_PUBLIC_*` /
+      `EXPO_PUBLIC_*` / `VITE_*` env var, a URL/query param, or unsanitized logs.
+- [ ] The user-session client and the secret-key / legacy `service_role` admin
+      client are separate instances; no user session is attached to the admin client.
 
 ## Functions
 
 - [ ] Postgres functions are `SECURITY INVOKER` unless they must be `DEFINER`.
 - [ ] Every `SECURITY DEFINER` function sets `search_path = ''`, schema-qualifies its
       relations, and is not in an API-exposed schema.
-- [ ] Edge Functions touching user data keep `verify_jwt = true` or verify the caller
-      in code; no secrets are hardcoded; Postgres is reached through the pooler/client,
-      not a fresh per-request connection.
+- [ ] Edge Functions touching user data keep `verify_jwt = true` for user-JWT
+      callers, or use `verify_jwt = false` with an in-code signature / `apikey`
+      check for webhooks and service calls; publishable/secret keys are not sent as
+      bearer tokens.
+- [ ] No secrets are hardcoded; Postgres is reached through the pooler/client, not a
+      fresh per-request connection.
 
 ## Workflow
 

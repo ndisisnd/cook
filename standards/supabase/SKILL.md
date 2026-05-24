@@ -1,6 +1,6 @@
 ---
 name: supabase
-description: Supabase platform standards — Row-Level Security, the anon/service_role key boundary, Postgres and Edge functions, Storage, Realtime, and the CLI migration workflow. Use when working with RLS policies, Supabase clients, Edge Functions, or supabase/ migrations. Loads alongside the database (Postgres) domain.
+description: Supabase platform standards — Row-Level Security, publishable/anon and secret/service_role key boundaries, Postgres and Edge functions, Storage, Realtime, and the CLI migration workflow. Use when working with RLS policies, Supabase clients, Edge Functions, or supabase/ migrations. Loads alongside the database (Postgres) domain.
 metadata:
   triggers:
     files:
@@ -13,8 +13,13 @@ metadata:
       - row level security
       - rls policy
       - auth.uid
+      - publishable key
+      - secret key
+      - sb_publishable
+      - sb_secret
       - service_role
       - anon key
+      - apikey
       - edge function
       - security definer
       - search_path
@@ -66,20 +71,24 @@ rather than restating them.
 
 ## Priority: P0 — Keys & Client Boundary
 
-- **The `service_role` key bypasses RLS — backend / Edge Functions only.** Never ship
-  it to a browser or mobile bundle, never put it in a client-public env
-  (`NEXT_PUBLIC_*`, `EXPO_PUBLIC_*`, `VITE_*`). A leaked `service_role` key is root on
-  the database.
-  Signal: `service_role` / `SUPABASE_SERVICE_ROLE_KEY` referenced in client-bundled
-  code or a public-prefixed env var.
-- **The `anon` key is public but RLS-gated** — only safe in a client if RLS is enabled
-  on every exposed table (ties back to RLS above).
-  Signal: an `anon` client used against a table with RLS disabled.
-- **A user-session client and a `service_role` client are separate instances.** A
-  client carrying a user session sends the user JWT (RLS applies); do not attach a
-  user session to the admin client, and the user session must not override the
-  `service_role` apikey. In SSR, build a dedicated admin client.
-  Signal: one shared client mixing a user session with the `service_role` key.
+- **Use publishable keys (`sb_publishable_...`) for public clients; treat legacy
+  `anon` as the compatibility form.** Public clients are only safe when RLS protects
+  every exposed table for the `anon` / `authenticated` roles.
+  Signal: a publishable or legacy `anon` client used against a table with RLS disabled.
+- **Secret keys (`sb_secret_...`) and legacy `service_role` keys bypass RLS —
+  backend / Edge Functions only.** Never ship them to a browser or mobile bundle,
+  never put them in a client-public env (`NEXT_PUBLIC_*`, `EXPO_PUBLIC_*`, `VITE_*`),
+  and never pass them in URLs or query params. A leaked secret key is root on the
+  database.
+  Signal: `sb_secret`, `SUPABASE_SECRET_KEYS`, `service_role`, or
+  `SUPABASE_SERVICE_ROLE_KEY` referenced in client-bundled code, a public-prefixed
+  env var, a URL/query param, or unsanitized logs.
+- **A user-session client and an admin client are separate instances.** A client
+  carrying a user session sends the user JWT (RLS applies); do not attach a user
+  session to the admin client, and the user session must not override the admin API
+  key. In SSR, build a dedicated admin client from a secret key / legacy
+  `service_role` key.
+  Signal: one shared client mixing a user session with `sb_secret` / `service_role`.
 
 ## Priority: P0 — Postgres & Edge Functions
 
@@ -88,11 +97,14 @@ rather than restating them.
   (`public.table`), and never create it in an API-exposed schema.
   Signal: `security definer` with no `set search_path = ''`, or such a function in an
   exposed schema.
-- **Edge Functions are publicly invokable by default — verify the caller.** Keep
-  `verify_jwt` on (or check the JWT/authorization in code) for any function touching
-  user data; read secrets from project secrets / env, never hardcode.
-  Signal: an Edge Function reading user data with `verify_jwt = false` and no in-code
-  auth check; a literal key in function source.
+- **Edge Functions are publicly invokable by default — match `verify_jwt` to the
+  caller credential and verify inside the handler when needed.** Keep `verify_jwt`
+  on for user-JWT calls. Turn it off for webhooks or API-key service calls, then
+  verify the provider signature or `apikey` header in code. Publishable/secret keys
+  are not JWTs and must not be sent as `Authorization: Bearer ...`.
+  Signal: an Edge Function reading user data with `verify_jwt = false` and no
+  signature / `apikey` / authorization check; a publishable or secret key sent as a
+  bearer token; a literal key in function source.
 - **Treat Postgres as a pooled remote from Edge Functions** — use the connection
   pooler / serverless-friendly client; don't open a fresh direct connection per
   invocation.
@@ -120,7 +132,7 @@ rather than restating them.
 - bare `auth.uid()` per-row in a policy
 - policy keyed on `user_metadata` for authorization
 - unindexed RLS predicate column
-- `service_role` key in a client bundle or public-prefixed env var
+- `sb_secret` / `service_role` key in a client bundle, public-prefixed env var, URL, or log
 - user session attached to the admin client
 - `security definer` with no `search_path = ''`, or in an exposed schema
 - Edge Function on user data with `verify_jwt` off and no in-code check
@@ -133,8 +145,8 @@ rather than restating them.
 Load only what the task requires:
 
 - [rls](refs/rls.md) — enable-RLS migration pattern, per-operation policies, `SELECT`+`UPDATE` pairing, `WITH CHECK`, `(select auth.uid())` wrapping, `app_metadata` vs `user_metadata`, indexing predicate columns
-- [keys-and-clients](refs/keys-and-clients.md) — anon vs service_role, browser/mobile boundary, SSR admin-client separation, public-env pitfalls
+- [keys-and-clients](refs/keys-and-clients.md) — publishable/anon vs secret/service_role, browser/mobile boundary, SSR admin-client separation, public-env pitfalls
 - [database-functions](refs/database-functions.md) — `SECURITY INVOKER` default, `SECURITY DEFINER` + `search_path = ''` + schema qualification, exposed-schema rule, `auth.uid()` in helpers
-- [edge-functions](refs/edge-functions.md) — Deno runtime, `verify_jwt` / in-code auth, project secrets, connection pooling for Postgres
+- [edge-functions](refs/edge-functions.md) — Deno runtime, user JWT vs API-key auth, `verify_jwt` / in-code auth, project secrets, connection pooling for Postgres
 - [migrations](refs/migrations.md) — CLI workflow, RLS-as-SQL, dashboard drift, storage and Realtime policies
 - [checklist](refs/checklist.md) — pre-deploy review checklist
