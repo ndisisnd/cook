@@ -4,12 +4,13 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-24 · Cook robustness — Phase 0 + Phase 1
+## [pending] — 2026-05-24 · Cook robustness — Phase 0 + Phase 1 + Phase 2
 
-**Added the routing vocabulary and the fingerprint-first cache resolver (`feat/cook-robustness`).**
+**Added the routing vocabulary, fingerprint-first cache resolver, and mechanical compilation layer (`feat/cook-robustness`).**
 
 - Phase 0: added `vocab/tag-vocabulary.json` (14 canonical tags routing to `domain:*`/`concern:*`, seeded from every `_INDEX.md` keyword column at full coverage parity — 432/432) and `vocab/intent-vocabulary.json` (11-label closed set)
 - Phase 1: added `scripts/cook_cache.py` — a mechanical resolver (`lookup`/`write`, no LLM) that gathers signals via the T1/T2/T4/T5 cascade + extension disambiguation, builds a fingerprint from raw observable signals (no intent label), and checks the cache before any classification; cache entries carry vocab + index checksums and are written atomically
+- Phase 2: added `scripts/cook_compile.py` — a mechanical compilation script (no LLM) that takes a comma-separated path list, deduplicates, buckets into Universal/Domain/Concern, strips YAML frontmatter, and concatenates with terse section headers; output is a JSON envelope `{content, degraded, metadata}`; `SKILL.md` Step 7 updated to invoke it via a single Bash call
 - Added `improve/` and `.agent-skills/` to `.gitignore`
 
 ---

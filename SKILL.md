@@ -108,7 +108,28 @@ For each matched domain index, match the extracted keywords and file patterns ag
 
 ### Step 7 — Compile and return
 
-Assemble everything loaded — global P0 + matched global concern refs + matched domain skills/refs — into a single standards payload and return it to the invoking agent.
+Invoke the compilation script with the path list assembled by Steps 4–6 (or from `routing.skills` on a cache hit). Single Bash call — no LLM involvement:
+
+```
+python3 scripts/cook_compile.py \
+  --skills <comma-separated paths relative to cook root>
+```
+
+The script deduplicates paths, buckets them (Universal → Domain → Concern), reads each file, strips YAML frontmatter, and concatenates with terse section headers (`## Universal`, `## React`, `## Security`, etc.). Output is JSON:
+
+```json
+{
+  "content": "<assembled markdown>",
+  "degraded": [],
+  "metadata": {"resolutions_applied": [], "dropped_for_budget": []}
+}
+```
+
+Return the JSON envelope to the invoking agent. If `degraded` is non-empty, log the failed paths — the next invocation re-attempts them automatically.
+
+**Path list construction:**
+- **Cache hit:** use `routing.skills` from the resolver output directly.
+- **Miss path:** collect paths from Steps 4–6: `standards/global/SKILL.md`, matched `standards/global/refs/<name>.md`, matched domain `SKILL.md` + `refs/*.md`.
 
 ## Notes
 
