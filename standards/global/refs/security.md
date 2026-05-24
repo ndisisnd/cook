@@ -4,13 +4,16 @@
 
 - Never use `dangerouslySetInnerHTML` or equivalent without explicit sanitization.
 - Never construct URLs from unsanitized user input.
-- Never store auth tokens in `localStorage` — prefer `httpOnly` cookies or short-lived session memory.
 
-## Auth & Ownership
+## Ownership Scoping
 
 - Scope every resource query by owner or tenant ID alongside any user-supplied ID.
-- Require auth on all routes by default. Explicit opt-out only.
-- Every role-gated action has a guard. No open admin routes.
+
+> Authentication, token storage, session, CSRF, RBAC route-guards, credential
+> hashing, brute-force/rate-limiting on auth endpoints, JWT signature verification,
+> and password-reset flows live in [auth.md](auth.md). The OWASP tables below stay as
+> the master detection reference. Routing and the always-on `localStorage` token rule
+> moved there.
 
 ## Input Validation
 

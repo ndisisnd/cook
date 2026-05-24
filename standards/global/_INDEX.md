@@ -16,9 +16,11 @@ Layer selection (frontend vs backend vs full-stack) is no longer decided here â€
 | `refs/architecture.md` | `**/components/**`, `**/services/**`, `**/hooks/**`, `**/widgets/**` | architecture, component, state, hook, lift state, business logic, logic leak, layer, monolith, god class, refactor, structure, duplication |
 | `refs/api-design.md` | `**/controllers/**`, `**/routes/**`, `**/handlers/**`, `**/api/**`, `**/*.controller.*` | api, endpoint, rest, http, GET, POST, status code, pagination, paginate, versioning, version bump, contract, openapi |
 | `refs/error-handling.md` | `**/*.controller.*`, `**/*.service.*`, `**/domain/**`, `**/infrastructure/**` | error, exception, throw, catch, failure, error code, envelope, error boundary, domain error |
-| `refs/security.md` | `**/auth/**`, `**/middleware.*`, `**/*.controller.*` | security, auth, token, secret, jwt, owasp, sanitize, validate, validation, xss, sql injection, dangerouslySetInnerHTML, localStorage, tenant, owner, role, guard, cors, ssrf, pii |
+| `refs/security.md` | `**/auth/**`, `**/middleware.*`, `**/*.controller.*` | security, secret, owasp, sanitize, validate, validation, xss, sql injection, dangerouslySetInnerHTML, localStorage, tenant, owner, guard, cors, ssrf, pii |
+| `refs/auth.md` | `**/auth/**`, `**/middleware.*`, `**/login/**`, `**/*.guard.*` | auth, login, oauth, pkce, token, jwt, session, cookie, rbac, role, scope, csrf, guard, route guard, middleware, admin, password hash, mfa, 2fa, brute force, lockout, password reset, password policy, mtls, client credentials, service-to-service, api key, service account |
 | `refs/performance.md` | `**/components/**`, `**/*.entity.ts`, `**/migrations/*.sql` | performance, slow, n+1, index, re-render, memo, virtualize, waterfall, parallel fetch, cache, latency, throughput, bottleneck, profile |
 | `refs/debug.md` | n/a | debug, crash, trace, stack trace, reproduce, repro, bug report, regression |
+| `refs/cicd.md` | `.github/workflows/**`, `**/*.yml`, `**/*.yaml`, `Jenkinsfile`, `.gitlab-ci.yml`, `fastlane/**` | ci, cd, pipeline, workflow, deploy, artifact, rollback, staging, release, secrets |
 
 ## Notes
 

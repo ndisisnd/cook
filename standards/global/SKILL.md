@@ -63,6 +63,7 @@ Three rules that apply on every code write, regardless of context:
 - No raw SQL string concatenation. Parameterized queries or ORMs only.
 - No wildcard CORS on authenticated routes. Explicit allowlisted origins only.
 - No full ORM entity returned from an API endpoint. Project to DTO always.
+- No auth tokens in `localStorage`/`sessionStorage`. Use `httpOnly` cookies; deeper auth rules live in `refs/auth.md`.
 
 ### Change Quality
 
@@ -92,7 +93,9 @@ Load only what the current task requires:
 
 - [api-design](refs/api-design.md) — HTTP semantics, status codes, URL design, versioning, pagination, or OpenAPI
 - [error-handling](refs/error-handling.md) — error hierarchies, response envelopes, or error-boundary placement
-- [security](refs/security.md) — auth, encryption, access control, OWASP checklist, or running a SAST scan
+- [security](refs/security.md) — injection, CORS, SSRF, XSS, OWASP checklist, or running a SAST scan
+- [auth](refs/auth.md) — OAuth/PKCE flows, token storage, session, CSRF, RBAC, credential hashing, brute-force/rate-limiting, JWT verification, password reset, MFA, service-to-service auth
 - [architecture](refs/architecture.md) — auditing structural debt, detecting logic leakage, or remediating God classes
 - [performance](refs/performance.md) — profiling bottlenecks, batching queries, or fixing memory leaks
 - [debug](refs/debug.md) — troubleshooting crashes, tracing failures, or filing a structured bug report
+- [cicd](refs/cicd.md) — vendor-neutral pipeline shape, gating, secrets handling, artifact promotion

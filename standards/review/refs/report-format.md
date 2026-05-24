@@ -44,6 +44,25 @@ Use this exact shape for each finding:
 - State `block`, `fix before merge`, or `safe with follow-up`.
 - Give one sentence for the reason.
 
+## Severity Reference
+
+### Severity Bands
+
+| Severity | Use for | Expected action |
+| --- | --- | --- |
+| Blocker | Security flaw, data loss, broken core flow, corrupt output | Stop merge or release until fixed |
+| Major | High-likelihood bug, regression, missing access check, missing error path | Fix before merge unless the owner accepts the risk |
+| Minor | Low-impact bug, narrow edge case, maintainability issue with clear risk | Fix soon or track explicitly |
+| Note | Clarification, follow-up question, or improvement with low risk | Optional follow-up |
+
+### Ranking Rules
+
+- Rank by user impact first.
+- Rank by exploitability first for security findings.
+- Rank by production likelihood before code style concerns.
+- Raise severity when the code has no tests for the risky path.
+- Lower severity only when the failure needs an unlikely precondition.
+
 ## Worked Example
 
 ```markdown

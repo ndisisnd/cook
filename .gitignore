@@ -5,7 +5,10 @@ plan-fixes.json
 .compress.md
 */verify
 verify/
+eval/
 evals/
+improve/
+.agent-skills/
 
 # OS
 .DS_Store

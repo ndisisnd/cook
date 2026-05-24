@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "_note": "Canonical routing surface for cook. raw_signal -> canonical tag -> routes_to. Seeded from every standards/*/_INDEX.md keyword column + the global Concern Match table for coverage parity, then extended with gap-closing synonyms. Within-domain ref selection still uses the domain _INDEX.md tables; this file drives top-level routing only. Verify parity with verify/check-vocab-parity.py.",
+  "tags": {
+    "react": {
+      "routes_to": ["domain:react"],
+      "aliases": [
+        "component", "props", "children", "jsx", "hooks", "useEffect", "useEffectEvent",
+        "useState", "useCallback", "useMemo", "useRef", "useContext", "useReducer",
+        "useSyncExternalStore", "useId", "useLayoutEffect", "ReactNode", "render", "screen",
+        "userEvent", "MSW", "mock service worker", "waitFor", "queryBy", "fake timers", "act",
+        "vite", "webpack", "bundle", "StrictMode", "why-did-you-render", "exhaustive-deps",
+        "React Compiler", "zustand", "redux", "RTK", "RTK Query", "react-query",
+        "TanStack Query", "SWR", "Jotai", "store", "lazy", "Suspense", "dynamic",
+        "react-window", "TanStack Virtual", "bundle size", "DOMPurify", "Trusted Types",
+        "SameSite", "compound component", "HOC", "render prop", "composition", "controlled",
+        "uncontrolled", "accessibility", "ARIA", "dialog", "tabs", "menu", "useLocalStorage",
+        "useDebounce", "useWindowSize", "useOnClickOutside", "useIntersectionObserver",
+        "usePrevious", "useToggle", "custom hook"
+      ]
+    },
+    "nextjs": {
+      "routes_to": ["domain:nextjs"],
+      "aliases": [
+        "Server Component", "Client Component", "use client", "hydration", "App Router",
+        "Layout", "Route Group", "parallel routes", "intercepting routes", "async params",
+        "Pages Router", "getServerSideProps", "getStaticProps", "_app", "_document",
+        "useRouter", "RSC", "serialization", "fetch", "revalidate", "no-store", "force-cache",
+        "DAL", "Data Access Layer", "server-only", "generateStaticParams", "dynamicParams",
+        "PPR", "streaming", "revalidateTag", "Data Cache", "Router Cache", "use server",
+        "Server Action", "revalidatePath", "useFormStatus", "useActionState", "cookie",
+        "session", "jose", "boundary", "action", "URL state", "tailwind", "css modules",
+        "styled-components", "clsx", "cn", "metadata", "next/image", "next/font",
+        "Core Web Vitals", "testing-library", "FSD", "Feature Sliced Design", "slices",
+        "segments", "RSC boundaries", "runtime", "bundling", "i18n", "locale", "translation",
+        "next-intl", "react-intl", "next-translate", "hreflang", "Dockerfile", "turbopack",
+        "output", "standalone", "lint", "telemetry", "codemod", "next upgrade", "playwright"
+      ]
+    },
+    "flutter": {
+      "routes_to": ["domain:flutter"],
+      "aliases": [
+        "Widget", "StatelessWidget", "StatefulWidget", "const", "build", "Theme", "SizedBox",
+        "ListView", "Bloc", "Cubit", "Riverpod", "GetX", "Obx", "AsyncValue", "ref.watch",
+        "GoRouter", "AutoRoute", "GetPage", "Navigator", "deep link", "redirect", "feature",
+        "infrastructure", "mapper", "Either", "fold", "Left", "Right", "dartz", "Dio",
+        "Retrofit", "RestClient", "Interceptor", "token refresh", "GetIt", "injectable",
+        "singleton", "module", "ThemeData", "ColorScheme", "AppColors", "design token",
+        "tr()", "easy_localization", "FCM", "FirebaseMessaging", "push", "secure_storage",
+        "pinning", "jailbreak", "Isolate", "compute", "ReceivePort", "background", "patrol",
+        "robot", "blocTest", "WidgetKeys", "testWidgets", "test", "localization", "ci", "cd",
+        "deploy", "workflow", "pipeline"
+      ]
+    },
+    "database": {
+      "routes_to": ["domain:database"],
+      "aliases": [
+        "db", "datastore", "store", "persist", "table", "record", "sql", "schema",
+        "migration", "postgres", "postgresql", "prisma", "PrismaService", "TypeOrmModule",
+        "PostgresModule", "redis", "cache", "ttl", "eviction", "index", "RLS", "transaction",
+        "query plan", "explain", "pipeline", "scan"
+      ]
+    },
+    "graphql": {
+      "routes_to": ["domain:graphql"],
+      "aliases": [
+        "graphql", "gql", "resolver", "mutation", "query", "subscription", "SDL", "typeDefs",
+        "Apollo", "DataLoader", "connection", "cursor", "input", "payload", "union",
+        "deprecat", "depth limit", "complexity", "rate limit", "introspection", "authorization",
+        "batch", "loader", "executeOperation", "schema snapshot", "mock context",
+        "resolver test", "integration test", "codegen", "graphql-eslint", "graphql-inspector",
+        "schema registry", "rover", "persisted"
+      ]
+    },
+    "typescript": {
+      "routes_to": ["domain:typescript"],
+      "aliases": [
+        "type", "interface", "generic", "enum", "union", "readonly", "async", "import",
+        "export", "eslint", "jest", "vitest", "tsconfig", "tsx", "ts"
+      ]
+    },
+    "dart": {
+      "routes_to": ["domain:dart"],
+      "aliases": [
+        "sealed", "record", "switch", "pattern", "!", "late", "extension", "naming",
+        "convention", "trailing comma", "tear-off", "build_runner", "dart format",
+        "dart_code_metrics", "mocktail", "mockito", "fake_async"
+      ]
+    },
+    "data-model": {
+      "routes_to": ["concern:architecture"],
+      "aliases": [
+        "array", "list", "collection", "map", "keys", "entity", "struct", "shape", "model",
+        "dto", "DTO"
+      ]
+    },
+    "architecture": {
+      "routes_to": ["concern:architecture"],
+      "aliases": [
+        "architecture", "state", "hook", "lift state", "business logic", "logic leak",
+        "layer", "monolith", "god class", "refactor", "structure", "duplication", "domain",
+        "feature", "slices", "segments"
+      ]
+    },
+    "api-design": {
+      "routes_to": ["concern:api-design"],
+      "aliases": [
+        "api", "endpoint", "rest", "http", "GET", "POST", "status code", "pagination",
+        "paginate", "versioning", "version bump", "contract", "openapi"
+      ]
+    },
+    "error-handling": {
+      "routes_to": ["concern:error-handling"],
+      "aliases": [
+        "error", "exception", "throw", "catch", "failure", "Failure", "error code",
+        "envelope", "error boundary", "domain error"
+      ]
+    },
+    "auth": {
+      "routes_to": ["concern:auth"],
+      "aliases": [
+        "auth", "authentication", "authorization", "login", "oauth", "oauth2", "pkce",
+        "token", "access token", "refresh token", "jwt", "JWT", "session", "cookie",
+        "rbac", "role", "scope", "csrf", "CSRF", "SameSite", "session fixation",
+        "guard", "route guard", "middleware", "admin", "argon2", "bcrypt",
+        "password hash", "mfa", "MFA", "2fa", "2FA", "multi-factor", "step-up auth",
+        "brute force", "account lockout", "lockout", "password reset",
+        "forgot password", "account recovery", "password policy", "breached password",
+        "redirect_uri", "user enumeration", "timing-safe", "mtls", "mTLS", "mutual tls",
+        "client credentials", "service-to-service", "service to service",
+        "machine-to-machine", "m2m", "api key", "service account", "workload identity",
+        "zero-trust"
+      ]
+    },
+    "security": {
+      "routes_to": ["concern:security"],
+      "aliases": [
+        "security", "secret", "owasp", "OWASP", "sanitize", "validate", "validation",
+        "xss", "XSS", "sql injection", "dangerouslySetInnerHTML", "localStorage",
+        "localstorage", "tenant", "owner", "guard", "cors", "ssrf", "pii", "PII", "CSP"
+      ]
+    },
+    "performance": {
+      "routes_to": ["concern:performance"],
+      "aliases": [
+        "performance", "slow", "n+1", "N+1", "index", "re-render", "memo", "virtualize",
+        "waterfall", "parallel fetch", "cache", "latency", "throughput", "bottleneck",
+        "profile", "lazy", "Suspense"
+      ]
+    },
+    "debug": {
+      "routes_to": ["concern:debug"],
+      "aliases": [
+        "debug", "crash", "trace", "stack trace", "reproduce", "repro", "bug report",
+        "regression"
+      ]
+    },
+    "cicd": {
+      "routes_to": ["concern:cicd"],
+      "aliases": [
+        "ci", "cd", "cicd", "ci/cd", "pipeline", "workflow", "deploy", "deployment",
+        "github actions", "gitlab ci", "artifact", "rollback", "staging", "release",
+        "secrets", "timeout-minutes", "concurrency"
+      ]
+    }
+  }
+}

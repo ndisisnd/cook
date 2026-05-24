@@ -15,7 +15,7 @@ allowed_tools:
 
 - Natural-language: "review this", "review this PR", "review this plan", "audit this code", "check for bugs", "adversarial review"
 - Context: a code diff, a changed file list, a PR summary, a plan/PRD/spec/design doc, or any prose describing a system
-- Root routing: `cook/SKILL.md` invokes this skill when intent is `review-code`
+- Root routing: `SKILL.md` invokes this skill when intent is `review-code`
 
 ## Inputs
 
@@ -23,6 +23,7 @@ allowed_tools:
 |------|--------|--------|
 | review_request | prompt | user message |
 | review_target | file path, file list, diff, or plan document | user message or attached context |
+| code_surface | frontend, backend, full-stack, security-sensitive, plan, or comma-separated combination | `SKILL.md` for code reviews; inferred as `plan` for plan targets |
 | supporting_spec | prompt, PR summary, requirements, or prior context | optional |
 
 ## Outputs
@@ -59,7 +60,7 @@ Emit `Step X/7 - <title>` at the start of each step, unconditionally.
 
 - Review every changed line plus enough context to understand behavior, ownership, and failure mode.
 - Assume malicious or accidental misuse. Look for what breaks under adversarial conditions, not just normal use.
-- Start high-level: design, functionality, security, tests — before naming or formatting.
+- Start high-level: correctness, security, and reliability before naming or formatting.
 - Tie every finding to evidence, impact, and principle.
 - Cite the relevant repo standard or external engineering principle when the reason is not obvious from the code alone.
 - If the diff is too large to review reliably, say so, review the highest-risk paths first, and recommend splitting.
@@ -67,13 +68,12 @@ Emit `Step X/7 - <title>` at the start of each step, unconditionally.
 
 ### Inspection order — code
 
-1. Design and system fit
-2. Functionality and edge cases
-3. Security and trust boundaries
+1. Correctness and edge cases
+2. Security and trust boundaries
+3. Reliability, failure paths, and observability
 4. Complexity and over-engineering
-5. Error handling and observability
-6. Tests and documentation
-7. Naming and comments (only when they affect understanding)
+5. Tests as evidence for risky behavior
+6. Naming and comments (only when they affect understanding)
 
 ### Inspection order — plan
 
@@ -87,12 +87,9 @@ Emit `Step X/7 - <title>` at the start of each step, unconditionally.
 
 ### Inspection lenses — code
 
-- **Design**: Does the change fit the architecture? Leak business logic into the wrong layer? Add unnecessary abstraction?
-- **Functionality**: Check null, empty, retry, timeout, duplicate-submit, rollback, and race-condition paths.
-- **Security**: Check validation, sanitization, auth, ownership, tenant scoping, secrets, unsafe HTML/URLs, query construction, and data exposure.
-- **Performance**: Look for N+1 access, repeated work in loops, wasteful renders, large payloads, and sync blocking.
-- **Tests**: Risky paths, failures, and regressions must have direct coverage. Tests must verify behavior, not trivia.
-- **Docs**: Comments must explain why. Docs must stay accurate after the change.
+- **Correctness**: Does it match the stated requirement under all inputs? Check null, empty, retry, timeout, race, duplicate-submit, rollback, state transitions, data mapping, and missing test evidence for risky claims.
+- **Security**: Check auth, ownership, tenant scoping, validation at trust boundaries, data exposure, secrets, unsafe HTML/URL/upload/redirect/query construction, and injection risk.
+- **Reliability**: Check error handling, failure paths, partial writes, lock cleanup, retry limits, observability, and what breaks silently in production.
 
 ### Inspection lenses — plan
 
@@ -156,14 +153,22 @@ block | fix before merge | safe with follow-up — one sentence reason.
 **Step 1 — Read and detect** `[model: sonnet]`
 Read `review_request` and `review_target`. Detect target type (code | plan) using the detection rules above. Produce `review_scope` and `target_type`. Refuse destructive edits, implementation asks, or out-of-domain requests.
 
-**Step 2 — Classify surface and load standards** `[model: sonnet]`
-Read `review_scope` and `target_type`. Produce `review_mode` and `standards_set`.
+**Step 2 — Read surface and load standards** `[model: sonnet]`
+Read `review_scope`, `target_type`, and `code_surface`. Produce `review_mode` and `standards_set`.
 
-- Detect code surface: frontend, backend, full-stack, or security-sensitive. Use the trigger signals in `refs/skill-routing.md`.
+- For code targets, use the `code_surface` passed by `SKILL.md`; do not re-detect trigger signals here.
+- For plan targets, set surface to `plan`.
 - Flag oversized or low-context review targets in `review_mode`.
 - Always load `standards/global/SKILL.md` and all matching concern refs from `standards/global/_INDEX.md`.
-- Load domain skills that match the touched file types using the surface-to-skills mapping in `refs/skill-routing.md`. Load from `standards/*/SKILL.md` paths in this repo.
-- For security-sensitive signals (auth, token, session, role, upload, redirect, external URL): load `standards/global/refs/security.md`.
+- Load matching concern refs and domain skills with this lookup table:
+
+| Surface | Concern refs | Domain skills |
+| --- | --- | --- |
+| Frontend | `refs/architecture.md`, `refs/performance.md` | `standards/typescript/SKILL.md` or matching language skill; React/Next.js skills on match |
+| Backend | `refs/api-design.md`, `refs/error-handling.md` | `standards/typescript/SKILL.md` or matching language skill; database/GraphQL on match |
+| Full-stack | union of frontend + backend rows | union of matched skills |
+| Security-sensitive | `refs/security.md` in addition to the detected surface refs | matching domain skills; activate when `code_surface` includes security-sensitive |
+
 - For plan targets: load `standards/global/refs/architecture.md` unconditionally.
 - **Institutional knowledge scan** (run in the project root, not this standards repo):
   - Search for `CLAUDE.md` files (root and `.claude/` directory). Read any found — they carry project coding conventions that override generic standards.
@@ -196,7 +201,5 @@ _Eval report_:
 
 ## References
 
-- `refs/finding-severity.md` — worked severity examples and edge cases
-- `refs/report-format.md` — worked examples for the review report
-- `refs/review-lenses.md` — worked inspection examples for correctness, security, architecture, and tests
-- `refs/skill-routing.md` — surface-to-standards mapping
+- `refs/report-format.md` — report template, vibecoder field guidance, and severity reference
+- `refs/review-lenses.md` — Correctness, Security, and Reliability lenses

@@ -32,7 +32,7 @@
 > Load `<SKILLS>/flutter/refs/notifications.md` when touching FCM, firebase_messaging, or flutter_local_notifications.
 > Load `<SKILLS>/flutter/refs/security.md` when touching secure_storage, pinning, obfuscation, or OWASP concerns.
 > Load `<SKILLS>/flutter/refs/concurrency.md` when touching isolate, compute, or background worker files.
-> Load `<SKILLS>/flutter/refs/cicd.md` when touching GitHub Actions workflows or Fastlane files.
+> Load `<SKILLS>/flutter/refs/cicd.md` when touching GitHub Actions workflows or Fastlane files. A Flutter CI/CD task also loads the vendor-neutral `concern:cicd` (`<SKILLS>/global/refs/cicd.md`) alongside it — concerns load on top of the matched domain.
 > Load `<SKILLS>/flutter/refs/testing.md` when writing or reviewing any test, robot, integration test, or widget key file.
 
 ## Archived

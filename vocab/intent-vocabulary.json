@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "intents": [
+    { "label": "write-feature",        "desc": "Add new behaviour or capability." },
+    { "label": "write-component",      "desc": "Build or change a UI component." },
+    { "label": "write-data-model",     "desc": "Define/shape data: entities, schemas, collections." },
+    { "label": "write-migration",      "desc": "Change persisted schema or data." },
+    { "label": "design-api",           "desc": "Define or change an endpoint/contract." },
+    { "label": "fix-bug",              "desc": "Correct incorrect behaviour." },
+    { "label": "refactor",             "desc": "Restructure without changing behaviour." },
+    { "label": "optimize-performance", "desc": "Reduce latency, renders, queries, memory." },
+    { "label": "harden-security",      "desc": "Auth, validation, secrets, injection." },
+    { "label": "add-tests",            "desc": "Add or change tests." },
+    { "label": "review-code",          "desc": "Audit existing code (routes to review skill)." }
+  ]
+}

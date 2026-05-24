@@ -4,6 +4,92 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-24 · cook skill robustness improvements
+
+**fix(cook): add error handling and clarify protocol steps.**
+
+- Added error handling for failed script runs in the cache-lookup step — non-zero exit or unparseable JSON now treated as `miss` with `confidence: low`, continuing to Step 1c without crashing
+- Clarified Step 1c to explicitly read `vocab/intent-vocabulary.json` and `vocab/tag-vocabulary.json` before classifying
+- Expanded Step 2 cache-hit path to load both `standards/global/SKILL.md` and `standards/review/SKILL.md`, write the cache entry with both skill paths, and compile both via Step 7 — invoking agent now receives a compiled payload, not a bare file reference
+
+---
+
+## [pending] — 2026-05-24 · Auth code examples + service-to-service auth
+
+**feat(standards): add Secure Patterns examples and a Service-to-Service Auth section to auth.md.**
+
+- Added a `## Secure Patterns` section to `standards/global/refs/auth.md` — five TypeScript good/`// Never:` snippets (token storage, argon2id hashing, JWT verification with pinned `algorithms`+`aud`/`iss`, constant-time comparison, client-credentials service token), closing the style gap with `security.md` (which already carried examples; auth.md had none)
+- Added a `## Service-to-Service Auth` section — two P0 rules with `Signal:`s (mTLS / short-lived client-credentials token, never a long-lived shared static API key [API2]; receiving service verifies caller identity via mTLS cert or token `aud`+`iss`, never network reachability alone [zero-trust]) and one `P1 (design)` rule (scope/rotate service credentials, source from a secret manager)
+- Extended the `auth.md` intro summary and Anti-Patterns block (static shared API keys; trusting network reachability over caller identity). OWASP intro mapping unchanged — S2S maps to API2, already listed
+- Routing: added 12 service-auth aliases to `tags.auth.aliases` in `vocab/tag-vocabulary.json` (mtls/mutual tls, client credentials, service-to-service/m2m/machine-to-machine, api key, service account, workload identity, zero-trust); added five keywords (`mtls, client credentials, service-to-service, api key, service account`) to the `refs/auth.md` row in `global/_INDEX.md`; extended the `auth` References blurb in `global/SKILL.md`
+- Vocab parity holds at 466/466 (`verify/check-vocab-parity.py`); route targets resolve (66/66, `scripts/check_index_routes.py`)
+- Plan: `improve/standards/cook-feat-standards-1.3.md`; verify: `improve/standards/cook-feat-standards-1.3-verify.md`
+
+---
+
+## [pending] — 2026-05-24 · Close auth coverage gaps (brute-force, JWT verification, password reset, enumeration, OAuth state, MFA, password policy)
+
+**feat(standards): close auth coverage gaps surfaced by the security.md OWASP tables.**
+
+- Closed the gap between what `security.md`'s OWASP tables advertise and what `auth.md` prescribes. Added P0 rules (each with a `Signal:`) to `standards/global/refs/auth.md`: brute-force/rate-limiting on auth endpoints (A04/API4), JWT signature verification — pinned algorithm, reject `alg:none`, validate `aud`/`iss` (A08/API2), OAuth `state` + exact-match `redirect_uri` (A01/API2), single-use/short-expiry password-reset tokens with session invalidation (API6), account-enumeration uniformity, and constant-time secret comparison
+- Added two `P1 (design)` rules: MFA + step-up re-auth for sensitive actions, and an input-side password policy (NIST 800-63B length floor + breached-password check)
+- Updated the `auth.md` intro OWASP mapping `A01/A02/A07 + API2/API5` → `A01/A02/A04/A07/A08 + API2/API4/API5/API6`; extended the Anti-Patterns block
+- Reconciled `security.md`: expanded the "lives in auth.md" cross-reference note (brute-force/rate-limiting, JWT verification, password-reset now owned by auth.md) and stated the OWASP tables stay as the master detection reference — no rule duplication
+- Routing: extended `tags.auth.aliases` in `vocab/tag-vocabulary.json` (mfa/2fa/multi-factor/step-up, brute force/lockout, password reset/forgot password/account recovery, password policy/breached password, redirect_uri, user enumeration, timing-safe); added six keywords (`mfa, 2fa, brute force, lockout, password reset, password policy`) to the `refs/auth.md` row in `global/_INDEX.md`; extended the `auth` References blurb in `global/SKILL.md`. Deliberately did **not** add bare `rate limit` (owned elsewhere — avoids a cross-concern collision)
+- Vocab parity holds at 461/461 (`verify/check-vocab-parity.py`); route targets resolve (66/66, `scripts/check_index_routes.py`)
+- Plan: `improve/standards/cook-feat-standards-1.2.md`; verify: `improve/standards/cook-feat-standards-1.2-verify.md`
+
+---
+
+## [pending] — 2026-05-24 · Add cicd cross-cutting concern; route CI workflow files in cook
+
+**feat(standards): add cicd cross-cutting concern; route CI workflow files in cook.**
+
+- Added `standards/global/refs/cicd.md` (`concern:cicd`) — the vendor-neutral pipeline baseline: fail-fast gating order, blocked merges on failing checks, per-job timeouts + run cancellation, PR/secret-exposure rules, secrets-from-vault, and artifact promotion; 7 rules, each carrying a `Signal:` for review mode, staged-rollout/rollback tagged `P1 (design)`
+- De-duplicated the platform refs: removed the shared timeout/fail-fast/secrets rule prose from `flutter/refs/cicd.md` (kept Fastlane, `.aab`/`.ipa`, `subosito/flutter-action`, the workflow examples) and trimmed the generic CI prose from `nextjs/refs/tooling.md` (kept Docker/standalone, `.next/cache`, telemetry); both now point to the global baseline
+- Routing: added a `cicd` tag (`routes_to: ["concern:cicd"]`) to `vocab/tag-vocabulary.json`; added a `refs/cicd.md` Concern Match row to `global/_INDEX.md`; listed `cicd` in `global/SKILL.md` References; noted in `flutter/_INDEX.md` that a Flutter CI task loads `domain:flutter` + `concern:cicd` together
+- Cook activation: added `.github/workflows/**`, `**/*.yml`, `**/*.yaml` to cook `SKILL.md` `metadata.triggers.files` so a CI-only change in any repo (not just Flutter/Next.js) reaches cook; the broad YAML glob only governs activation — concern routing stays precise (below)
+- Mechanical concern detection (`scripts/cook_cache.py`): added a `derive_concerns()` path + `CONCERN_PATTERNS` (GitHub Actions, GitLab CI, Jenkins, Fastlane, Azure, Bitbucket) kept separate from `domain_hints` (no category leak); a recognised CI file emits `concern_hints: ["cicd"]` and floors confidence to `high`; `concern_hints` added to the fingerprint basis and `SKILL.md` Step 5 notes the pre-selection
+- Cache impact: adding `concern_hints` to the fingerprint basis changes every hash, so the cache cold-rebuilds once — entries re-resolve on next use, no error
+- Vocab parity holds at 455/455 (`verify/check-vocab-parity.py`); route targets resolve (66/66, `scripts/check_index_routes.py`)
+
+---
+
+## [pending] — 2026-05-24 · Add auth cross-cutting concern; move auth keywords off security
+
+**feat(standards): add auth cross-cutting concern; move auth keywords off security.**
+
+- Added `standards/global/refs/auth.md` (`concern:auth`) — OAuth/PKCE flows, token & session storage, CSRF, RBAC deny-by-default, and credential hashing; every P0 rule carries a detection signal, refresh-rotation/scopes tagged `P1 (design)`, OWASP A01/A02/A07/API2/API5 referenced (not restated)
+- De-duplicated `security.md`: removed the `localStorage` token-storage rule and the auth-on-routes / role-guard rules (now in `auth.md`); renamed `## Auth & Ownership` → `## Ownership Scoping`; added a cross-reference to `auth.md`. `security.md` keeps injection, CORS, SSRF, XSS, the OWASP tables, and the SAST scans
+- `global/SKILL.md`: kept the `localStorage` token rule as a P0 always-on baseline line; added `auth` to the References section; scoped the `security` reference blurb to non-auth topics
+- Routing: added an `auth` tag (`routes_to: ["concern:auth"]`) to `vocab/tag-vocabulary.json` and moved `auth, token, jwt, session, cookie, role, csrf, SameSite` off the `security` tag (one owner per keyword); added a `refs/auth.md` Concern Match row to `global/_INDEX.md` and trimmed the moved keywords from the `security` row
+- Vocab parity holds at 445/445 (`verify/check-vocab-parity.py`)
+- Note: `git` from the original plan set was dropped (human-process gate, collides with `commit-this` + CHANGELOG workflow); `cicd` is Part 2, shipped separately
+
+---
+
+## [pending] — 2026-05-24 · Cook robustness — Phase 3 (self-heal + fallback)
+
+**Added cache self-heal, hard-failure fallback routing, and a mechanical route-target validator (`feat/cook-robustness`).**
+
+- Feature 7 self-heal: added `heal` subcommand to `scripts/cook_cache.py` that reconciles an entry's `degraded` flag with the compiler's fresh read result, rewriting atomically only when the set changed (clears when a file is fixed, updates when a new read fails); mechanical, no LLM, safe on the cache-hit fast path
+- Component 8 hard-failure fallback: `load_routing()` now returns `(routing, corrupt)` distinguishing an unparseable cache (corrupt) from a cold miss; `lookup` emits `status: fallback` on corruption so the agent degrades to greedy routing instead of silently rebuilding
+- Added `scripts/check_index_routes.py` — a mechanical CI/pre-commit validator that walks every `standards/*/_INDEX.md`, extracts each route target cook loads, and fails the build on a dangling path (catches rename-without-index-update drift)
+- `SKILL.md` Step 7 updated with the `heal` reconcile call, partial-load semantics, and the corrupt-cache fallback path
+
+---
+
+## [pending] — 2026-05-24 · Cook robustness — Phase 0 + Phase 1 + Phase 2
+
+**Added the routing vocabulary, fingerprint-first cache resolver, and mechanical compilation layer (`feat/cook-robustness`).**
+
+- Phase 0: added `vocab/tag-vocabulary.json` (14 canonical tags routing to `domain:*`/`concern:*`, seeded from every `_INDEX.md` keyword column at full coverage parity — 432/432) and `vocab/intent-vocabulary.json` (11-label closed set)
+- Phase 1: added `scripts/cook_cache.py` — a mechanical resolver (`lookup`/`write`, no LLM) that gathers signals via the T1/T2/T4/T5 cascade + extension disambiguation, builds a fingerprint from raw observable signals (no intent label), and checks the cache before any classification; cache entries carry vocab + index checksums and are written atomically
+- Phase 2: added `scripts/cook_compile.py` — a mechanical compilation script (no LLM) that takes a comma-separated path list, deduplicates, buckets into Universal/Domain/Concern, strips YAML frontmatter, and concatenates with terse section headers; output is a JSON envelope `{content, degraded, metadata}`; `SKILL.md` Step 7 updated to invoke it via a single Bash call
+- Added `improve/` and `.agent-skills/` to `.gitignore`
+
+---
+
 ## [pending] — 2026-05-23 · Standardise _INDEX.md format
 
 **Closed verify-[14] by applying five formatting rules across five AUTO-GENERATED `_INDEX.md` files.**
