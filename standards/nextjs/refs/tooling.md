@@ -70,7 +70,11 @@ export const env = envSchema.parse(process.env);
 
 ## CI/CD
 
-- Run lint, typecheck, test, and `next build` in CI.
+Pipeline shape — fail-fast gating order, required checks before merge, per-job
+timeouts and run cancellation — is vendor-neutral; see `global/refs/cicd.md`.
+Next.js specifics:
+
+- Run `next build` as the production correctness gate, alongside lint, typecheck, and test.
 - Cache `.next/cache` for faster builds.
 - Keep telemetry policy explicit; opt out with `next telemetry disable` if privacy requires it.
 - Use structured loggers such as Pino or Winston for production; do not ship raw `console.log`.

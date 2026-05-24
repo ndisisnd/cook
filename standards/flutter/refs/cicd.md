@@ -2,6 +2,11 @@
 
 **Priority: P1 (HIGH)**
 
+> The vendor-neutral pipeline baseline — fail-fast gating, per-job timeouts + run
+> cancellation, secrets from a vault, artifact promotion, blocked merges on failing
+> checks — lives in `global/refs/cicd.md` and loads alongside this ref. This file keeps
+> only Flutter-specific content (Fastlane, `.aab`/`.ipa`, `subosito/flutter-action`).
+
 ## Core Pipeline Steps
 
 1. **Environment Setup**: Use stable Flutter channel. Cache dependencies (pub, gradle, cocoapods).
@@ -12,19 +17,21 @@
    - **iOS**: Sign and build `.ipa` (requires macOS runner).
 5. **Deployment (CD)**: Automated upload to TestFlight/Play Console using standard tools (Fastlane, Codemagic).
 
-## Best Practices
+## Best Practices (Flutter-specific)
 
-- **Timeout Limits**: Always set `timeout-minutes` (e.g., 30m) to save costs on hung jobs.
-- **Fail Fast**: Run Analyze/Format _before_ Tests/Builds.
-- **Secrets**: Never commit keys. Use GitHub Secrets or secure vaults for `keystore.jks` and `.p8` certs.
-- **Versioning**: Automate version bumping based on git tags or semantic version scripts.
+The fail-fast ordering, per-job timeouts, run cancellation, and secret-handling rules
+are vendor-neutral — see `global/refs/cicd.md`. Flutter adds:
 
-## Anti-Patterns
+- **Signing inputs**: keep `keystore.jks`, `.p8` certs, and `.env` out of the repo —
+  inject via GitHub Secrets or Fastlane `match`. (Applies the baseline secret rule to Flutter's signing artifacts.)
+- **Versioning**: automate `pubspec.yaml` `version:` bumping from git tags or a semver script.
 
-- **No secrets in repo**: Store `keystore.jks`, `.p8`, and `.env` in GitHub Secrets.
-- **No uncapped jobs**: Always set `timeout-minutes` to save runner minutes.
-- **No manual versioning**: Automate `pubspec.yaml` versioning via git tags or scripts.
-- **No late analysis**: Run `flutter analyze` before builds/tests for fast failure.
+## Anti-Patterns (Flutter-specific)
+
+- **No manual versioning**: automate `pubspec.yaml` versioning via git tags or scripts.
+
+The vendor-neutral anti-patterns (secrets in repo, uncapped jobs, late static
+analysis, rebuild-during-release) live in `global/refs/cicd.md`.
 
 ---
 

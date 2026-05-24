@@ -11,6 +11,9 @@ metadata:
       - '**/*.dart'
       - '**/*.sql'
       - '**/*.graphql'
+      - '.github/workflows/**'
+      - '**/*.yml'
+      - '**/*.yaml'
     keywords:
       - review
       - audit
@@ -88,7 +91,9 @@ Load `standards/global/SKILL.md`. Its P0 universal rules apply to every code tas
 
 ### Step 5 — Match global concerns
 
-Read `standards/global/_INDEX.md` and match the extracted keywords and file patterns against its **Concern Match** table. Load every concern ref (`refs/architecture.md`, `refs/api-design.md`, `refs/error-handling.md`, `refs/security.md`, `refs/performance.md`, `refs/debug.md`) whose patterns or keywords match at least one signal. These refs hold the prescriptive layer rules — UI/component, API, auth, error, and performance — folded in by topic.
+Read `standards/global/_INDEX.md` and match the extracted keywords and file patterns against its **Concern Match** table. Load every concern ref (`refs/architecture.md`, `refs/api-design.md`, `refs/error-handling.md`, `refs/security.md`, `refs/auth.md`, `refs/performance.md`, `refs/debug.md`, `refs/cicd.md`) whose patterns or keywords match at least one signal. These refs hold the prescriptive layer rules — UI/component, API, auth, error, and performance — folded in by topic.
+
+Path-identifiable concerns are pre-selected mechanically: when the resolver's `signals.concern_hints` lists a concern (e.g. `cicd` for a `.github/workflows/**` change), load its `global/refs/<concern>.md` directly — no keyword guess needed.
 
 ### Step 6 — Detect domains and match skills/refs
 

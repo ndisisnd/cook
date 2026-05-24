@@ -156,6 +156,28 @@ def derive_domains(files, frameworks, project: Path):
     return sorted(hints)
 
 
+# Path-identifiable concerns only. Keyword-only concerns (security, performance)
+# stay agent-matched. Patterns mirror the global/_INDEX.md cicd row and are
+# deliberately precise (workflow dirs and named CI files) so pubspec.yaml,
+# codegen.yml, and tailwind.config do NOT trigger a concern.
+CONCERN_PATTERNS = {
+    "cicd": (".github/workflows/", ".gitlab-ci.yml", "jenkinsfile",
+             "fastlane/", "azure-pipelines.yml", "bitbucket-pipelines.yml"),
+}
+
+
+def derive_concerns(files: list[str]) -> list[str]:
+    """Detect path-identifiable cross-cutting concerns. Kept apart from
+    derive_domains so domains and concerns never blur (no category leak)."""
+    hints = set()
+    for f in files:
+        low = f.lower()
+        for concern, needles in CONCERN_PATTERNS.items():
+            if any(n in low for n in needles):
+                hints.add(concern)
+    return sorted(hints)
+
+
 def gather(explicit_paths: list[str], project: Path) -> dict:
     source = "none"
     files: list[str] = []
@@ -171,9 +193,11 @@ def gather(explicit_paths: list[str], project: Path) -> dict:
     if not files and frameworks:             # greenfield: manifest only
         source = "manifest"
     domain_hints = derive_domains(files, frameworks, project)
+    concern_hints = derive_concerns(files)
 
-    # mechanical confidence floor (LLM may refine on the miss path)
-    if domain_hints:
+    # mechanical confidence floor (LLM may refine on the miss path). A recognised
+    # CI file is as strong a signal as a recognised source extension.
+    if domain_hints or concern_hints:
         confidence, fallback = "high", False
     elif files or frameworks:
         confidence, fallback = "medium", False
@@ -186,6 +210,7 @@ def gather(explicit_paths: list[str], project: Path) -> dict:
         "extensions": extensions(files),
         "frameworks": frameworks,
         "domain_hints": domain_hints,
+        "concern_hints": concern_hints,
         "confidence": confidence,
         "fallback": fallback,
     }
@@ -198,6 +223,7 @@ def fingerprint(signals: dict) -> str:
         "files": signals["files"],
         "frameworks": signals["frameworks"],
         "domain_hints": signals["domain_hints"],
+        "concern_hints": signals["concern_hints"],
     }, sort_keys=True)
     return hashlib.sha256(basis.encode("utf-8")).hexdigest()[:16]
 

@@ -148,6 +148,14 @@
         "debug", "crash", "trace", "stack trace", "reproduce", "repro", "bug report",
         "regression"
       ]
+    },
+    "cicd": {
+      "routes_to": ["concern:cicd"],
+      "aliases": [
+        "ci", "cd", "cicd", "ci/cd", "pipeline", "workflow", "deploy", "deployment",
+        "github actions", "gitlab ci", "artifact", "rollback", "staging", "release",
+        "secrets", "timeout-minutes", "concurrency"
+      ]
     }
   }
 }

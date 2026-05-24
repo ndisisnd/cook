@@ -20,6 +20,7 @@ Layer selection (frontend vs backend vs full-stack) is no longer decided here â€
 | `refs/auth.md` | `**/auth/**`, `**/middleware.*`, `**/login/**`, `**/*.guard.*` | auth, login, oauth, pkce, token, jwt, session, cookie, rbac, role, scope, csrf, guard, route guard, middleware, admin, password hash |
 | `refs/performance.md` | `**/components/**`, `**/*.entity.ts`, `**/migrations/*.sql` | performance, slow, n+1, index, re-render, memo, virtualize, waterfall, parallel fetch, cache, latency, throughput, bottleneck, profile |
 | `refs/debug.md` | n/a | debug, crash, trace, stack trace, reproduce, repro, bug report, regression |
+| `refs/cicd.md` | `.github/workflows/**`, `**/*.yml`, `**/*.yaml`, `Jenkinsfile`, `.gitlab-ci.yml`, `fastlane/**` | ci, cd, pipeline, workflow, deploy, artifact, rollback, staging, release, secrets |
 
 ## Notes
 

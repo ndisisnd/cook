@@ -4,6 +4,20 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-24 · Add cicd cross-cutting concern; route CI workflow files in cook
+
+**feat(standards): add cicd cross-cutting concern; route CI workflow files in cook.**
+
+- Added `standards/global/refs/cicd.md` (`concern:cicd`) — the vendor-neutral pipeline baseline: fail-fast gating order, blocked merges on failing checks, per-job timeouts + run cancellation, PR/secret-exposure rules, secrets-from-vault, and artifact promotion; 7 rules, each carrying a `Signal:` for review mode, staged-rollout/rollback tagged `P1 (design)`
+- De-duplicated the platform refs: removed the shared timeout/fail-fast/secrets rule prose from `flutter/refs/cicd.md` (kept Fastlane, `.aab`/`.ipa`, `subosito/flutter-action`, the workflow examples) and trimmed the generic CI prose from `nextjs/refs/tooling.md` (kept Docker/standalone, `.next/cache`, telemetry); both now point to the global baseline
+- Routing: added a `cicd` tag (`routes_to: ["concern:cicd"]`) to `vocab/tag-vocabulary.json`; added a `refs/cicd.md` Concern Match row to `global/_INDEX.md`; listed `cicd` in `global/SKILL.md` References; noted in `flutter/_INDEX.md` that a Flutter CI task loads `domain:flutter` + `concern:cicd` together
+- Cook activation: added `.github/workflows/**`, `**/*.yml`, `**/*.yaml` to cook `SKILL.md` `metadata.triggers.files` so a CI-only change in any repo (not just Flutter/Next.js) reaches cook; the broad YAML glob only governs activation — concern routing stays precise (below)
+- Mechanical concern detection (`scripts/cook_cache.py`): added a `derive_concerns()` path + `CONCERN_PATTERNS` (GitHub Actions, GitLab CI, Jenkins, Fastlane, Azure, Bitbucket) kept separate from `domain_hints` (no category leak); a recognised CI file emits `concern_hints: ["cicd"]` and floors confidence to `high`; `concern_hints` added to the fingerprint basis and `SKILL.md` Step 5 notes the pre-selection
+- Cache impact: adding `concern_hints` to the fingerprint basis changes every hash, so the cache cold-rebuilds once — entries re-resolve on next use, no error
+- Vocab parity holds at 455/455 (`verify/check-vocab-parity.py`); route targets resolve (66/66, `scripts/check_index_routes.py`)
+
+---
+
 ## [pending] — 2026-05-24 · Add auth cross-cutting concern; move auth keywords off security
 
 **feat(standards): add auth cross-cutting concern; move auth keywords off security.**

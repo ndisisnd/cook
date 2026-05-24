@@ -98,3 +98,4 @@ Load only what the current task requires:
 - [architecture](refs/architecture.md) — auditing structural debt, detecting logic leakage, or remediating God classes
 - [performance](refs/performance.md) — profiling bottlenecks, batching queries, or fixing memory leaks
 - [debug](refs/debug.md) — troubleshooting crashes, tracing failures, or filing a structured bug report
+- [cicd](refs/cicd.md) — vendor-neutral pipeline shape, gating, secrets handling, artifact promotion
