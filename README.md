@@ -22,6 +22,20 @@ Every run is saved — if the code changes are on the same programming languages
 
 ## Installation
 
+Run this in your terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bash
+```
+
+This installs cook to `~/.claude/skills/cook/`. To install somewhere else:
+
+```bash
+COOK_DIR=/path/to/destination bash install.sh
+```
+
+**Requirements:** `curl`, `python3`
+
 ## How it Works
 
 1. **Ask your coding agent to invoke `/cook`:** `cook` will check file paths, prose descriptions, git context.
