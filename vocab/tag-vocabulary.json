@@ -116,13 +116,21 @@
         "envelope", "error boundary", "domain error"
       ]
     },
+    "auth": {
+      "routes_to": ["concern:auth"],
+      "aliases": [
+        "auth", "authentication", "authorization", "login", "oauth", "oauth2", "pkce",
+        "token", "access token", "refresh token", "jwt", "JWT", "session", "cookie",
+        "rbac", "role", "scope", "csrf", "CSRF", "SameSite", "session fixation",
+        "argon2", "bcrypt", "password hash"
+      ]
+    },
     "security": {
       "routes_to": ["concern:security"],
       "aliases": [
-        "security", "auth", "token", "secret", "jwt", "JWT", "owasp", "OWASP", "sanitize",
-        "validate", "validation", "xss", "XSS", "sql injection", "dangerouslySetInnerHTML",
-        "localStorage", "localstorage", "tenant", "owner", "role", "guard", "cors", "ssrf",
-        "pii", "PII", "CSP", "CSRF", "SameSite", "cookie", "session"
+        "security", "secret", "owasp", "OWASP", "sanitize", "validate", "validation",
+        "xss", "XSS", "sql injection", "dangerouslySetInnerHTML", "localStorage",
+        "localstorage", "tenant", "owner", "guard", "cors", "ssrf", "pii", "PII", "CSP"
       ]
     },
     "performance": {
