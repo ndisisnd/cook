@@ -61,6 +61,16 @@
         "query plan", "explain", "pipeline", "scan"
       ]
     },
+    "supabase": {
+      "routes_to": ["domain:supabase"],
+      "aliases": [
+        "supabase", "supabase-js", "row level security", "rls policy", "policy",
+        "auth.uid", "auth.jwt", "service_role", "service role key", "anon key",
+        "edge function", "deno", "postgrest", "gotrue", "realtime", "storage bucket",
+        "supabase cli", "security definer", "security invoker", "search_path",
+        "app_metadata", "user_metadata", "verify_jwt", "with check", "pgvector"
+      ]
+    },
     "graphql": {
       "routes_to": ["domain:graphql"],
       "aliases": [

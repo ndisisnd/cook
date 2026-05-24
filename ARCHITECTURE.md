@@ -22,6 +22,7 @@ SKILL.md (cook)
     ├── react/           React (non-Next)
     ├── typescript/      TypeScript 5 language
     ├── database/        PostgreSQL + Redis
+    ├── supabase/        Supabase platform (RLS, keys, Edge functions) — co-loads with database
     └── graphql/         GraphQL schema + resolvers
 ```
 
@@ -92,6 +93,7 @@ Return the JSON envelope to the invoking agent. A non-empty `degraded` is a part
 | react | React + TypeScript standards: hook rules, component structure, prop typing, and boundary safety for non-Next.js projects. |
 | typescript | TypeScript 5.x language standards: type safety, narrowing, generics, modules, and async code. |
 | database | Database standards for PostgreSQL schema/migration/query design and Redis caching and cache invalidation. |
+| supabase | Supabase platform standards: Row-Level Security, the anon/service_role key boundary, Postgres/Edge function security, Storage, Realtime, and the CLI migration workflow. Co-loads with database on Supabase Postgres work. |
 | graphql | GraphQL schema design and resolver conventions: naming, nullability, types, input objects, mutations, queries, and operation structure. |
 
 ---
@@ -195,6 +197,15 @@ Return the JSON envelope to the invoking agent. A non-empty `degraded` is a part
 - `refs/redis-best-practices.md`: Key design, TTL strategy, and data structure selection.
 - `refs/redis-checklist.md`: Pre-deploy checklist for Redis usage.
 - `refs/sql-gotchas.md`: SQL edge cases: NULL semantics, type coercion, lock behaviour.
+
+### supabase
+
+- `refs/rls.md`: Row-Level Security — enable-on-create, per-operation policies, `SELECT`+`UPDATE` pairing, `WITH CHECK`, `(select auth.uid())` wrapping, `app_metadata` vs `user_metadata`, indexing predicate columns.
+- `refs/keys-and-clients.md`: anon vs service_role boundary, browser/mobile bundle rules, SSR admin-client separation, public-env pitfalls.
+- `refs/database-functions.md`: `SECURITY INVOKER`/`SECURITY DEFINER`, `search_path = ''`, schema qualification, RLS helper functions.
+- `refs/edge-functions.md`: Deno runtime, `verify_jwt`/in-code auth, project secrets, Postgres connection pooling.
+- `refs/migrations.md`: Supabase CLI workflow, RLS-as-SQL, dashboard drift, storage and Realtime policies.
+- `refs/checklist.md`: Pre-deploy review checklist for a Supabase change.
 
 ### graphql
 

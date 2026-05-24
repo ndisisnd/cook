@@ -59,6 +59,7 @@ COOK_DIR=/path/to/destination bash install.sh
 | GraphQL | Test |
 | NextJS | Test |
 | React | Test |
+| Supabase | Test |
 | Typescript | Test |
 
 ## FAQ

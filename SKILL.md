@@ -11,6 +11,7 @@ metadata:
       - '**/*.dart'
       - '**/*.sql'
       - '**/*.graphql'
+      - 'supabase/**'
     keywords:
       - review
       - audit
@@ -30,6 +31,7 @@ metadata:
       - graphql
       - typescript
       - dart
+      - supabase
       - prisma
       - apollo
       - migration
@@ -107,7 +109,7 @@ read.
 - Still weak, or resolver returned `fallback: true` → set `confidence: low`,
   `fallback: true`. Steps 4–5 then load broad. Step 3 (P0) loads regardless.
 
-### Step 2 — Review intent?
+### Step 2 — Reviewing intent
 
 If the classified intent is `review-code`, this is a review, not a build. Derive
 the review surface from `signals`:

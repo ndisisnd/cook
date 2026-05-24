@@ -4,7 +4,31 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-24 · cook skill robustness improvements
+## [pending] — 2026-05-24 · Supabase platform domain
+
+**feat(standards): add supabase platform domain (RLS, anon/service_role boundary, Postgres/Edge functions, CLI migrations).**
+
+- Added `standards/supabase/` — a new `domain:supabase` covering the Supabase platform contract only (it co-loads on top of `database`, which keeps all generic Postgres rules). `SKILL.md` carries 13 P0 rules (7 RLS, 3 keys/client boundary, 3 Postgres/Edge function) each with a review `Signal:`, 2 signal-bearing P1 workflow rules, and 1 `P1 (design)` Realtime rule
+- Added six refs: `refs/rls.md` (enable-on-create, per-operation policies, `SELECT`+`UPDATE` pairing, `WITH CHECK`, `(select auth.uid())` wrapping, `app_metadata` vs `user_metadata`, indexing predicate columns), `refs/keys-and-clients.md` (anon vs service_role boundary, public-env pitfalls, SSR admin-client separation), `refs/database-functions.md` (`SECURITY INVOKER`/`DEFINER` + `search_path = ''`), `refs/edge-functions.md` (Deno, `verify_jwt`, secrets, connection pooling), `refs/migrations.md` (CLI workflow, RLS-as-SQL, storage/Realtime policies), and `refs/checklist.md` (pre-deploy review gate). De-duplicated against `database` and `global/refs/auth.md` — bordering rules link rather than restate
+- Routing: added a `supabase` tag to `vocab/tag-vocabulary.json` (25 platform aliases — `row level security`, `service_role`, `auth.uid`, `verify_jwt`, `security definer`, …) routing to `domain:supabase`. Deliberately left `rls`, `migration`, `postgres`, `index`, `transaction` on the `database` tag so the two co-load with no vocabulary theft. Added `standards/supabase/_INDEX.md` (file-pattern + keyword rows for the SKILL and all six refs), `supabase/**` to cook's `SKILL.md` `triggers.files`, and `supabase` to cook's trigger keywords
+- Resolver: patched `scripts/cook_cache.py` so a `supabase/migrations/*.sql` change resolves **both** `database` and `supabase` (co-load), `supabase/functions/**` resolves `supabase`, and a manifest (`supabase/config.toml` or `@supabase/supabase-js` dep) lists `supabase` in `frameworks`. The supabase detection is a **separate second pass** after the extension chain (so the `.sql` arm can't consume the file first — the CG-1 failure mode) and is **segment-anchored** (`startswith("supabase/")` / `"/supabase/" in low`) so look-alikes like `mysupabase/x.ts` do not falsely load, while nested `src/lib/supabase/client.ts` correctly does
+- Cache: new framework/domain hints shift the fingerprint basis → one cold rebuild on first run after this change (existing `routing.json` entries go stale, none served as a stale hit)
+- Docs: added `supabase` to the `ARCHITECTURE.md` Skills table, `standards/` tree, and Refs index, and to the `README.md` Available Standards table
+- Vocab parity holds at 502/502 (`verify/check-vocab-parity.py`); route targets resolve (74/74 across 10 indexes, `scripts/check_index_routes.py`)
+- Plan: `improve/standards/cook-feat-standards-supabase.md`; acceptance: `improve/standards/cook-feat-standards-supabase-acceptance.md`
+
+---
+
+## [31e6810] — 2026-05-24 · One-line installer
+
+**feat(install): add installation script and README setup guide.**
+
+- Added `install.sh` — a `curl … | bash` installer that downloads cook's full file set (SKILL.md, vocab, scripts, and all `standards/**` skills + refs) into `~/.claude/skills/cook/`, with a `COOK_DIR` override for a custom destination; requires `curl` and `python3`
+- Added a "Requirements" / setup section to `README.md` documenting the one-line install command and the `COOK_DIR` override
+
+---
+
+## [0151218] — 2026-05-24 · cook skill robustness improvements
 
 **fix(cook): add error handling and clarify protocol steps.**
 
@@ -14,7 +38,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-24 · Auth code examples + service-to-service auth
+## [5c11b34] — 2026-05-24 · Auth code examples + service-to-service auth
 
 **feat(standards): add Secure Patterns examples and a Service-to-Service Auth section to auth.md.**
 
@@ -27,7 +51,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-24 · Close auth coverage gaps (brute-force, JWT verification, password reset, enumeration, OAuth state, MFA, password policy)
+## [5c11b34] — 2026-05-24 · Close auth coverage gaps (brute-force, JWT verification, password reset, enumeration, OAuth state, MFA, password policy)
 
 **feat(standards): close auth coverage gaps surfaced by the security.md OWASP tables.**
 
@@ -41,7 +65,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-24 · Add cicd cross-cutting concern; route CI workflow files in cook
+## [24195ed] — 2026-05-24 · Add cicd cross-cutting concern; route CI workflow files in cook
 
 **feat(standards): add cicd cross-cutting concern; route CI workflow files in cook.**
 
@@ -55,7 +79,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-24 · Add auth cross-cutting concern; move auth keywords off security
+## [b571dcc] — 2026-05-24 · Add auth cross-cutting concern; move auth keywords off security
 
 **feat(standards): add auth cross-cutting concern; move auth keywords off security.**
 
@@ -68,7 +92,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-24 · Cook robustness — Phase 3 (self-heal + fallback)
+## [ce3c96e] — 2026-05-24 · Cook robustness — Phase 3 (self-heal + fallback)
 
 **Added cache self-heal, hard-failure fallback routing, and a mechanical route-target validator (`feat/cook-robustness`).**
 
@@ -79,7 +103,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-24 · Cook robustness — Phase 0 + Phase 1 + Phase 2
+## [8c63370] — 2026-05-24 · Cook robustness — Phase 0 + Phase 1 + Phase 2
 
 **Added the routing vocabulary, fingerprint-first cache resolver, and mechanical compilation layer (`feat/cook-robustness`).**
 
@@ -90,7 +114,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-23 · Standardise _INDEX.md format
+## [001e8ef] — 2026-05-23 · Standardise _INDEX.md format
 
 **Closed verify-[14] by applying five formatting rules across five AUTO-GENERATED `_INDEX.md` files.**
 
@@ -103,7 +127,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-05-21 · Fix root SKILL.md TypeScript row accuracy
+## [0a23e59] — 2026-05-21 · Fix root SKILL.md TypeScript row accuracy
 
 **Closed verify-[13] by correcting two documentation inaccuracies in the root `SKILL.md` Step 6 TypeScript domain row.**
 

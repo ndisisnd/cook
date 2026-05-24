@@ -48,7 +48,7 @@ STATE_DIR = COOK_ROOT / ".agent-skills"
 ROUTING_FILE = STATE_DIR / "routing.json"
 
 MANIFESTS = ["package.json", "pubspec.yaml", "tsconfig.json", "next.config.js",
-             "next.config.ts", "next.config.mjs"]
+             "next.config.ts", "next.config.mjs", "supabase/config.toml"]
 
 
 def sha256_text(text: str) -> str:
@@ -104,8 +104,12 @@ def manifest_frameworks(project: Path, manifests: list[str]) -> list[str]:
                 fw.add("nextjs")
             if "react" in deps:
                 fw.add("react")
+            if "@supabase/supabase-js" in deps:
+                fw.add("supabase")
         except (OSError, json.JSONDecodeError):
             pass
+    if (project / "supabase" / "config.toml").exists():
+        fw.add("supabase")
     if "tsconfig.json" in manifests:
         fw.add("typescript")
     pub = project / "pubspec.yaml"
@@ -153,6 +157,25 @@ def derive_domains(files, frameworks, project: Path):
                 hints.add("typescript")
         elif suf == ".dart":
             hints.add("flutter" if has_flutter else "dart")
+
+    # Supabase platform domain — a SEPARATE second pass, NOT folded into the
+    # elif chain above. The chain's `.sql` arm already fires for
+    # supabase/migrations/*.sql and adds `database`; folding supabase into the
+    # chain would let that arm consume the file first and the elif would never
+    # run, so `supabase` would silently never be added (the CG-1 failure mode).
+    # Match a path SEGMENT `supabase/`, never a bare substring: a bare
+    # `"supabase/" in low` also matches `mysupabase/foo.ts`, `lib/foosupabase/x.ts`
+    # — false loads. The segment form catches `supabase/config.toml` (root) and
+    # `src/lib/supabase/client.ts` (nested client code, correctly Supabase) while
+    # rejecting the look-alikes.
+    for f in files:
+        low = f.lower()
+        if not (low.startswith("supabase/") or "/supabase/" in low):
+            continue                       # not a supabase/ segment — leave to the chain
+        hints.add("supabase")
+        if "/migrations/" in low and low.endswith(".sql"):
+            hints.add("database")          # belt-and-braces; the .sql arm also adds it
+
     return sorted(hints)
 
 
