@@ -8,11 +8,11 @@ All notable changes to this project are documented here, newest first.
 
 **feat(standards): add auth cross-cutting concern; move auth keywords off security.**
 
-- Added `standards/global/refs/auth.md` (`concern:auth`) — OAuth/PKCE flows, token & session storage, CSRF, RBAC deny-by-default, and credential hashing; every P0 rule carries a detection signal, refresh-rotation/scopes tagged `P1 (design)`, OWASP A02/A07/API1/API2/API5 referenced (not restated)
+- Added `standards/global/refs/auth.md` (`concern:auth`) — OAuth/PKCE flows, token & session storage, CSRF, RBAC deny-by-default, and credential hashing; every P0 rule carries a detection signal, refresh-rotation/scopes tagged `P1 (design)`, OWASP A01/A02/A07/API2/API5 referenced (not restated)
 - De-duplicated `security.md`: removed the `localStorage` token-storage rule and the auth-on-routes / role-guard rules (now in `auth.md`); renamed `## Auth & Ownership` → `## Ownership Scoping`; added a cross-reference to `auth.md`. `security.md` keeps injection, CORS, SSRF, XSS, the OWASP tables, and the SAST scans
 - `global/SKILL.md`: kept the `localStorage` token rule as a P0 always-on baseline line; added `auth` to the References section; scoped the `security` reference blurb to non-auth topics
 - Routing: added an `auth` tag (`routes_to: ["concern:auth"]`) to `vocab/tag-vocabulary.json` and moved `auth, token, jwt, session, cookie, role, csrf, SameSite` off the `security` tag (one owner per keyword); added a `refs/auth.md` Concern Match row to `global/_INDEX.md` and trimmed the moved keywords from the `security` row
-- Vocab parity holds at 432/432 (`verify/check-vocab-parity.py`)
+- Vocab parity holds at 445/445 (`verify/check-vocab-parity.py`)
 - Note: `git` from the original plan set was dropped (human-process gate, collides with `commit-this` + CHANGELOG workflow); `cicd` is Part 2, shipped separately
 
 ---

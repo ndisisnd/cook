@@ -3,7 +3,7 @@
 Cross-cutting concern: authentication, token storage, session, CSRF, RBAC, and
 credential hashing. Loads alongside whatever domain also matched. For injection,
 CORS, SSRF, XSS, secret-scanning, and the OWASP detection tables, see
-[security.md](security.md). Maps to OWASP A02/A07 and API1/API2/API5 — referenced,
+[security.md](security.md). Maps to OWASP A01/A02/A07 and API2/API5 — referenced,
 not restated.
 
 Each rule below carries a detection signal so review mode can flag it. P0 unless
