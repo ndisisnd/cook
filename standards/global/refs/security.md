@@ -9,9 +9,11 @@
 
 - Scope every resource query by owner or tenant ID alongside any user-supplied ID.
 
-> Authentication, token storage, session, CSRF, RBAC route-guards, and credential
-> hashing live in [auth.md](auth.md). Routing and the always-on `localStorage`
-> token rule moved there.
+> Authentication, token storage, session, CSRF, RBAC route-guards, credential
+> hashing, brute-force/rate-limiting on auth endpoints, JWT signature verification,
+> and password-reset flows live in [auth.md](auth.md). The OWASP tables below stay as
+> the master detection reference. Routing and the always-on `localStorage` token rule
+> moved there.
 
 ## Input Validation
 

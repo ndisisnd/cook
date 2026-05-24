@@ -123,7 +123,13 @@
         "token", "access token", "refresh token", "jwt", "JWT", "session", "cookie",
         "rbac", "role", "scope", "csrf", "CSRF", "SameSite", "session fixation",
         "guard", "route guard", "middleware", "admin", "argon2", "bcrypt",
-        "password hash"
+        "password hash", "mfa", "MFA", "2fa", "2FA", "multi-factor", "step-up auth",
+        "brute force", "account lockout", "lockout", "password reset",
+        "forgot password", "account recovery", "password policy", "breached password",
+        "redirect_uri", "user enumeration", "timing-safe", "mtls", "mTLS", "mutual tls",
+        "client credentials", "service-to-service", "service to service",
+        "machine-to-machine", "m2m", "api key", "service account", "workload identity",
+        "zero-trust"
       ]
     },
     "security": {

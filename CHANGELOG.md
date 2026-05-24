@@ -4,6 +4,33 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-24 · Auth code examples + service-to-service auth
+
+**feat(standards): add Secure Patterns examples and a Service-to-Service Auth section to auth.md.**
+
+- Added a `## Secure Patterns` section to `standards/global/refs/auth.md` — five TypeScript good/`// Never:` snippets (token storage, argon2id hashing, JWT verification with pinned `algorithms`+`aud`/`iss`, constant-time comparison, client-credentials service token), closing the style gap with `security.md` (which already carried examples; auth.md had none)
+- Added a `## Service-to-Service Auth` section — two P0 rules with `Signal:`s (mTLS / short-lived client-credentials token, never a long-lived shared static API key [API2]; receiving service verifies caller identity via mTLS cert or token `aud`+`iss`, never network reachability alone [zero-trust]) and one `P1 (design)` rule (scope/rotate service credentials, source from a secret manager)
+- Extended the `auth.md` intro summary and Anti-Patterns block (static shared API keys; trusting network reachability over caller identity). OWASP intro mapping unchanged — S2S maps to API2, already listed
+- Routing: added 12 service-auth aliases to `tags.auth.aliases` in `vocab/tag-vocabulary.json` (mtls/mutual tls, client credentials, service-to-service/m2m/machine-to-machine, api key, service account, workload identity, zero-trust); added five keywords (`mtls, client credentials, service-to-service, api key, service account`) to the `refs/auth.md` row in `global/_INDEX.md`; extended the `auth` References blurb in `global/SKILL.md`
+- Vocab parity holds at 466/466 (`verify/check-vocab-parity.py`); route targets resolve (66/66, `scripts/check_index_routes.py`)
+- Plan: `improve/standards/cook-feat-standards-1.3.md`; verify: `improve/standards/cook-feat-standards-1.3-verify.md`
+
+---
+
+## [pending] — 2026-05-24 · Close auth coverage gaps (brute-force, JWT verification, password reset, enumeration, OAuth state, MFA, password policy)
+
+**feat(standards): close auth coverage gaps surfaced by the security.md OWASP tables.**
+
+- Closed the gap between what `security.md`'s OWASP tables advertise and what `auth.md` prescribes. Added P0 rules (each with a `Signal:`) to `standards/global/refs/auth.md`: brute-force/rate-limiting on auth endpoints (A04/API4), JWT signature verification — pinned algorithm, reject `alg:none`, validate `aud`/`iss` (A08/API2), OAuth `state` + exact-match `redirect_uri` (A01/API2), single-use/short-expiry password-reset tokens with session invalidation (API6), account-enumeration uniformity, and constant-time secret comparison
+- Added two `P1 (design)` rules: MFA + step-up re-auth for sensitive actions, and an input-side password policy (NIST 800-63B length floor + breached-password check)
+- Updated the `auth.md` intro OWASP mapping `A01/A02/A07 + API2/API5` → `A01/A02/A04/A07/A08 + API2/API4/API5/API6`; extended the Anti-Patterns block
+- Reconciled `security.md`: expanded the "lives in auth.md" cross-reference note (brute-force/rate-limiting, JWT verification, password-reset now owned by auth.md) and stated the OWASP tables stay as the master detection reference — no rule duplication
+- Routing: extended `tags.auth.aliases` in `vocab/tag-vocabulary.json` (mfa/2fa/multi-factor/step-up, brute force/lockout, password reset/forgot password/account recovery, password policy/breached password, redirect_uri, user enumeration, timing-safe); added six keywords (`mfa, 2fa, brute force, lockout, password reset, password policy`) to the `refs/auth.md` row in `global/_INDEX.md`; extended the `auth` References blurb in `global/SKILL.md`. Deliberately did **not** add bare `rate limit` (owned elsewhere — avoids a cross-concern collision)
+- Vocab parity holds at 461/461 (`verify/check-vocab-parity.py`); route targets resolve (66/66, `scripts/check_index_routes.py`)
+- Plan: `improve/standards/cook-feat-standards-1.2.md`; verify: `improve/standards/cook-feat-standards-1.2-verify.md`
+
+---
+
 ## [pending] — 2026-05-24 · Add cicd cross-cutting concern; route CI workflow files in cook
 
 **feat(standards): add cicd cross-cutting concern; route CI workflow files in cook.**
