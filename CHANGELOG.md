@@ -4,6 +4,16 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-24 · cook skill robustness improvements
+
+**fix(cook): add error handling and clarify protocol steps.**
+
+- Added error handling for failed script runs in the cache-lookup step — non-zero exit or unparseable JSON now treated as `miss` with `confidence: low`, continuing to Step 1c without crashing
+- Clarified Step 1c to explicitly read `vocab/intent-vocabulary.json` and `vocab/tag-vocabulary.json` before classifying
+- Expanded Step 2 cache-hit path to load both `standards/global/SKILL.md` and `standards/review/SKILL.md`, write the cache entry with both skill paths, and compile both via Step 7 — invoking agent now receives a compiled payload, not a bare file reference
+
+---
+
 ## [pending] — 2026-05-24 · Auth code examples + service-to-service auth
 
 **feat(standards): add Secure Patterns examples and a Service-to-Service Auth section to auth.md.**
