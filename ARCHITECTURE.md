@@ -2,12 +2,19 @@
 
 ## Overview
 
-Cook is a keyword-driven standards orchestrator. A calling agent passes a task summary; cook classifies the intent, extracts signals, and compiles a single standards payload from the matching rule libraries under `standards/`.
+Cook is a keyword-driven standards orchestrator with a cache-first control flow. Cook resolves observable signals, checks a fingerprint cache before any classification, and compiles a single standards payload from the matching rule libraries under `standards/`. The compiled output is deterministic and model-free on cache hits.
 
 ```
 SKILL.md (cook)
+├── vocab/
+│   ├── intent-vocabulary.json   intent label constraints
+│   └── tag-vocabulary.json      canonical tag set + routes_to mappings
+├── scripts/
+│   ├── cook_cache.py            resolver: fingerprint, lookup, write, heal
+│   ├── cook_compile.py          compiler: dedup, bucket, concatenate
+│   └── check_index_routes.py    CI validator: _INDEX.md route integrity
 └── standards/
-    ├── global/          universal rules + concern refs
+    ├── global/          universal P0 rules + concern refs
     ├── review/          adversarial review skill
     ├── flutter/         Flutter/Dart UI
     ├── dart/            Dart 3 language
@@ -18,15 +25,67 @@ SKILL.md (cook)
     └── graphql/         GraphQL schema + resolvers
 ```
 
+Each `standards/` folder contains a `SKILL.md`, an `_INDEX.md` (concern/ref routing table), and a `refs/` directory of detailed ref files.
+
+---
+
+## Protocol
+
+Cook operates in three control-flow paths, selected at Step 1:
+
+| Path | Condition | LLM? | Cache write? |
+|---|---|---|---|
+| **Cache hit** | fingerprint present and fresh | No | No |
+| **Miss** | no cache entry or stale | Yes (classify only) | Yes |
+| **Fallback** | cache file corrupt | No | No |
+
+### Step 1 — Resolve and branch
+
+Run `cook_cache.py lookup` to build a fingerprint from raw observable signals (files, frameworks, domain hints, concern hints) and check the cache. Extensions are emitted as signals for classification but are not part of the fingerprint.
+
+- **`hit`** — routing is cached and fresh. Skip to Step 3 then Step 7. No LLM.
+- **`miss` | `stale`** — continue to classification (Step 1c).
+- **`fallback`** — cache corrupt. Use `signals.domain_hints` for greedy broad routing. Skip `write`/`heal`.
+
+On a **miss**, classify the intent against `vocab/intent-vocabulary.json` and canonicalize signals onto tags from `vocab/tag-vocabulary.json`. These `canonical_tags` are the only input to Steps 4–5. Tags not in the vocabulary are dropped.
+
+### Step 2 — Review intent?
+
+If intent is `review-code`, derive the code surface (frontend / backend / full-stack, with `security-sensitive` appended when relevant signals appear), load `standards/review/SKILL.md`, write the cache entry, and stop.
+
+### Step 3 — Load global P0 (always)
+
+Load `standards/global/SKILL.md`. Unconditional — applies on every path including fallback and weak classification.
+
+### Step 4 — Match global concerns
+
+For each `canonical_tag` routing to a `concern:*` target, load the matched ref under `standards/global/refs/`. On `fallback: true`, load the full concern set.
+
+### Step 5 — Match domains
+
+For each `canonical_tag` routing to a `domain:*` target, load that domain's `SKILL.md` plus matched `refs/*.md`. Multiple domains may match simultaneously. On `fallback: true`, load all domains in `signals.domain_hints`.
+
+### Step 6 — Write cache (miss path only)
+
+Run `cook_cache.py write` with the full skills path list, canonical tags, intent, confidence, and per-index checksums. The entry records the complete routing; read failures are not routing failures and do not suppress the write.
+
+### Step 7 — Compile and self-heal
+
+Run `cook_compile.py` with the path list from Steps 3–5 (or `routing.skills` on a hit). The compiler deduplicates, buckets by layer (Universal → Domain → Concern), strips YAML frontmatter, and concatenates with terse section headers. Output is JSON: `content`, `degraded`, `metadata`.
+
+After compiling, run `cook_cache.py heal` to stamp the compiler's `degraded` list onto the cache entry, except on the corrupt-cache fallback path where no trusted entry exists. On a cache hit this clears previously-flagged files that now read and sets newly missing ones — keeping the entry current without re-classification.
+
+Return the JSON envelope to the invoking agent. A non-empty `degraded` is a partial load; surviving sections are still delivered and P0 always loads.
+
 ---
 
 ## Skills
 
 | Skill | Description |
 |---|---|
-| cook | Entry-point orchestrator: classifies intent (review vs inform), extracts keywords, and composes a standards payload from matched domain skills and global refs. |
-| global | Universal P0 rules that apply to every task regardless of stack; concern refs are loaded on top by cook. |
-| review | Adversarial review that detects bugs, design gaps, and security risks by loading matching coding standards; offers auto-fix or eval-report output. |
+| cook | Entry-point orchestrator: cache-first routing, classification, and payload compilation. |
+| global | Universal P0 rules that apply to every task; concern refs are loaded on top by cook. |
+| review | Adversarial review that detects bugs, design gaps, and security risks; auto-fix or eval-report output. |
 | flutter | Flutter/Dart UI standards covering widgets, state management, navigation, architecture, performance, and testing. |
 | dart | Dart 3.x language standards: null safety, patterns, sealed classes, records, class modifiers, naming, immutability, collections, async, and import organisation. |
 | nextjs | Next.js App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
@@ -34,6 +93,25 @@ SKILL.md (cook)
 | typescript | TypeScript 5.x language standards: type safety, narrowing, generics, modules, and async code. |
 | database | Database standards for PostgreSQL schema/migration/query design and Redis caching and cache invalidation. |
 | graphql | GraphQL schema design and resolver conventions: naming, nullability, types, input objects, mutations, queries, and operation structure. |
+
+---
+
+## Vocabulary
+
+| File | Role |
+|---|---|
+| `vocab/intent-vocabulary.json` | Exhaustive list of valid intent labels. Classification is constrained to this set. |
+| `vocab/tag-vocabulary.json` | Canonical tag set. Each tag carries a `routes_to` field (`concern:*` or `domain:*`) that drives Steps 4–5. Tags not in this file are dropped at canonicalization. |
+
+---
+
+## Scripts
+
+| Script | Role |
+|---|---|
+| `scripts/cook_cache.py` | Implements the resolver (file-derivation cascade, fingerprint, lookup), cache writer (atomic tmp+rename, checksum stamps), and `heal` sub-command (degraded-flag reconciliation). |
+| `scripts/cook_compile.py` | Deterministic compiler: dedup, layer bucketing, frontmatter stripping, concatenation, degraded tracking. No LLM involvement. |
+| `scripts/check_index_routes.py` | CI / pre-commit validator. Fails the build if any `_INDEX.md` route target points at a missing file — upstream prevention for broken routing. |
 
 ---
 
@@ -45,8 +123,10 @@ SKILL.md (cook)
 - `refs/api-design.md`: HTTP verb semantics, status codes, request/response shape.
 - `refs/error-handling.md`: Error architecture, propagation, and user-facing error design.
 - `refs/security.md`: UI, API, and auth security rules.
+- `refs/auth.md`: Authentication and authorisation patterns.
 - `refs/performance.md`: Performance workflow and profiling discipline.
 - `refs/debug.md`: Scientific debugging method and instrumentation rules.
+- `refs/cicd.md`: CI/CD pipeline and deployment configuration.
 
 ### review
 
