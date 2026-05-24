@@ -4,6 +4,17 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-24 · Cook robustness — Phase 3 (self-heal + fallback)
+
+**Added cache self-heal, hard-failure fallback routing, and a mechanical route-target validator (`feat/cook-robustness`).**
+
+- Feature 7 self-heal: added `heal` subcommand to `scripts/cook_cache.py` that reconciles an entry's `degraded` flag with the compiler's fresh read result, rewriting atomically only when the set changed (clears when a file is fixed, updates when a new read fails); mechanical, no LLM, safe on the cache-hit fast path
+- Component 8 hard-failure fallback: `load_routing()` now returns `(routing, corrupt)` distinguishing an unparseable cache (corrupt) from a cold miss; `lookup` emits `status: fallback` on corruption so the agent degrades to greedy routing instead of silently rebuilding
+- Added `scripts/check_index_routes.py` — a mechanical CI/pre-commit validator that walks every `standards/*/_INDEX.md`, extracts each route target cook loads, and fails the build on a dangling path (catches rename-without-index-update drift)
+- `SKILL.md` Step 7 updated with the `heal` reconcile call, partial-load semantics, and the corrupt-cache fallback path
+
+---
+
 ## [pending] — 2026-05-24 · Cook robustness — Phase 0 + Phase 1 + Phase 2
 
 **Added the routing vocabulary, fingerprint-first cache resolver, and mechanical compilation layer (`feat/cook-robustness`).**

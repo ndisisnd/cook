@@ -125,11 +125,20 @@ The script deduplicates paths, buckets them (Universal → Domain → Concern), 
 }
 ```
 
-Return the JSON envelope to the invoking agent. If `degraded` is non-empty, log the failed paths — the next invocation re-attempts them automatically.
+**Reconcile the `degraded` flag (Phase 3, feature 7 self-heal).** Right after compiling, stamp the compiler's `degraded` list onto the cache entry — skip this only on the `fallback` (corrupt-cache) path, where there is no entry to heal:
+
+```
+python3 scripts/cook_cache.py heal --fingerprint <fp> --degraded <compiler.degraded>
+```
+
+One mechanical call, no LLM step. On a miss it stamps any failed read onto the freshly written entry (which still stores the **full** routing); on a cache hit the compiler re-reads every `routing.skills` path, so a flagged file that now reads clears the flag and a newly missing file sets it. `heal` rewrites only when the set changed.
+
+Then return the JSON envelope to the invoking agent. A non-empty `degraded` is a **partial load**: the surviving sections are still returned, global P0 always loaded, and the next invocation re-attempts the flagged files automatically. `scripts/check_index_routes.py` is the upstream CI / pre-commit prevention pass — it fails the build if any `_INDEX.md` route target points at a missing file.
 
 **Path list construction:**
 - **Cache hit:** use `routing.skills` from the resolver output directly.
 - **Miss path:** collect paths from Steps 4–6: `standards/global/SKILL.md`, matched `standards/global/refs/<name>.md`, matched domain `SKILL.md` + `refs/*.md`.
+- **Fallback (corrupt cache):** the resolver returns `status: fallback` / `cache_corrupt: true` (Component 8). Load broad — global P0 + every `signals.domain_hints` domain + the full concern set — compile, and return. Skip both `write` and `heal`; standards still apply, only the efficiency gain is lost.
 
 ## Notes
 

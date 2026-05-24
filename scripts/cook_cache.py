@@ -19,6 +19,13 @@ Subcommands
       Atomically upsert a cache entry (tmp + os.replace) with a tag-vocabulary
       checksum and per-index checksums.
 
+  heal --fingerprint F --degraded [P,...]
+      Reconcile an existing entry's `degraded` flag with reality (Phase 3,
+      feature 7 self-heal). Pass the `degraded` list the compiler just produced;
+      the entry is rewritten atomically ONLY when the set actually changed —
+      cleared when the file is fixed, updated when a new read fails. Mechanical,
+      no LLM, so it is safe to call on the cache-hit fast path.
+
 Paths
 -----
   cook root (this file's parent.parent): vocab/tag-vocabulary.json, .agent-skills/routing.json
@@ -197,13 +204,20 @@ def fingerprint(signals: dict) -> str:
 
 # ----------------------------------------------------------------- cache I/O
 
-def load_routing() -> dict:
+def load_routing() -> tuple[dict, bool]:
+    """Return (routing, corrupt).
+
+    corrupt is True only when the file exists but cannot be parsed — a missing
+    file is a clean cold cache, not corruption. Component 8 (hard-failure
+    fallback) keys off this: a corrupt cache must degrade to greedy routing, not
+    masquerade as an ordinary miss that silently rebuilds and drops nothing.
+    """
     if ROUTING_FILE.exists():
         try:
-            return json.loads(ROUTING_FILE.read_text())
+            return json.loads(ROUTING_FILE.read_text()), False
         except (OSError, json.JSONDecodeError):
-            pass
-    return {"version": 1, "entries": {}}
+            return {"version": 1, "entries": {}}, True
+    return {"version": 1, "entries": {}}, False
 
 
 def atomic_write(data: dict):
@@ -229,7 +243,24 @@ def cmd_lookup(args):
     project = Path(args.project).resolve() if args.project else Path.cwd()
     signals = gather(args.path or [], project)
     fp = fingerprint(signals)
-    routing = load_routing()
+    routing, corrupt = load_routing()
+
+    if corrupt:
+        # Component 8 — hard-failure fallback. The cache is unusable, but the
+        # signals were gathered mechanically and are still trustworthy. Degrade
+        # to greedy routing: the agent loads the P0 floor + every domain the
+        # signals point at, broadly. Only the efficiency gain is lost.
+        print(json.dumps({
+            "status": "fallback",
+            "fingerprint": fp,
+            "signals": signals,
+            "confidence": signals["confidence"],
+            "fallback": True,
+            "cache_corrupt": True,
+            "routing": None,
+        }, indent=2))
+        return
+
     entry = routing["entries"].get(fp)
 
     if entry is None:
@@ -250,7 +281,7 @@ def cmd_lookup(args):
 
 
 def cmd_write(args):
-    routing = load_routing()
+    routing, _ = load_routing()           # a corrupt cache is overwritten fresh
     skills = [s for s in args.skills.split(",") if s]
     indexes = [i for i in (args.index or "").split(",") if i]
     routing["entries"][args.fingerprint] = {
@@ -266,6 +297,43 @@ def cmd_write(args):
     }
     atomic_write(routing)
     print(json.dumps({"status": "written", "fingerprint": args.fingerprint}))
+
+
+def cmd_heal(args):
+    """Feature 7 self-heal. Reconcile the stored `degraded` flag with the list
+    the compiler just produced, rewriting the entry only when the set changed.
+
+    The routing decision itself (skills, tags, intent, confidence) is never
+    touched — a content-read failure must not corrupt a correct routing. The
+    compiler re-reads every path each run, so the fresh `degraded` list is
+    ground truth: empty once the file is fixed (entry heals), or naming the new
+    failure. Because the comparison happens here in code, the cache-hit caller
+    stays model-free."""
+    routing, corrupt = load_routing()
+    if corrupt:
+        print(json.dumps({"status": "noop", "reason": "cache-corrupt",
+                          "fingerprint": args.fingerprint}))
+        return
+    entry = routing["entries"].get(args.fingerprint)
+    if entry is None:
+        print(json.dumps({"status": "noop", "reason": "no-entry",
+                          "fingerprint": args.fingerprint}))
+        return
+
+    new_degraded = sorted({d for d in (args.degraded or "").split(",") if d})
+    old_degraded = sorted(entry.get("degraded", []))
+    if new_degraded == old_degraded:
+        print(json.dumps({"status": "unchanged", "fingerprint": args.fingerprint,
+                          "degraded": new_degraded}))
+        return
+
+    entry["degraded"] = new_degraded
+    entry["healed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    routing["entries"][args.fingerprint] = entry
+    atomic_write(routing)
+    status = "healed" if not new_degraded else "degraded-updated"
+    print(json.dumps({"status": status, "fingerprint": args.fingerprint,
+                      "degraded": new_degraded, "previous": old_degraded}))
 
 
 def main():
@@ -287,6 +355,12 @@ def main():
     wr.add_argument("--degraded", help="comma-separated failed paths")
     wr.add_argument("--index", help="comma-separated _INDEX.md paths to checksum")
     wr.set_defaults(func=cmd_write)
+
+    hl = sub.add_parser("heal")
+    hl.add_argument("--fingerprint", required=True)
+    hl.add_argument("--degraded", default="",
+                    help="comma-separated paths that failed THIS run (empty = all read OK)")
+    hl.set_defaults(func=cmd_heal)
 
     args = p.parse_args()
     args.func(args)
