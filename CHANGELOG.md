@@ -4,6 +4,21 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-24 · Node.js runtime domain
+
+**feat(standards): add nodejs runtime domain (event loop, streams, async rejection lifecycle, process signals, supply chain).**
+
+- Added `standards/nodejs/` — a new `domain:nodejs` covering Node runtime mechanics only. It co-loads with `typescript` for `.ts` server entries and links to neighbouring refs instead of restating API, auth, security, performance, CI, or database rules.
+- Added four refs: `refs/runtime-safety.md` (event loop, streams/backpressure, worker threads, Buffer safety, graceful shutdown), `refs/async-errors.md` (promise rejection lifecycle, callback/timer/event-boundary throws, global handlers, timeouts), `refs/tooling.md` (runtime/package-manager pinning, frozen installs, env validation, structured logging), and `refs/testing.md` (Node service/CLI/integration/network-boundary tests).
+- Routing: added a `nodejs` tag to `vocab/tag-vocabulary.json` routing to `domain:nodejs`, added `standards/nodejs/_INDEX.md`, and added precise cook triggers (`**/*.cjs`, `server.{ts,js,mjs,cjs}`, `app.{ts,js,mjs,cjs}`, `**/*.server.{ts,js,mjs,cjs}`) without broad `.mjs`, routes, or controllers triggers.
+- Resolver: patched `scripts/cook_cache.py` so `.cjs` resolves `nodejs` by extension, while `.ts`/`.js`/`.mjs` require a server-framework manifest plus a server entry/path and no frontend path. TypeScript server entries add `nodejs` alongside `typescript`, never instead of it; browser React and generic routes paths do not load `nodejs`.
+- Cache: new framework/domain hints shift the fingerprint basis → one cold rebuild on first run after this change; stale checksum entries are not served as hits.
+- Docs: added `nodejs` to the `ARCHITECTURE.md` standards tree, Skills table, and Refs index, and to the `README.md` Available Standards table.
+- Vocab parity holds at 519/519 (`verify/check-vocab-parity.py`); route targets resolve (79/79 across 11 indexes, `scripts/check_index_routes.py`).
+- Plan: `improve/standards/cook-feat-standards-nodejs.md`; acceptance: `improve/standards/cook-feat-standards-nodejs-acceptance.md`.
+
+---
+
 ## [pending] — 2026-05-24 · Supabase platform domain
 
 **feat(standards): add supabase platform domain (RLS, anon/service_role boundary, Postgres/Edge functions, CLI migrations).**

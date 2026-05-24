@@ -21,6 +21,7 @@ SKILL.md (cook)
     ├── nextjs/          Next.js App Router
     ├── react/           React (non-Next)
     ├── typescript/      TypeScript 5 language
+    ├── nodejs/          Node.js runtime (event loop, streams, process lifecycle)
     ├── database/        PostgreSQL + Redis
     ├── supabase/        Supabase platform (RLS, keys, Edge functions) — co-loads with database
     └── graphql/         GraphQL schema + resolvers
@@ -92,6 +93,7 @@ Return the JSON envelope to the invoking agent. A non-empty `degraded` is a part
 | nextjs | Next.js App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
 | react | React + TypeScript standards: hook rules, component structure, prop typing, and boundary safety for non-Next.js projects. |
 | typescript | TypeScript 5.x language standards: type safety, narrowing, generics, modules, and async code. |
+| nodejs | Node.js runtime standards: event-loop safety, streams/backpressure, process lifecycle, Buffer safety, runtime pinning, installs, env loading, and logging. |
 | database | Database standards for PostgreSQL schema/migration/query design and Redis caching and cache invalidation. |
 | supabase | Supabase platform standards: Row-Level Security, the anon/service_role key boundary, Postgres/Edge function security, Storage, Realtime, and the CLI migration workflow. Co-loads with database on Supabase Postgres work. |
 | graphql | GraphQL schema design and resolver conventions: naming, nullability, types, input objects, mutations, queries, and operation structure. |
@@ -187,6 +189,13 @@ Return the JSON envelope to the invoking agent. A non-empty `degraded` is a part
 - `refs/security.md`: Type-safe input validation and injection prevention.
 - `refs/testing.md`: TypeScript test patterns and type-level testing.
 - `refs/tooling.md`: tsconfig, strict mode, and compiler flag conventions.
+
+### nodejs
+
+- `refs/runtime-safety.md`: Event-loop budget, streams/backpressure, worker threads, Buffer safety, and graceful shutdown.
+- `refs/async-errors.md`: Promise rejection lifecycle, callback-boundary throws, global process handlers, and timeout/cancellation mechanics.
+- `refs/tooling.md`: Node/package-manager pinning, frozen installs, environment boot validation, and structured logging setup.
+- `refs/testing.md`: Node service, CLI, worker, integration, and network-boundary test conventions.
 
 ### database
 

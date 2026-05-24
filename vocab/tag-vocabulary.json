@@ -82,6 +82,18 @@
         "schema registry", "rover", "persisted"
       ]
     },
+    "nodejs": {
+      "routes_to": ["domain:nodejs"],
+      "aliases": [
+        "node", "nodejs", "node.js", "express", "fastify", "nestjs", "nest", "koa",
+        "hapi", "hono", "elysia", "apollo server", "trpc", "node:http", "process",
+        "event loop", "stream", "backpressure", "worker_threads", "worker thread",
+        "pipeline", "cluster", "pm2", "EventEmitter", "Buffer", "SIGTERM", "SIGINT",
+        "graceful shutdown", "npm ci", "lockfile", "package.json", "engines", "dotenv",
+        "pino", "winston", "unhandledRejection", "uncaughtException", "AbortController",
+        "server", "request handler"
+      ]
+    },
     "typescript": {
       "routes_to": ["domain:typescript"],
       "aliases": [

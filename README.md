@@ -58,6 +58,7 @@ COOK_DIR=/path/to/destination bash install.sh
 | Flutter | Test |
 | GraphQL | Test |
 | NextJS | Test |
+| Node.js | Node runtime safety, process lifecycle, streams, package installs, env loading, and logging |
 | React | Test |
 | Supabase | Test |
 | Typescript | Test |

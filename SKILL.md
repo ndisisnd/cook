@@ -8,6 +8,10 @@ metadata:
       - '**/*.tsx'
       - '**/*.js'
       - '**/*.jsx'
+      - '**/*.cjs'
+      - 'server.{ts,js,mjs,cjs}'
+      - 'app.{ts,js,mjs,cjs}'
+      - '**/*.server.{ts,js,mjs,cjs}'
       - '**/*.dart'
       - '**/*.sql'
       - '**/*.graphql'
@@ -30,6 +34,9 @@ metadata:
       - flutter
       - graphql
       - typescript
+      - node
+      - nodejs
+      - node.js
       - dart
       - supabase
       - prisma

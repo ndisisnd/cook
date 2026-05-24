@@ -48,7 +48,12 @@ STATE_DIR = COOK_ROOT / ".agent-skills"
 ROUTING_FILE = STATE_DIR / "routing.json"
 
 MANIFESTS = ["package.json", "pubspec.yaml", "tsconfig.json", "next.config.js",
-             "next.config.ts", "next.config.mjs", "supabase/config.toml"]
+              "next.config.ts", "next.config.mjs", "supabase/config.toml"]
+
+NODE_SERVER_DEPS = {
+    "express", "fastify", "@nestjs/core", "koa", "@hapi/hapi", "koa-router",
+    "hono", "elysia", "@apollo/server", "apollo-server", "@trpc/server",
+}
 
 
 def sha256_text(text: str) -> str:
@@ -106,6 +111,8 @@ def manifest_frameworks(project: Path, manifests: list[str]) -> list[str]:
                 fw.add("react")
             if "@supabase/supabase-js" in deps:
                 fw.add("supabase")
+            if deps.keys() & NODE_SERVER_DEPS:
+                fw.add("nodejs")
         except (OSError, json.JSONDecodeError):
             pass
     if (project / "supabase" / "config.toml").exists():
@@ -133,12 +140,20 @@ def derive_domains(files, frameworks, project: Path):
     has_next = "nextjs" in frameworks
     has_react = "react" in frameworks
     has_flutter = "flutter" in frameworks
+    has_node = "nodejs" in frameworks
     for f in files:
         low = f.lower()
         suf = Path(low).suffix
         in_app_pages = ("/app/" in f or f.startswith("app/")
                         or "/pages/" in f or f.startswith("pages/")
                         or "src/app/" in f)
+        server_path = (low.startswith(("server/", "src/server/"))
+                       or "/server/" in low
+                       or low.endswith(("server.ts", "server.js", "server.mjs",
+                                        "app.ts", "app.js", "app.mjs"))
+                       or ".server." in low)
+        frontend_path = (in_app_pages or low.startswith(("src/components/", "components/",
+                                                         "src/app/", "app/", "pages/")))
         if suf in (".sql",) or low.endswith(".entity.ts") or "/migrations/" in low:
             hints.add("database")
         elif suf in (".graphql", ".gql"):
@@ -155,6 +170,13 @@ def derive_domains(files, frameworks, project: Path):
                 hints.add("nextjs")
             else:
                 hints.add("typescript")
+                if has_node and server_path and not frontend_path:
+                    hints.add("nodejs")
+        elif suf == ".cjs":
+            hints.add("nodejs")
+        elif suf in (".js", ".mjs"):
+            if has_node and server_path and not frontend_path:
+                hints.add("nodejs")
         elif suf == ".dart":
             hints.add("flutter" if has_flutter else "dart")
 
