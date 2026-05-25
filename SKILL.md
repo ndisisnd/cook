@@ -1,6 +1,6 @@
 ---
 name: cook
-description: Keyword-driven orchestrator for this repository's coding and review standards. Receives a code-task summary from the invoking agent, extracts keywords, matches them against the global concern index and the relevant domain indexes, loads only the matched rules, and returns a single compiled standards payload.
+description: Keyword-driven orchestrator for this repository's coding standards. Receives a code-task summary from the invoking agent, extracts keywords, matches them against the global concern index and the relevant domain indexes, loads only the matched rules, and returns a single compiled standards payload.
 metadata:
   triggers:
     files:
@@ -17,7 +17,6 @@ metadata:
       - '**/*.graphql'
       - 'supabase/**'
     keywords:
-      - review
       - audit
       - refactor
       - bug
@@ -57,8 +56,8 @@ Cook is the single entry point for standards. It does not hold rules of its own 
 
 ## Protocol
 
-> **Phase 3 status (cook-feat-robust):** Steps 1–6 are the cache-first control
-> flow from Phase 1. Step 7 is the mechanical compilation script (Phase 2) — no
+> **Phase 3 status (cook-feat-robust):** Steps 1–5 are the cache-first control
+> flow from Phase 1. Step 6 is the mechanical compilation script (Phase 2) — no
 > LLM assembly, deterministic, model-free on cache hits — now followed by a
 > mechanical self-heal of the `degraded` flag (Phase 3, feature 7). A corrupt
 > cache degrades to greedy routing (Component 8) without dropping standards.
@@ -90,15 +89,15 @@ Do not attempt to read a fingerprint or signals from a failed run.
 
 - **`hit`** — the routing is cached and fresh (vocab + index checksums still
   match). Use `routing.skills` directly. **Do not classify, do not re-match.**
-  Skip to Step 3 (P0 always loads), then Step 7 (compile). This is the no-LLM
+  Skip to Step 2 (P0 always loads), then Step 6 (compile). This is the no-LLM
   fast path.
 - **`miss` | `stale`** — no usable cache. Continue to 1c.
 - **`fallback`** — the cache file is present but **corrupt** (`cache_corrupt:
   true`); the resolver could not trust it (Component 8). The mechanically
   gathered `signals` are still valid, so degrade to **greedy routing**: skip
-  classification and the cache write entirely, load Step 3 (P0) plus — broadly —
+  classification and the cache write entirely, load Step 2 (P0) plus — broadly —
   every domain in `signals.domain_hints` and all 8 concern refs (the full
-  concern set enumerated in Step 4), then compile (Step 7). Standards still
+  concern set enumerated in Step 3), then compile (Step 6). Standards still
   apply; only the efficiency gain is lost. Do **not** call `write` or `heal`
   while the cache is corrupt.
 
@@ -107,7 +106,7 @@ Do not attempt to read a fingerprint or signals from a failed run.
 `vocab/intent-vocabulary.json`. Then canonicalize: map each raw signal
 (`signals` + any prose terms) onto a tag in `vocab/tag-vocabulary.json`. Output
 is **constrained to the vocabulary** — never invent a tag. Drop and note any
-unmappable signal. The resulting `canonical_tags` are the only thing Steps 4–5
+unmappable signal. The resulting `canonical_tags` are the only thing Steps 3–4
 read.
 
 **1d. Sufficiency gate (never empty-handed).**
@@ -115,43 +114,15 @@ read.
 - ≥1 `domain:*` tag resolved → emit the blob with the resolver's `confidence`.
 - Weak but files were reachable → trust `signals.domain_hints` from the cascade.
 - Still weak, or resolver returned `fallback: true` → set `confidence: low`,
-  `fallback: true`. Steps 4–5 then load broad. Step 3 (P0) loads regardless.
+  `fallback: true`. Steps 3–4 then load broad. Step 2 (P0) loads regardless.
 
-### Step 2 — Reviewing intent
-
-If the classified intent is `review-code`, this is a review, not a build. Derive
-the review surface from `signals`:
-
-- Frontend: `.tsx`, `.jsx`, `components/`, `pages/`, `app/`, `hooks/`, `styles/`
-- Backend: `controllers/`, `routes/`, `handlers/`, `services/`, `repositories/`, `db/`
-- Full-stack: both present in one target
-- Security-sensitive: auth, token, session, role, permission, owner scope, upload, redirect, webhook, external URL
-
-Tag the surface as `frontend` / `backend` / `full-stack`, appending
-`security-sensitive` when those signals appear (e.g. `full-stack, security-sensitive`).
-Pass it as `code_surface`. Then:
-
-1. Load `standards/global/SKILL.md` (P0 floor — Step 3's invariant applies here
-   too) and `standards/review/SKILL.md`.
-2. If `signals.domain_hints` includes `supabase` or the review target mentions
-   Supabase-specific terms (`supabase`, `row level security`, `auth.uid`,
-   `sb_secret`, `service_role`, `verify_jwt`, `apikey`), also load
-   `standards/supabase/SKILL.md` and `standards/supabase/refs/checklist.md`.
-   This keeps Supabase pre-deploy reviews from losing the platform checklist on
-   the review fast path.
-3. Write the cache entry (Step 6) with the full skill path list.
-4. Compile via Step 7 and return the JSON envelope.
-
-Do not skip compilation. The invoking agent expects a compiled payload, not a
-bare file reference.
-
-### Step 3 — Load global P0 (always, unconditional)
+### Step 2 — Load global P0 (always, unconditional)
 
 Load `standards/global/SKILL.md`. Its P0 universal rules apply to every code task
 regardless of stack, confidence, or cache state. This floor is never skipped —
 not on `fallback: true`, not on a weak classification.
 
-### Step 4 — Match global concerns (via canonical_tags)
+### Step 3 — Match global concerns (via canonical_tags)
 
 For each `canonical_tag` whose `routes_to` is a `concern:*` target, load the
 matching concern ref under `standards/global/refs/`. The full concern set is
@@ -169,7 +140,7 @@ language may also load `standards/global/refs/auth.md`; the Supabase refs own th
 platform-specific key boundary, while auth/security own the generic trust-boundary
 rules.
 
-### Step 5 — Match domains (via canonical_tags)
+### Step 4 — Match domains (via canonical_tags)
 
 For each `canonical_tag` whose `routes_to` is a `domain:*` target, load that
 domain's `SKILL.md` plus any matched `refs/*.md`. **Multiple domains may
@@ -179,7 +150,7 @@ that domain to load. For `typescript`, load `standards/typescript/SKILL.md`
 directly. On `fallback: true`, load the broad domain set indicated by
 `signals.domain_hints`.
 
-### Step 6 — Write the cache entry (miss path only)
+### Step 5 — Write the cache entry (miss path only)
 
 After matching, persist the decision so the next identical surface is a hit:
 
@@ -194,15 +165,15 @@ The write stamps the entry with a `tag-vocabulary.json` checksum and per-index
 checksums (Feature 4) and writes atomically (tmp + rename). Skip this step on a
 cache hit (the entry already exists) and on the `fallback` path (corrupt cache).
 
-Write the **full** `--skills` list from Steps 3–5 — every matched path, even one
+Write the **full** `--skills` list from Steps 2–4 — every matched path, even one
 whose file might fail to read. A read failure is not a routing failure: the
 routing was correct, so the entry must record it in full. The `degraded` flag is
-*not* set here (the read outcome is unknown until the compiler runs) — Step 7
+*not* set here (the read outcome is unknown until the compiler runs) — Step 6
 reconciles it after compilation.
 
-### Step 7 — Compile and return
+### Step 6 — Compile and return
 
-Invoke the compilation script with the path list assembled by Steps 3–5 (or
+Invoke the compilation script with the path list assembled by Steps 2–4 (or
 from `routing.skills` on a cache hit). The script is a single Bash call — no
 LLM involvement:
 
@@ -249,13 +220,13 @@ fails the build if any `_INDEX.md` route target points at a missing file.
 
 **Path list construction:**
 - **Cache hit:** use `routing.skills` from the resolver output directly.
-- **Miss path:** collect the paths loaded in Steps 3–5:
-  - Step 3: `standards/global/SKILL.md`
-  - Step 4: each matched `standards/global/refs/<name>.md`
-  - Step 5: each matched domain `SKILL.md` + matched `refs/*.md`
-- **Fallback path (corrupt cache):** Step 3 P0 + every `signals.domain_hints`
+- **Miss path:** collect the paths loaded in Steps 2–4:
+  - Step 2: `standards/global/SKILL.md`
+  - Step 3: each matched `standards/global/refs/<name>.md`
+  - Step 4: each matched domain `SKILL.md` + matched `refs/*.md`
+- **Fallback path (corrupt cache):** Step 2 P0 + every `signals.domain_hints`
   domain `SKILL.md` + all 8 concern refs (the full concern set enumerated in
-  Step 4) — loaded broad, compiled, returned; no `write`/`heal`.
+  Step 3) — loaded broad, compiled, returned; no `write`/`heal`.
 
 ## Notes
 

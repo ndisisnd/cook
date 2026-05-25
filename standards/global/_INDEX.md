@@ -25,4 +25,3 @@ Layer selection (frontend vs backend vs full-stack) is no longer decided here â€
 ## Notes
 
 - Concern refs hold the prescriptive layer rules (frontend component/UI-security/render-performance and backend API/error/auth/query rules) folded in by topic â€” there is no separate frontend/backend/full-stack file.
-- For findings-first code review, load `<SKILLS>/review/SKILL.md` instead of this skill.

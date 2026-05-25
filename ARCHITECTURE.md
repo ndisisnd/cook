@@ -15,7 +15,6 @@ SKILL.md (cook)
 │   └── check_index_routes.py    CI validator: _INDEX.md route integrity
 └── standards/
     ├── global/          universal P0 rules + concern refs
-    ├── review/          adversarial review skill
     ├── flutter/         Flutter/Dart UI
     ├── dart/            Dart 3 language
     ├── nextjs/          Next.js App Router
@@ -45,35 +44,31 @@ Cook operates in three control-flow paths, selected at Step 1:
 
 Run `cook_cache.py lookup` to build a fingerprint from raw observable signals (files, frameworks, domain hints, concern hints) and check the cache. Extensions are emitted as signals for classification but are not part of the fingerprint.
 
-- **`hit`** — routing is cached and fresh. Skip to Step 3 then Step 7. No LLM.
+- **`hit`** — routing is cached and fresh. Skip to Step 2 then Step 6. No LLM.
 - **`miss` | `stale`** — continue to classification (Step 1c).
 - **`fallback`** — cache corrupt. Use `signals.domain_hints` for greedy broad routing. Skip `write`/`heal`.
 
-On a **miss**, classify the intent against `vocab/intent-vocabulary.json` and canonicalize signals onto tags from `vocab/tag-vocabulary.json`. These `canonical_tags` are the only input to Steps 4–5. Tags not in the vocabulary are dropped.
+On a **miss**, classify the intent against `vocab/intent-vocabulary.json` and canonicalize signals onto tags from `vocab/tag-vocabulary.json`. These `canonical_tags` are the only input to Steps 3–4. Tags not in the vocabulary are dropped.
 
-### Step 2 — Review intent?
-
-If intent is `review-code`, derive the code surface (frontend / backend / full-stack, with `security-sensitive` appended when relevant signals appear), load `standards/review/SKILL.md`, write the cache entry, and stop.
-
-### Step 3 — Load global P0 (always)
+### Step 2 — Load global P0 (always)
 
 Load `standards/global/SKILL.md`. Unconditional — applies on every path including fallback and weak classification.
 
-### Step 4 — Match global concerns
+### Step 3 — Match global concerns
 
 For each `canonical_tag` routing to a `concern:*` target, load the matched ref under `standards/global/refs/`. On `fallback: true`, load the full concern set.
 
-### Step 5 — Match domains
+### Step 4 — Match domains
 
 For each `canonical_tag` routing to a `domain:*` target, load that domain's `SKILL.md` plus matched `refs/*.md`. Multiple domains may match simultaneously. On `fallback: true`, load all domains in `signals.domain_hints`.
 
-### Step 6 — Write cache (miss path only)
+### Step 5 — Write cache (miss path only)
 
 Run `cook_cache.py write` with the full skills path list, canonical tags, intent, confidence, and per-index checksums. The entry records the complete routing; read failures are not routing failures and do not suppress the write.
 
-### Step 7 — Compile and self-heal
+### Step 6 — Compile and self-heal
 
-Run `cook_compile.py` with the path list from Steps 3–5 (or `routing.skills` on a hit). The compiler deduplicates, buckets by layer (Universal → Domain → Concern), strips YAML frontmatter, and concatenates with terse section headers. Output is JSON: `content`, `degraded`, `metadata`.
+Run `cook_compile.py` with the path list from Steps 2–4 (or `routing.skills` on a hit). The compiler deduplicates, buckets by layer (Universal → Domain → Concern), strips YAML frontmatter, and concatenates with terse section headers. Output is JSON: `content`, `degraded`, `metadata`.
 
 After compiling, run `cook_cache.py heal` to stamp the compiler's `degraded` list onto the cache entry, except on the corrupt-cache fallback path where no trusted entry exists. On a cache hit this clears previously-flagged files that now read and sets newly missing ones — keeping the entry current without re-classification.
 
@@ -87,7 +82,6 @@ Return the JSON envelope to the invoking agent. A non-empty `degraded` is a part
 |---|---|
 | cook | Entry-point orchestrator: cache-first routing, classification, and payload compilation. |
 | global | Universal P0 rules that apply to every task; concern refs are loaded on top by cook. |
-| review | Adversarial review that detects bugs, design gaps, and security risks; auto-fix or eval-report output. |
 | flutter | Flutter/Dart UI standards covering widgets, state management, navigation, architecture, performance, and testing. |
 | dart | Dart 3.x language standards: null safety, patterns, sealed classes, records, class modifiers, naming, immutability, collections, async, and import organisation. |
 | nextjs | Next.js App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
@@ -105,7 +99,7 @@ Return the JSON envelope to the invoking agent. A non-empty `degraded` is a part
 | File | Role |
 |---|---|
 | `vocab/intent-vocabulary.json` | Exhaustive list of valid intent labels. Classification is constrained to this set. |
-| `vocab/tag-vocabulary.json` | Canonical tag set. Each tag carries a `routes_to` field (`concern:*` or `domain:*`) that drives Steps 4–5. Tags not in this file are dropped at canonicalization. |
+| `vocab/tag-vocabulary.json` | Canonical tag set. Each tag carries a `routes_to` field (`concern:*` or `domain:*`) that drives Steps 3–4. Tags not in this file are dropped at canonicalization. |
 
 ---
 
@@ -131,11 +125,6 @@ Return the JSON envelope to the invoking agent. A non-empty `degraded` is a part
 - `refs/performance.md`: Performance workflow and profiling discipline.
 - `refs/debug.md`: Scientific debugging method and instrumentation rules.
 - `refs/cicd.md`: CI/CD pipeline and deployment configuration.
-
-### review
-
-- `refs/report-format.md`: Output format, vibecoder field guidance, and severity reference for review reports.
-- `refs/review-lenses.md`: Correctness, Security, and Reliability lenses applied during review.
 
 ### flutter
 

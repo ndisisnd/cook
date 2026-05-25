@@ -40,7 +40,7 @@ COOK_DIR=/path/to/destination bash install.sh
 
 1. **Ask your coding agent to invoke `/cook`:** `cook` will check file paths, prose descriptions, git context.
 2. **Build a fingerprint:** the raw signals are hashed and checked against the cache. A match skips classification entirely — straight to compile.
-3. **Classify intent:** if it's a miss, `cook` classifies the intent (e.g. "review code" vs. "implement feature"). Review tasks get a surface tag (frontend / backend / full-stack) and load the review standards — global rules still apply.
+3. **Classify intent:** if it's a miss, `cook` classifies the intent (e.g. "add a feature" vs. "fix a bug"), then routes to the relevant domain and concern standards.
 4. **Load global rules**: Global rules are always loaded first (e.g. SOLID principles, DRY, security) — no exceptions, regardless of cache state.
 5. **Load concern rules**: Concern rules are cross-cutting rules like security, error handling, performance, and API design. 
 6. **Load domain rules**: Domain rules for your programming language are loaded. Multiple domains can match at once.
@@ -60,7 +60,6 @@ COOK_DIR=/path/to/destination bash install.sh
 | Next.js | App Router and Pages Router, Server/Client Components, data fetching, rendering and caching strategies, Server Actions, security, performance, and testing |
 | Node.js | Runtime safety, event loop, streams, backpressure, worker threads, graceful shutdown, async error handling, env validation, logging, and testing |
 | React | Component patterns, hooks, state management (Zustand/Redux/TanStack), performance (Suspense, lazy), security (XSS/CSP), testing (RTL/MSW), and tooling |
-| Review | Findings-first code review mode — detects code surface (frontend / backend / full-stack) and loads the matching standards for bug hunting and regression checks |
 | Supabase | RLS policies (auth.uid/auth.jwt), anon vs service_role key boundary, Edge Functions (Deno, verify_jwt), Postgres functions (SECURITY DEFINER/INVOKER), and migration workflow |
 | TypeScript | Type safety, generics, unions, interfaces, ESLint configuration, jest/vitest setup, and input validation patterns |
 

@@ -4,6 +4,23 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-25 · Remove review standard
+
+**refactor(cook): remove `standards/review/` and all live routing references to it.**
+
+- `SKILL.md`: removed Step 2 (review-code intent fast path); renumbered Steps 3–7 → 2–6; updated all internal cross-references. Removed `review` from the keywords list and updated the description.
+- `ARCHITECTURE.md`: removed Step 2 section, removed `review/` from the directory tree, removed the `review` row from the Skills table, and removed the `review` Refs subsection. Updated Step 1 hit-path cross-reference.
+- `README.md`: removed the Review row from the Available Standards table; rewrote the Step 3 description to remove review-specific language.
+- `vocab/intent-vocabulary.json`: removed the `review-code` intent entry; 10 intents remain.
+- `standards/global/_INDEX.md`: removed the Notes line redirecting to `standards/review/SKILL.md`.
+- `chef/eval_set.json`: adapted cases 7 and 11 from `review-code` to `harden-security`; stripped `standards/review/SKILL.md` from `skills_include`; rewrote grading checks; added `"note"` fields recording the original test purpose.
+- `chef/eval_benchmark.json`: updated `notes` fields for cases 7 and 11 to record the adaptation.
+- `chef/eval_issues.json`: updated issue-010 to remove the review-specific example.
+- `verify/done/check-vocab-parity.py`: removed the `EXCLUDE = {"review"}` guard (no `standards/review/_INDEX.md` exists to exclude); fixed `ROOT` path computation (was off by one level after script was moved to `verify/done/`).
+- All verification checks pass: 0 `review-code` intent entries in eval set, 10 intents in vocab, 531/531 index keywords covered, 77/77 route targets resolve.
+
+---
+
 ## [8c7763b] — 2026-05-25 · Concern-ref enumeration and path-traversal guard
 
 **fix(cook): enumerate all 8 fallback concern refs explicitly; add path-traversal bounds check in compiler.**

@@ -10,7 +10,6 @@
     { "label": "refactor",             "desc": "Restructure without changing behaviour." },
     { "label": "optimize-performance", "desc": "Reduce latency, renders, queries, memory." },
     { "label": "harden-security",      "desc": "Auth, validation, secrets, injection." },
-    { "label": "add-tests",            "desc": "Add or change tests." },
-    { "label": "review-code",          "desc": "Audit existing code (routes to review skill)." }
+    { "label": "add-tests",            "desc": "Add or change tests." }
   ]
 }
