@@ -39,12 +39,12 @@ COOK_DIR=/path/to/destination bash install.sh
 ## How it Works
 
 1. **Ask your coding agent to invoke `/cook`:** `cook` will check file paths, prose descriptions, git context.
-2. **Building a fingerprint:** these raw signals are hashed and kept cached. Cook will check if it has been loaded before.
-3. **Determine intent:** If it's new, `cook` will match the intent (e.g. "review code"). If it's a review, it'll then figure out what surface it's reviewing and skip the other steps.
-4. **Load global rules**: Global rules will alway be loaded first (e.g. SOLID principles, DRY).
+2. **Build a fingerprint:** the raw signals are hashed and checked against the cache. A match skips classification entirely — straight to compile.
+3. **Classify intent:** if it's a miss, `cook` classifies the intent (e.g. "review code" vs. "implement feature"). Review tasks get a surface tag (frontend / backend / full-stack) and load the review standards — global rules still apply.
+4. **Load global rules**: Global rules are always loaded first (e.g. SOLID principles, DRY, security) — no exceptions, regardless of cache state.
 5. **Load concern rules**: Concern rules are cross-cutting rules like security, error handling, performance, and API design. 
 6. **Load domain rules**: Domain rules for your programming language are loaded. Multiple domains can match at once.
-7. **Cache the result**: Routing decisions are cached so that next time it'll just load straight from the cache. 
+7. **Cache the result**: Routing decisions are written to cache so the next identical surface hits instantly. 
 8. **Compile and output**: A Python compiler stitches all the loaded rule files into one markdown blob for your agent to ingest. `cook` ends here!
    
 
@@ -52,15 +52,16 @@ COOK_DIR=/path/to/destination bash install.sh
 
 | Standards | What's covered | 
 | --- | --- |
-| Global | Test | 
-| Dart | Test |
-| Database | Test |
-| Flutter | Test |
-| GraphQL | Test |
-| NextJS | Test |
-| Node.js | Node runtime safety, process lifecycle, streams, package installs, env loading, and logging |
-| React | Test |
-| Supabase | Test |
-| Typescript | Test |
+| Global | Universal rules loaded on every task: architecture, API design, error handling, security, auth, performance, debugging, and CI/CD |
+| Dart | Language correctness, sealed/record/pattern matching, async, naming conventions, tooling (build_runner, dart format), and testing (mocktail, fake_async) |
+| Database | PostgreSQL schema design, expand-contract migrations, query optimisation, indexing, RLS, and Redis caching strategy (TTL, eviction, pipeline safety) |
+| Flutter | Widget best practices, state management (Bloc/Riverpod/GetX), navigation (GoRouter), architecture (feature-domain), networking (Dio), error handling (Either/dartz), and DI (GetIt) |
+| GraphQL | Schema design, resolver patterns, security (depth/complexity limits), performance (DataLoader, N+1 prevention), testing, and tooling (codegen, graphql-eslint) |
+| Next.js | App Router and Pages Router, Server/Client Components, data fetching, rendering and caching strategies, Server Actions, security, performance, and testing |
+| Node.js | Runtime safety, event loop, streams, backpressure, worker threads, graceful shutdown, async error handling, env validation, logging, and testing |
+| React | Component patterns, hooks, state management (Zustand/Redux/TanStack), performance (Suspense, lazy), security (XSS/CSP), testing (RTL/MSW), and tooling |
+| Review | Findings-first code review mode — detects code surface (frontend / backend / full-stack) and loads the matching standards for bug hunting and regression checks |
+| Supabase | RLS policies (auth.uid/auth.jwt), anon vs service_role key boundary, Edge Functions (Deno, verify_jwt), Postgres functions (SECURITY DEFINER/INVOKER), and migration workflow |
+| TypeScript | Type safety, generics, unions, interfaces, ESLint configuration, jest/vitest setup, and input validation patterns |
 
 ## FAQ

@@ -4,6 +4,16 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [8c7763b] — 2026-05-25 · Concern-ref enumeration and path-traversal guard
+
+**fix(cook): enumerate all 8 fallback concern refs explicitly; add path-traversal bounds check in compiler.**
+
+- `SKILL.md` Step 4 now lists all 8 `standards/global/refs/` concern files (`architecture.md`, `api-design.md`, `error-handling.md`, `security.md`, `auth.md`, `performance.md`, `debug.md`, `cicd.md`) as the single authoritative enumeration. The previous list omitted `auth.md` and `cicd.md`, causing partial loads on the fallback/greedy path (the only recorded eval failure, case 9).
+- Step 1b and Step 7 fallback branches now reference "all 8 concern refs enumerated in Step 4" instead of the ambiguous "full/broad concern set."
+- `scripts/cook_compile.py` now resolves each skill path and checks it is within `cook_root` before reading. A path that escapes the root (e.g. `../../outside.md`) is added to `degraded` and skipped — previously such a path would be read and its content silently included in the payload if the file existed.
+
+---
+
 ## [pending] — 2026-05-24 · Node.js runtime domain
 
 **feat(standards): add nodejs runtime domain (event loop, streams, async rejection lifecycle, process signals, supply chain).**
