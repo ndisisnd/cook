@@ -97,9 +97,10 @@ Do not attempt to read a fingerprint or signals from a failed run.
   true`); the resolver could not trust it (Component 8). The mechanically
   gathered `signals` are still valid, so degrade to **greedy routing**: skip
   classification and the cache write entirely, load Step 3 (P0) plus — broadly —
-  every domain in `signals.domain_hints` and the full concern set, then compile
-  (Step 7). Standards still apply; only the efficiency gain is lost. Do **not**
-  call `write` or `heal` while the cache is corrupt.
+  every domain in `signals.domain_hints` and all 8 concern refs (the full
+  concern set enumerated in Step 4), then compile (Step 7). Standards still
+  apply; only the efficiency gain is lost. Do **not** call `write` or `heal`
+  while the cache is corrupt.
 
 **1c. Classify (miss path only).** Read `vocab/intent-vocabulary.json` and
 `vocab/tag-vocabulary.json`. Pick exactly ONE intent label from
@@ -153,11 +154,13 @@ not on `fallback: true`, not on a weak classification.
 ### Step 4 — Match global concerns (via canonical_tags)
 
 For each `canonical_tag` whose `routes_to` is a `concern:*` target, load the
-matching concern ref under `standards/global/refs/` (`architecture.md`,
-`api-design.md`, `error-handling.md`, `security.md`, `performance.md`,
-`debug.md`). The tag-vocabulary `routes_to` is the matching surface; the
+matching concern ref under `standards/global/refs/`. The full concern set is
+exactly these 8 refs: `architecture.md`, `api-design.md`, `error-handling.md`,
+`security.md`, `auth.md`, `performance.md`, `debug.md`, `cicd.md`. The
+tag-vocabulary `routes_to` is the matching surface; the
 `standards/global/_INDEX.md` Concern Match table remains the within-file route
-target. On `fallback: true`, load the broad concern set.
+target. On `fallback: true`, load all 8 refs (the full concern set enumerated
+above) — not a partial subset.
 
 Supabase key-boundary work stacks with security: when `domain:supabase` is
 matched from secret-key / `service_role` / client-public-env / key-leak language,
@@ -251,8 +254,8 @@ fails the build if any `_INDEX.md` route target points at a missing file.
   - Step 4: each matched `standards/global/refs/<name>.md`
   - Step 5: each matched domain `SKILL.md` + matched `refs/*.md`
 - **Fallback path (corrupt cache):** Step 3 P0 + every `signals.domain_hints`
-  domain `SKILL.md` + the full concern set — loaded broad, compiled, returned;
-  no `write`/`heal`.
+  domain `SKILL.md` + all 8 concern refs (the full concern set enumerated in
+  Step 4) — loaded broad, compiled, returned; no `write`/`heal`.
 
 ## Notes
 

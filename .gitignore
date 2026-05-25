@@ -9,6 +9,8 @@ eval/
 evals/
 improve/
 .agent-skills/
+*/chef
+/chef
 
 # OS
 .DS_Store

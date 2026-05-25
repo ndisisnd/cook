@@ -118,8 +118,15 @@ def compile_skills(skills: list[str], cook_root: Path) -> dict:
     sections: list[str] = []
     degraded: list[str] = []
 
+    root = cook_root.resolve()
     for rel in ordered:
-        path = cook_root / rel
+        path = (cook_root / rel).resolve()
+        # Bounds check before any read: a path that resolves outside cook_root
+        # (e.g. ../../outside.md) must never be read, or its content leaks into
+        # the payload. Degrade it like an unreadable file instead.
+        if not path.is_relative_to(root):
+            degraded.append(rel)
+            continue
         try:
             raw = path.read_text(encoding="utf-8")
         except OSError:
