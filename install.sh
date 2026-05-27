@@ -81,6 +81,12 @@ FILES=(
   standards/nextjs/refs/styling-and-optimization.md
   standards/nextjs/refs/testing.md
   standards/nextjs/refs/tooling.md
+  standards/nodejs/SKILL.md
+  standards/nodejs/_INDEX.md
+  standards/nodejs/refs/async-errors.md
+  standards/nodejs/refs/runtime-safety.md
+  standards/nodejs/refs/testing.md
+  standards/nodejs/refs/tooling.md
   standards/react/SKILL.md
   standards/react/_INDEX.md
   standards/react/refs/component-patterns.md
@@ -90,10 +96,14 @@ FILES=(
   standards/react/refs/state-management.md
   standards/react/refs/testing.md
   standards/react/refs/tooling.md
-  standards/review/SKILL.md
-  standards/review/_INDEX.md
-  standards/review/refs/report-format.md
-  standards/review/refs/review-lenses.md
+  standards/supabase/SKILL.md
+  standards/supabase/_INDEX.md
+  standards/supabase/refs/checklist.md
+  standards/supabase/refs/database-functions.md
+  standards/supabase/refs/edge-functions.md
+  standards/supabase/refs/keys-and-clients.md
+  standards/supabase/refs/migrations.md
+  standards/supabase/refs/rls.md
   standards/typescript/SKILL.md
   standards/typescript/_INDEX.md
   standards/typescript/refs/security.md

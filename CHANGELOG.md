@@ -18,6 +18,7 @@ All notable changes to this project are documented here, newest first.
 - `chef/eval_issues.json`: updated issue-010 to remove the review-specific example.
 - `verify/done/check-vocab-parity.py`: removed the `EXCLUDE = {"review"}` guard (no `standards/review/_INDEX.md` exists to exclude); fixed `ROOT` path computation (was off by one level after script was moved to `verify/done/`).
 - All verification checks pass: 0 `review-code` intent entries in eval set, 10 intents in vocab, 531/531 index keywords covered, 77/77 route targets resolve.
+- `install.sh`: removed stale `standards/review/` entries; added missing `standards/nodejs/` and `standards/supabase/` to match disk.
 
 ---
 
