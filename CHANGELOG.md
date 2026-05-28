@@ -4,6 +4,20 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-28 · `--global` shelf flag and `--domain:ref` sub-ref flags
+
+**feat(cook): add `--global` and sub-ref `--<domain>:<ref>` flag modes for granular explicit loading.**
+
+- `--global` loads the complete global shelf: `standards/global/SKILL.md` + all 8 concern refs. It is the only explicit-mode path that opts back into the P0 floor without triggering auto-detection.
+- Sub-ref flags (`--react:hooks`, `--react:state-management`) load a single ref file from a domain shelf without loading the domain SKILL.md. Combine with the domain flag (`--react --react:hooks`) to load both. Sub-ref flags are valid for all domain shelves; the ref is validated against actual files on disk at runtime via `valid_sub_flags()`.
+- `vocab/tag-vocabulary.json`: added `global` tag with `routes_to: ["shelf:global"]`; updated `_note` to document the three prefix categories (`concern:`, `domain:`, `shelf:`) and the sub-ref syntax.
+- `scripts/cook_cache.py`: added `valid_domain_flags()` (returns domain-only flag names) and `valid_sub_flags(domain)` (enumerates ref stems from disk); updated flag validation in `cmd_lookup` to accept compound `domain:ref` tokens with domain and ref-stem checks; updated docstring.
+- `SKILL.md`: Step 0 documents two flag forms (simple vs sub-ref); Step 0b adds `--global` routing and sub-ref routing rules; Step 6 path-list bullet updated.
+- `README.md`: flags section gains Shelf and Sub-ref categories; examples table extended with `--global`, `--react:hooks`, and `--react --react:hooks` rows.
+- `ARCHITECTURE.md`: Args section updated with simple-flag, sub-ref-flag, and `--global` descriptions.
+
+---
+
 ## [pending] — 2026-05-28 · Explicit args support (`--flag` / prose)
 
 **feat(cook): add explicit override modes to `/cook` — flags pin concerns/domains; prose triggers LLM-guided library search.**

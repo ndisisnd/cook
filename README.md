@@ -55,22 +55,29 @@ You can invoke `/cook` with explicit flags or prose to control exactly what gets
 
 The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow as the vocabulary grows. Treat this list as a snapshot; the vocab file is the source of truth.
 
-**Concerns (8):** `--security`, `--auth`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd`
+**Shelf (1):** `--global` — loads `standards/global/SKILL.md` + all 8 concern refs (P0 + full concern set). Use when you want the global floor without auto-detection.
 
-**Domains (9):** `--react`, `--nextjs`, `--flutter`, `--dart`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql`
+**Concerns (8):** `--security`, `--auth`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd` — each loads one ref from `standards/global/refs/`; no P0.
+
+**Domains (9):** `--react`, `--nextjs`, `--flutter`, `--dart`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
+
+**Sub-ref flags:** `--<domain>:<ref>` loads a single ref from a domain shelf without loading the domain SKILL.md. The `ref` is a file stem under `standards/<domain>/refs/`. Combine with the domain flag to load both: `--react --react:hooks`.
 
 #### Examples
 
 | Invocation | What loads |
 |---|---|
 | `/cook` | Auto-detect from git + manifests; loads global P0 + matched concerns + matched domains |
+| `/cook --global` | `standards/global/SKILL.md` + all 8 concern refs; no auto-detection |
 | `/cook --security` | `standards/global/refs/security.md` only; no P0 |
-| `/cook --react --nextjs` | Both shelves in full (`react/SKILL.md` + all `react/refs/` + `nextjs/SKILL.md` + all `nextjs/refs/`); no P0 |
+| `/cook --react --nextjs` | Both shelves in full; no P0 |
+| `/cook --react:hooks` | `standards/react/refs/hooks.md` only; no SKILL.md, no P0 |
+| `/cook --react --react:hooks` | `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only |
 | `/cook --react fix re-renders in the dashboard` | `standards/react/SKILL.md` + only the refs the LLM picks from `react/_INDEX.md`; no P0, no cache |
 | `/cook refactor the OAuth callback` | LLM scans every `_INDEX.md` and loads matching refs across the whole library; no P0, no cache |
 | `/cook --notarealflag` | Error — non-zero exit, usage printed with the full valid flag list, nothing loaded |
 
-**P0 trade-off:** any explicit flag or prose argument skips the global P0 floor — the contract is "load exactly what I named." Default `/cook` keeps the floor.
+**P0 trade-off:** any explicit flag or prose argument skips the global P0 floor — the contract is "load exactly what I named." Use `--global` to opt back in explicitly. Default `/cook` keeps the floor.
 
 ## Available Standards
 

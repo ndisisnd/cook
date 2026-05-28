@@ -14,8 +14,11 @@ Subcommands
       explicit-prose), fingerprint, signals, confidence, fallback, and on a hit
       the cached routing.
 
-      --flag NAME   Pin a specific concern or domain (repeatable). Valid names
-                    are derived at runtime from tag-vocabulary.json routes_to.
+      --flag NAME   Pin a specific concern, domain, or global shelf (repeatable).
+                    Simple flags (--security, --react, --global) are validated
+                    against tag-vocabulary.json routes_to. Compound sub-ref flags
+                    (--react:hooks) load a single ref from a domain shelf; format
+                    is <domain>:<ref> where ref is a stem under standards/<domain>/refs/.
                     Unknown flag → non-zero exit with usage.
       --prose TEXT  Prose argument. Any non-empty prose causes status: "skip"
                     (LLM must run; no deterministic cache key possible).
@@ -269,9 +272,9 @@ def gather(explicit_paths: list[str], project: Path) -> dict:
 
 
 def valid_flags() -> set:
-    """Compute the valid --flag set at runtime from vocab routes_to (single source of truth).
+    """Compute the valid simple --flag set at runtime from vocab routes_to.
 
-    Strips concern: / domain: prefix from every routes_to target across all tags.
+    Strips any prefix (concern:/domain:/shelf:) from every routes_to target.
     Never hard-codes flag names — vocab is the only source.
     """
     vocab = json.loads(VOCAB_FILE.read_text())
@@ -282,6 +285,25 @@ def valid_flags() -> set:
             if len(parts) == 2:
                 flags.add(parts[1])
     return flags
+
+
+def valid_domain_flags() -> set:
+    """Return only domain-type flag names (support sub-ref syntax <domain>:<ref>)."""
+    vocab = json.loads(VOCAB_FILE.read_text())
+    domains = set()
+    for tag_data in vocab["tags"].values():
+        for target in tag_data.get("routes_to", []):
+            if target.startswith("domain:"):
+                domains.add(target.split(":", 1)[1])
+    return domains
+
+
+def valid_sub_flags(domain: str) -> set:
+    """Return valid ref stems for a domain (file names without .md extension)."""
+    refs_dir = COOK_ROOT / "standards" / domain / "refs"
+    if not refs_dir.is_dir():
+        return set()
+    return {p.stem for p in refs_dir.glob("*.md")}
 
 
 def fingerprint(signals: dict, flags=None) -> str:
@@ -347,13 +369,32 @@ def cmd_lookup(args):
     flags = args.flag or []
     prose = (args.prose or "").strip()
 
-    # Validate flags against the runtime-computed set (single source of truth)
+    # Validate flags: simple flags against vocab, compound domain:ref flags against disk.
     if flags:
         all_valid = valid_flags()
-        unknown = [f for f in flags if f not in all_valid]
-        if unknown:
-            print(f"Error: unknown flag(s): {', '.join(sorted(unknown))}", file=sys.stderr)
-            print(f"Valid flags: {', '.join(sorted(all_valid))}", file=sys.stderr)
+        all_domains = valid_domain_flags()
+        errors = []
+        for f in flags:
+            if ":" in f:
+                domain_part, ref_part = f.split(":", 1)
+                if domain_part not in all_domains:
+                    errors.append(
+                        f"'{f}': sub-ref syntax requires a domain left of ':', "
+                        f"'{domain_part}' is not a domain flag"
+                    )
+                else:
+                    valid_refs = valid_sub_flags(domain_part)
+                    if ref_part not in valid_refs:
+                        errors.append(
+                            f"'{f}': '{ref_part}' not found in {domain_part}/refs/ "
+                            f"(valid: {', '.join(sorted(valid_refs))})"
+                        )
+            elif f not in all_valid:
+                errors.append(f"unknown flag '{f}'")
+        if errors:
+            for e in errors:
+                print(f"Error: {e}", file=sys.stderr)
+            print(f"Valid simple flags: {', '.join(sorted(all_valid))}", file=sys.stderr)
             sys.exit(1)
 
     # Explicit-prose path: skip cache entirely.

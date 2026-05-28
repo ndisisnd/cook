@@ -89,11 +89,20 @@ Cook supports three invocation modes, selected by the presence of flags and/or p
 **"Any explicit args"** (flags, prose, or both) is the single break-point for
 P0 and auto-detection. The contract is "load exactly what I named."
 
-The valid `--flag` set is the union of `routes_to` targets in
-`vocab/tag-vocabulary.json`, stripped of the `concern:` / `domain:` prefix.
-`cook_cache.py` computes this set at runtime from the vocab — never from a
-hard-coded list — so the flag namespace stays in sync with the vocabulary
-automatically.
+**Simple flags** are validated against `valid_flags()`, which strips any
+`concern:` / `domain:` / `shelf:` prefix from every `routes_to` target in
+`vocab/tag-vocabulary.json`. `cook_cache.py` computes this at runtime — never
+from a hard-coded list.
+
+**Sub-ref flags** use the format `--<domain>:<ref>`. `valid_domain_flags()`
+derives the allowed domain part from `domain:*` targets in the vocab;
+`valid_sub_flags(domain)` enumerates actual `.md` file stems under
+`standards/<domain>/refs/` at runtime. Sub-ref flags load only the named ref
+file — the domain SKILL.md does not auto-load.
+
+**`--global`** routes to `shelf:global` in the vocab, loading
+`standards/global/SKILL.md` + every `standards/global/refs/*.md` (P0 +
+all concern refs). It is the only explicit-mode path that loads the P0 floor.
 
 **Cache-key extension.** For `explicit-flags` invocations the fingerprint basis
 is extended to `(signals, sorted(flags))`. Auto-mode entries (no flags) keep

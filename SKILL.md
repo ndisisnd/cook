@@ -74,10 +74,16 @@ Cook is the single entry point for standards. It does not hold rules of its own 
 
 Scan the invocation string **before** doing anything else:
 
-- Tokens beginning with `--` are **flags**. Validate each against the runtime
-  flag set (derived from `vocab/tag-vocabulary.json` `routes_to` at runtime —
-  never a hard-coded list). On an unknown flag, exit non-zero and print usage
-  with the full valid flag list.
+- Tokens beginning with `--` are **flags** of two forms:
+  - **Simple flags** (`--security`, `--react`, `--global`): validated against
+    the runtime flag set derived from `vocab/tag-vocabulary.json` `routes_to`.
+    Unknown flag → non-zero exit with the full valid flag list.
+  - **Sub-ref flags** (`--react:hooks`): format is `--<domain>:<ref>`. `domain`
+    must be a valid domain flag; `ref` must be a file stem under
+    `standards/<domain>/refs/`. Sub-ref flags load only the named ref — the
+    domain SKILL.md does NOT auto-load. Combine with the domain flag to load
+    both: `/cook --react --react:hooks` loads `react/SKILL.md` +
+    `react/refs/hooks.md`.
 - A bare `--` token (Unix convention) **terminates flag parsing**: every token
   after it is treated as prose, even if it begins with `--`. Use this when
   prose legitimately contains a dash-prefixed substring (e.g. `/cook -- fix the
@@ -105,12 +111,15 @@ flags into the fingerprint basis and performs a normal hit/miss lookup.
 
 #### Step 0b — Resolve refs from args (no P0, no auto-match)
 
-**Never load `standards/global/SKILL.md`** in explicit mode — P0 is opt-in to
-the default protocol only. Explicit args are the entire load surface.
+**Never load `standards/global/SKILL.md`** automatically in explicit mode — P0
+is opt-in to the default protocol only. The exception is `--global` (see below).
 
+- `--global` → `standards/global/SKILL.md` + every `standards/global/refs/*.md`
+  (P0 universal rules + all 8 concern refs — the complete global shelf). This is
+  the only way to explicitly opt back into P0 while still bypassing auto-detection.
 - Each **concern flag** (`--security`, `--auth`, `--performance`,
   `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd`)
-  → load `standards/global/refs/<concern>.md`.
+  → load `standards/global/refs/<concern>.md` only (no P0 SKILL.md).
 - Each **domain flag** (`--react`, `--nextjs`, `--flutter`, `--dart`,
   `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql`) →
   `standards/<domain>/SKILL.md` always loads, plus:
@@ -119,6 +128,10 @@ the default protocol only. Explicit args are the entire load surface.
     pick which refs match the prose. If the LLM picks zero refs, the domain
     `SKILL.md` still loads — refs are additive; the flag guarantees the shelf
     entry point.
+- Each **sub-ref flag** (`--react:hooks`, `--react:state-management`) →
+  `standards/<domain>/refs/<ref>.md` only. The domain SKILL.md does NOT load.
+  Combine with the domain flag to load both: `--react --react:hooks` gives
+  `react/SKILL.md` + `react/refs/hooks.md`.
 - **Prose without any flag** → LLM scans every `_INDEX.md` (per-domain +
   `standards/global/_INDEX.md`) and picks matching refs across the whole
   library. The LLM may load any `SKILL.md` + `refs/*.md` it surfaces, but
@@ -305,12 +318,15 @@ fails the build if any `_INDEX.md` route target points at a missing file.
   - Step 2: `standards/global/SKILL.md`
   - Step 3: each matched `standards/global/refs/<name>.md`
   - Step 4: each matched domain `SKILL.md` + matched `refs/*.md`
-- **Explicit path (Step 0b):** no P0; paths come from args alone:
-  - Each concern flag → `standards/global/refs/<concern>.md`
+- **Explicit path (Step 0b):** no auto P0; paths come from args alone:
+  - `--global` → `standards/global/SKILL.md` + every `standards/global/refs/*.md`
+  - Each concern flag → `standards/global/refs/<concern>.md` (no SKILL.md)
   - Each domain flag (no prose) → `standards/<domain>/SKILL.md` + every
     `standards/<domain>/refs/*.md`
   - Each domain flag (with prose) → `standards/<domain>/SKILL.md` + the refs
     the LLM picks from `<domain>/_INDEX.md` (domain SKILL.md always loads)
+  - Each sub-ref flag (`--react:hooks`) → `standards/<domain>/refs/<ref>.md`
+    only (no domain SKILL.md unless the bare domain flag is also present)
   - Prose only → any `SKILL.md` + `refs/*.md` the LLM surfaces from scanning
     all `_INDEX.md` files; the LLM never invents paths
 - **Fallback path (corrupt cache):** Step 2 P0 + every `signals.domain_hints`
