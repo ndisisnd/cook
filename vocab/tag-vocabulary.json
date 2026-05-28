@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_note": "Canonical routing surface for cook. raw_signal -> canonical tag -> routes_to. Seeded from every standards/*/_INDEX.md keyword column + the global Concern Match table for coverage parity, then extended with gap-closing synonyms. Within-domain ref selection still uses the domain _INDEX.md tables; this file drives top-level routing only. Verify parity with verify/check-vocab-parity.py.",
+  "_note": "Canonical routing surface for cook. raw_signal -> canonical tag -> routes_to. Seeded from every standards/*/_INDEX.md keyword column + the global Concern Match table for coverage parity, then extended with gap-closing synonyms. Within-domain ref selection still uses the domain _INDEX.md tables; this file drives top-level routing only. Verify parity with verify/check-vocab-parity.py. The routes_to targets (e.g. concern:security, domain:react) double as the public --flag namespace for /cook invocations; renaming or deleting a routes_to target is therefore a breaking change for the CLI surface.",
   "tags": {
     "react": {
       "routes_to": ["domain:react"],

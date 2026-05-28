@@ -46,7 +46,31 @@ COOK_DIR=/path/to/destination bash install.sh
 6. **Load domain rules**: Domain rules for your programming language are loaded. Multiple domains can match at once.
 7. **Cache the result**: Routing decisions are written to cache so the next identical surface hits instantly. 
 8. **Compile and output**: A Python compiler stitches all the loaded rule files into one markdown blob for your agent to ingest. `cook` ends here!
-   
+
+### Usage
+
+You can invoke `/cook` with explicit flags or prose to control exactly what gets loaded.
+
+#### Flags
+
+The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow as the vocabulary grows. Treat this list as a snapshot; the vocab file is the source of truth.
+
+**Concerns (8):** `--security`, `--auth`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd`
+
+**Domains (9):** `--react`, `--nextjs`, `--flutter`, `--dart`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql`
+
+#### Examples
+
+| Invocation | What loads |
+|---|---|
+| `/cook` | Auto-detect from git + manifests; loads global P0 + matched concerns + matched domains |
+| `/cook --security` | `standards/global/refs/security.md` only; no P0 |
+| `/cook --react --nextjs` | Both shelves in full (`react/SKILL.md` + all `react/refs/` + `nextjs/SKILL.md` + all `nextjs/refs/`); no P0 |
+| `/cook --react fix re-renders in the dashboard` | `standards/react/SKILL.md` + only the refs the LLM picks from `react/_INDEX.md`; no P0, no cache |
+| `/cook refactor the OAuth callback` | LLM scans every `_INDEX.md` and loads matching refs across the whole library; no P0, no cache |
+| `/cook --notarealflag` | Error — non-zero exit, usage printed with the full valid flag list, nothing loaded |
+
+**P0 trade-off:** any explicit flag or prose argument skips the global P0 floor — the contract is "load exactly what I named." Default `/cook` keeps the floor.
 
 ## Available Standards
 

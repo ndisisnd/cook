@@ -4,6 +4,27 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-28 · Explicit args support (`--flag` / prose)
+
+**feat(cook): add explicit override modes to `/cook` — flags pin concerns/domains; prose triggers LLM-guided library search.**
+
+Three invocation modes are now supported:
+
+- **`auto`** (no args, existing behaviour): auto-detects the change surface from git + manifests, loads global P0 + matched concerns + matched domains. Unchanged from the pre-feature protocol.
+- **`explicit-flags`** (`/cook --security`, `/cook --react --nextjs`, etc.): bypasses auto-detection and P0. Each flag loads exactly the named shelf — concern flags load `standards/global/refs/<concern>.md`; domain flags load `standards/<domain>/SKILL.md` + all `standards/<domain>/refs/*`. Cache participates (fingerprint includes flags). Valid flag names are derived at runtime from `vocab/tag-vocabulary.json` `routes_to`; an unknown flag exits non-zero with usage.
+- **`explicit-prose`** (`/cook refactor the OAuth callback`, `/cook --react fix re-renders`): the LLM picks refs from the relevant `_INDEX.md` tables. With flags, the LLM narrows within those shelves; without flags, the LLM scans the whole library. No cache read or write — prose is intentionally uncacheable. P0 is not loaded.
+
+**P0 trade-off:** any explicit flag or prose argument skips the global P0 floor. The contract is "load exactly what I named." Default `/cook` keeps the floor.
+
+- `SKILL.md`: new Step 0 (arg parsing, mode branch table, Steps 0a–0c). Step 2 notes P0 is default-protocol-only. Step 5 notes it is skipped on `explicit-prose`. Step 6 path-list gains an Explicit path bullet.
+- `scripts/cook_cache.py`: new `valid_flags()` (runtime-computed from vocab); `fingerprint()` accepts optional `flags` (empty/absent → byte-identical basis, no cache flush); `cmd_lookup` gains `--flag`/`--prose` with three-mode logic; `cmd_write` records `flags` and `mode` on entries.
+- `ARCHITECTURE.md`: new **Args** section with mode table and cache-key extension description.
+- `README.md`: new **Usage** subsection with flag reference, six worked examples, and P0 trade-off note.
+- `vocab/tag-vocabulary.json`: `_note` updated — `routes_to` targets double as the public `--flag` namespace; renaming one is a breaking CLI change.
+- `verify/check-cook-args.py` (new): 25-assertion test suite (D1–D7) covering flag namespace closure, fingerprint backwards-compat, fallback suppression, prose skip-cache, unknown-flag error, cache round-trip, and two-domain composition.
+
+---
+
 ## [pending] — 2026-05-25 · Remove review standard
 
 **refactor(cook): remove `standards/review/` and all live routing references to it.**

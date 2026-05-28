@@ -6,18 +6,25 @@ classification so a cache hit never wakes the model.
 
 Subcommands
 -----------
-  lookup [--path P ...] [--project DIR]
+  lookup [--path P ...] [--project DIR] [--flag NAME ...] [--prose TEXT]
       Gather raw signals via the T1/T2/T4/T5 cascade (T3 plan/PRD parsing is
       left to the agent on the miss path), build a fingerprint from raw
       observable signals (NO intent label), and check the cache. Prints a JSON
-      blob to stdout: status (hit|miss|stale), fingerprint, signals, confidence,
-      fallback, and on a hit the cached routing.
+      blob to stdout: status (hit|miss|stale|skip), mode (auto|explicit-flags|
+      explicit-prose), fingerprint, signals, confidence, fallback, and on a hit
+      the cached routing.
+
+      --flag NAME   Pin a specific concern or domain (repeatable). Valid names
+                    are derived at runtime from tag-vocabulary.json routes_to.
+                    Unknown flag → non-zero exit with usage.
+      --prose TEXT  Prose argument. Any non-empty prose causes status: "skip"
+                    (LLM must run; no deterministic cache key possible).
 
   write --fingerprint F --intent I --skills S[,S...] [--tags T,...]
         [--confidence high|medium|low] [--fallback] [--degraded P,...]
-        [--index IDX,...]
+        [--index IDX,...] [--flag NAME ...] [--mode MODE]
       Atomically upsert a cache entry (tmp + os.replace) with a tag-vocabulary
-      checksum and per-index checksums.
+      checksum and per-index checksums. Records flags and mode on the entry.
 
   heal --fingerprint F --degraded [P,...]
       Reconcile an existing entry's `degraded` flag with reality (Phase 3,
@@ -261,16 +268,40 @@ def gather(explicit_paths: list[str], project: Path) -> dict:
     }
 
 
-def fingerprint(signals: dict) -> str:
+def valid_flags() -> set:
+    """Compute the valid --flag set at runtime from vocab routes_to (single source of truth).
+
+    Strips concern: / domain: prefix from every routes_to target across all tags.
+    Never hard-codes flag names — vocab is the only source.
+    """
+    vocab = json.loads(VOCAB_FILE.read_text())
+    flags = set()
+    for tag_data in vocab["tags"].values():
+        for target in tag_data.get("routes_to", []):
+            parts = target.split(":", 1)
+            if len(parts) == 2:
+                flags.add(parts[1])
+    return flags
+
+
+def fingerprint(signals: dict, flags=None) -> str:
     """Hash of RAW OBSERVABLE SIGNALS ONLY — deliberately excludes intent label,
-    so the cache can be checked before classification."""
-    basis = json.dumps({
+    so the cache can be checked before classification.
+
+    When flags is non-empty, they are folded into the basis so flag-overrides
+    produce distinct cache entries from auto-mode entries on the same surface.
+    Empty/absent flags must NOT change the basis — existing auto-mode entries
+    must remain valid after the upgrade (B2 backwards-compat guarantee).
+    """
+    basis = {
         "files": signals["files"],
         "frameworks": signals["frameworks"],
         "domain_hints": signals["domain_hints"],
         "concern_hints": signals["concern_hints"],
-    }, sort_keys=True)
-    return hashlib.sha256(basis.encode("utf-8")).hexdigest()[:16]
+    }
+    if flags:
+        basis["flags"] = sorted(flags)
+    return hashlib.sha256(json.dumps(basis, sort_keys=True).encode("utf-8")).hexdigest()[:16]
 
 
 # ----------------------------------------------------------------- cache I/O
@@ -313,7 +344,37 @@ def entry_is_fresh(entry: dict) -> bool:
 def cmd_lookup(args):
     project = Path(args.project).resolve() if args.project else Path.cwd()
     signals = gather(args.path or [], project)
-    fp = fingerprint(signals)
+    flags = args.flag or []
+    prose = (args.prose or "").strip()
+
+    # Validate flags against the runtime-computed set (single source of truth)
+    if flags:
+        all_valid = valid_flags()
+        unknown = [f for f in flags if f not in all_valid]
+        if unknown:
+            print(f"Error: unknown flag(s): {', '.join(sorted(unknown))}", file=sys.stderr)
+            print(f"Valid flags: {', '.join(sorted(all_valid))}", file=sys.stderr)
+            sys.exit(1)
+
+    # Explicit-prose path: skip cache entirely.
+    # LLM must interpret prose; no deterministic key is possible without either
+    # requiring verbatim string equality (useless) or normalising with an LLM
+    # (defeats the cache's guarantee that a hit never wakes the model).
+    if prose:
+        print(json.dumps({
+            "status": "skip",
+            "mode": "explicit-prose",
+            "flags": sorted(flags),
+            "prose": prose,
+            "signals": signals,
+            "confidence": signals["confidence"],
+            "fallback": False,   # explicit args override the broad-load safety net
+            "routing": None,
+        }, indent=2))
+        return
+
+    # Auto or explicit-flags path
+    fp = fingerprint(signals, flags or None)
     routing, corrupt = load_routing()
 
     if corrupt:
@@ -341,21 +402,32 @@ def cmd_lookup(args):
     else:
         status, payload = "stale", None
 
-    print(json.dumps({
+    # Explicit-flags mode forces fallback: false — the user's flags are the load
+    # surface regardless of what gather() could observe on the signal surface.
+    mode = "explicit-flags" if flags else "auto"
+    effective_fallback = False if flags else signals["fallback"]
+
+    result = {
         "status": status,
+        "mode": mode,
         "fingerprint": fp,
         "signals": signals,
         "confidence": signals["confidence"],
-        "fallback": signals["fallback"],
+        "fallback": effective_fallback,
         "routing": payload,
-    }, indent=2))
+    }
+    if flags:
+        result["flags"] = sorted(flags)
+    print(json.dumps(result, indent=2))
 
 
 def cmd_write(args):
     routing, _ = load_routing()           # a corrupt cache is overwritten fresh
     skills = [s for s in args.skills.split(",") if s]
     indexes = [i for i in (args.index or "").split(",") if i]
-    routing["entries"][args.fingerprint] = {
+    flags = args.flag or []
+    mode = args.mode if args.mode else ("explicit-flags" if flags else "auto")
+    entry = {
         "intent": args.intent,
         "skills": skills,
         "canonical_tags": [t for t in (args.tags or "").split(",") if t],
@@ -365,7 +437,11 @@ def cmd_write(args):
         "vocab_checksum": sha256_file(VOCAB_FILE),
         "index_checksums": {i: sha256_file(COOK_ROOT / i) for i in indexes},
         "decided_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "mode": mode,
     }
+    if flags:
+        entry["flags"] = sorted(flags)
+    routing["entries"][args.fingerprint] = entry
     atomic_write(routing)
     print(json.dumps({"status": "written", "fingerprint": args.fingerprint}))
 
@@ -414,6 +490,10 @@ def main():
     lk = sub.add_parser("lookup")
     lk.add_argument("--path", action="append", help="explicit file path (repeatable)")
     lk.add_argument("--project", help="project dir to scan (default CWD)")
+    lk.add_argument("--flag", action="append", metavar="NAME",
+                    help="pin a concern or domain flag (repeatable); validated against vocab")
+    lk.add_argument("--prose", metavar="TEXT",
+                    help="prose argument; any non-empty value skips the cache (status: skip)")
     lk.set_defaults(func=cmd_lookup)
 
     wr = sub.add_parser("write")
@@ -425,6 +505,10 @@ def main():
     wr.add_argument("--fallback", action="store_true")
     wr.add_argument("--degraded", help="comma-separated failed paths")
     wr.add_argument("--index", help="comma-separated _INDEX.md paths to checksum")
+    wr.add_argument("--flag", action="append", metavar="NAME",
+                    help="flags used for this lookup (repeatable; recorded on entry)")
+    wr.add_argument("--mode", choices=["auto", "explicit-flags"],
+                    help="mode recorded on entry (default: explicit-flags if --flag, else auto)")
     wr.set_defaults(func=cmd_write)
 
     hl = sub.add_parser("heal")

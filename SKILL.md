@@ -62,6 +62,81 @@ Cook is the single entry point for standards. It does not hold rules of its own 
 > mechanical self-heal of the `degraded` flag (Phase 3, feature 7). A corrupt
 > cache degrades to greedy routing (Component 8) without dropping standards.
 
+**Mode branch table.** Step 0 selects which path to take before anything else:
+
+| Mode | Condition | P0 loaded? | Cache participates? | Steps |
+|---|---|---|---|---|
+| `auto` | No args | **yes** (unconditional) | yes (signals fingerprint) | 1 → 2 → 3 → 4 → 5 → 6 |
+| `explicit-flags` | Flags only, no prose | **no** | yes (signals + flags fingerprint) | 0a → 0b → 0c → 5 → 6 |
+| `explicit-prose` | Any prose (± flags) | **no** | **no** (LLM must run anyway) | 0a → 0b → 0c → 6 |
+
+### Step 0 — Parse user args
+
+Scan the invocation string **before** doing anything else:
+
+- Tokens beginning with `--` are **flags**. Validate each against the runtime
+  flag set (derived from `vocab/tag-vocabulary.json` `routes_to` at runtime —
+  never a hard-coded list). On an unknown flag, exit non-zero and print usage
+  with the full valid flag list.
+- A bare `--` token (Unix convention) **terminates flag parsing**: every token
+  after it is treated as prose, even if it begins with `--`. Use this when
+  prose legitimately contains a dash-prefixed substring (e.g. `/cook -- fix the
+  --separator handling`).
+- All remaining text (after flags and the optional `--` terminator) is the
+  **prose** argument (whitespace-trimmed). Flag order is free: `/cook fix bug
+  --react` parses identically to `/cook --react fix bug`.
+- **`flags == [] && prose == ""`** → auto mode: fall through to Step 1. No
+  behavioural change from the pre-feature protocol.
+- **Any non-empty flags or prose** → explicit mode: proceed to Steps 0a–0c.
+
+#### Step 0a — Resolver call with args
+
+Call the resolver with the parsed args attached:
+
+```
+python3 scripts/cook_cache.py lookup --project <dir> \
+  [--flag <name> ...] [--prose <text>]
+```
+
+The resolver gathers raw signals (kept on the entry for diagnostics), validates
+flags, determines the mode, and — on the `explicit-prose` path — returns
+`status: "skip"` without consulting the cache. On `explicit-flags` it folds the
+flags into the fingerprint basis and performs a normal hit/miss lookup.
+
+#### Step 0b — Resolve refs from args (no P0, no auto-match)
+
+**Never load `standards/global/SKILL.md`** in explicit mode — P0 is opt-in to
+the default protocol only. Explicit args are the entire load surface.
+
+- Each **concern flag** (`--security`, `--auth`, `--performance`,
+  `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd`)
+  → load `standards/global/refs/<concern>.md`.
+- Each **domain flag** (`--react`, `--nextjs`, `--flutter`, `--dart`,
+  `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql`) →
+  `standards/<domain>/SKILL.md` always loads, plus:
+  - If prose is **empty**: every `standards/<domain>/refs/*.md` (full shelf).
+  - If prose is **non-empty**: use the domain's `_INDEX.md` keyword table to
+    pick which refs match the prose. If the LLM picks zero refs, the domain
+    `SKILL.md` still loads — refs are additive; the flag guarantees the shelf
+    entry point.
+- **Prose without any flag** → LLM scans every `_INDEX.md` (per-domain +
+  `standards/global/_INDEX.md`) and picks matching refs across the whole
+  library. The LLM may load any `SKILL.md` + `refs/*.md` it surfaces, but
+  never invents paths.
+- **Explicit args beat fallback.** If `gather()` would normally set
+  `fallback: true` (greenfield, no git, no manifests), explicit mode suppresses
+  it — the user's flags/prose are the load surface regardless. Signals are
+  still recorded on the entry for diagnostics.
+
+#### Step 0c — Skip to Step 5 (explicit-flags) or Step 6 (explicit-prose)
+
+On `explicit-flags`: proceed to Step 5 (cache write) then Step 6 (compile).
+On `explicit-prose`: skip Step 5 entirely (no cache write; prose is uncacheable)
+and go directly to Step 6.
+
+The existing Steps 1c (classify) / 3 / 4 are skipped wholesale on both explicit
+paths.
+
 ### Step 1 — Build the normalised blob (cook-owned, cache-first)
 
 Cook does **not** wait for a caller-written summary. It grounds itself in real
@@ -122,6 +197,9 @@ Load `standards/global/SKILL.md`. Its P0 universal rules apply to every code tas
 regardless of stack, confidence, or cache state. This floor is never skipped —
 not on `fallback: true`, not on a weak classification.
 
+Step 2 is part of the default protocol only. In explicit mode (Step 0), P0 is
+intentionally skipped — the user has taken manual control of the surface.
+
 ### Step 3 — Match global concerns (via canonical_tags)
 
 For each `canonical_tag` whose `routes_to` is a `concern:*` target, load the
@@ -150,9 +228,12 @@ that domain to load. For `typescript`, load `standards/typescript/SKILL.md`
 directly. On `fallback: true`, load the broad domain set indicated by
 `signals.domain_hints`.
 
-### Step 5 — Write the cache entry (miss path only)
+### Step 5 — Write the cache entry (auto and explicit-flags miss path only)
 
-After matching, persist the decision so the next identical surface is a hit:
+After matching, persist the decision so the next identical surface is a hit.
+This step runs on `auto` and `explicit-flags` modes only. It is **never** called
+on the `explicit-prose` path — prose is intentionally uncacheable because the
+LLM's ref selection cannot be reproduced from a deterministic key.
 
 ```
 python3 scripts/cook_cache.py write --fingerprint <fp> --intent <label> \
@@ -224,6 +305,14 @@ fails the build if any `_INDEX.md` route target points at a missing file.
   - Step 2: `standards/global/SKILL.md`
   - Step 3: each matched `standards/global/refs/<name>.md`
   - Step 4: each matched domain `SKILL.md` + matched `refs/*.md`
+- **Explicit path (Step 0b):** no P0; paths come from args alone:
+  - Each concern flag → `standards/global/refs/<concern>.md`
+  - Each domain flag (no prose) → `standards/<domain>/SKILL.md` + every
+    `standards/<domain>/refs/*.md`
+  - Each domain flag (with prose) → `standards/<domain>/SKILL.md` + the refs
+    the LLM picks from `<domain>/_INDEX.md` (domain SKILL.md always loads)
+  - Prose only → any `SKILL.md` + `refs/*.md` the LLM surfaces from scanning
+    all `_INDEX.md` files; the LLM never invents paths
 - **Fallback path (corrupt cache):** Step 2 P0 + every `signals.domain_hints`
   domain `SKILL.md` + all 8 concern refs (the full concern set enumerated in
   Step 3) — loaded broad, compiled, returned; no `write`/`heal`.

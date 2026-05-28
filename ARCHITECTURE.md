@@ -76,6 +76,37 @@ Return the JSON envelope to the invoking agent. A non-empty `degraded` is a part
 
 ---
 
+## Args
+
+Cook supports three invocation modes, selected by the presence of flags and/or prose arguments:
+
+| Mode | Condition | Auto-detect? | P0 loaded? | Cache participates? |
+|---|---|---|---|---|
+| `auto` | `/cook` (no args) | yes | yes (always) | yes (signals fingerprint) |
+| `explicit-flags` | `/cook --security`, `/cook --react --nextjs` | no | **no** | yes (signals + flags fingerprint) |
+| `explicit-prose` | `/cook refactor OAuth callback`, `/cook --react fix re-renders` | no | **no** | **no** |
+
+**"Any explicit args"** (flags, prose, or both) is the single break-point for
+P0 and auto-detection. The contract is "load exactly what I named."
+
+The valid `--flag` set is the union of `routes_to` targets in
+`vocab/tag-vocabulary.json`, stripped of the `concern:` / `domain:` prefix.
+`cook_cache.py` computes this set at runtime from the vocab — never from a
+hard-coded list — so the flag namespace stays in sync with the vocabulary
+automatically.
+
+**Cache-key extension.** For `explicit-flags` invocations the fingerprint basis
+is extended to `(signals, sorted(flags))`. Auto-mode entries (no flags) keep
+their byte-identical basis, so existing cache entries remain valid after the
+upgrade with no flush. Flag-only invocations with the same flags on the same
+signal surface hash to the same fingerprint; different flags on the same surface
+produce distinct entries. Prose is deliberately excluded from the key: there is
+no way to compute a deterministic key from prose without either requiring
+verbatim string equality (rephrasings miss) or normalising with an LLM (which
+defeats the cache's core guarantee that a hit never wakes the model).
+
+---
+
 ## Skills
 
 | Skill | Description |
