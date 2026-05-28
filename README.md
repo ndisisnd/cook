@@ -53,6 +53,8 @@ You can invoke `/cook` with explicit flags or prose to control exactly what gets
 
 #### Flags
 
+_Refer to [FLAG_LIST.md](FLAG-LIST.md) for the full list of flags_
+
 The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow as the vocabulary grows. Treat this list as a snapshot; the vocab file is the source of truth.
 
 **Shelf (1):** `--global` — loads `standards/global/SKILL.md` + all 8 concern refs (P0 + full concern set). Use when you want the global floor without auto-detection.

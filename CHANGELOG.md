@@ -4,6 +4,18 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-05-28 · Comprehensive security standards library
+
+**feat(standards/security): add OWASP and core security guidelines library.**
+
+- `standards/security/SKILL.md`: main entry point describing library structure and routing.
+- `standards/security/_INDEX.md`: searchable index for prose-mode lookup across 100+ standards.
+- `standards/security/core/`: core security standards (cryptography, APIs, authentication, data storage, etc.).
+- `standards/security/owasp/`: detailed OWASP guidance (injection, XSS, CSRF, serialization, and 90+ modules).
+- `README.md`: updated to reference FLAG_LIST.md.
+
+---
+
 ## [pending] — 2026-05-28 · `--global` shelf flag and `--domain:ref` sub-ref flags
 
 **feat(cook): add `--global` and sub-ref `--<domain>:<ref>` flag modes for granular explicit loading.**
