@@ -4,19 +4,24 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased]
+## [3aa98de] — 2026-05-28 · Compress OWASP codeguard security standards
 
-- Compress and refactor security standards with streamlined template format
+**refactor(standards/security): compress OWASP codeguard standards to new template format.**
 
-## [pending] — 2026-05-28 · Comprehensive security standards library
+- All `standards/security/owasp/` and `standards/security/core/` files reformatted to the streamlined CodeGuard template (terse rules, no prose filler).
+- `standards/security/SKILL.md`: concern-mapping table updated to match compressed filenames and new signal keywords.
+
+## [77b2472] — 2026-05-28 · Comprehensive security standards library
 
 **feat(standards/security): add OWASP and core security guidelines library.**
 
-- `standards/security/SKILL.md`: main entry point describing library structure and routing.
+The `standards/security/` shelf is a granular, Project CodeGuard–based security library. It is the deep counterpart to `standards/global/refs/security.md`, which remains a general-purpose standalone for light security concern routing. Use `standards/security/` for security-focused tasks; the global ref loads automatically for all other tasks.
+
+- `standards/security/SKILL.md`: main entry point — 3 always-apply P0 rules (no hardcoded credentials, approved crypto, certificate hygiene) and a 30-concern routing table.
 - `standards/security/_INDEX.md`: searchable index for prose-mode lookup across 100+ standards.
-- `standards/security/core/`: core security standards (cryptography, APIs, authentication, data storage, etc.).
-- `standards/security/owasp/`: detailed OWASP guidance (injection, XSS, CSRF, serialization, and 90+ modules).
-- `README.md`: updated to reference FLAG_LIST.md.
+- `standards/security/core/`: 23 language-agnostic refs covering credentials, cryptography, auth/MFA, authorization, session management, input validation, client-side security, API/web services, data storage, file handling, logging, supply chain, CI/CD/containers, Kubernetes, IaC, mobile, MCP/AI, C/C++ safety, and framework specifics.
+- `standards/security/owasp/`: 90+ OWASP cheat sheet refs covering injection, XSS/DOM-XSS, CSRF, OAuth2, JWT, SAML, IDOR, mass assignment, serialization, crypto storage, transport security, HTTP headers, Docker, Kubernetes, CI/CD, microservices, zero trust, and framework-specific sheets (Node.js, Django, Java, PHP, Ruby, .NET).
+- `README.md`, `ARCHITECTURE.md`: updated to document the security shelf and note the global/granular distinction.
 
 ---
 

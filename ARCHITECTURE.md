@@ -14,7 +14,8 @@ SKILL.md (cook)
 │   ├── cook_compile.py          compiler: dedup, bucket, concatenate
 │   └── check_index_routes.py    CI validator: _INDEX.md route integrity
 └── standards/
-    ├── global/          universal P0 rules + concern refs
+    ├── global/          universal P0 rules + concern refs (includes general security ref)
+    ├── security/        Project CodeGuard security library (core/ + owasp/); superset of global refs/security.md
     ├── flutter/         Flutter/Dart UI
     ├── dart/            Dart 3 language
     ├── nextjs/          Next.js App Router
@@ -121,7 +122,8 @@ defeats the cache's core guarantee that a hit never wakes the model).
 | Skill | Description |
 |---|---|
 | cook | Entry-point orchestrator: cache-first routing, classification, and payload compilation. |
-| global | Universal P0 rules that apply to every task; concern refs are loaded on top by cook. |
+| global | Universal P0 rules that apply to every task; concern refs are loaded on top by cook. Includes `refs/security.md`, a general-purpose security standard usable standalone. |
+| security | Project CodeGuard comprehensive security library. Three always-apply P0 rules (no hardcoded credentials, approved crypto, certificate hygiene) plus 30+ concern-specific refs and 100+ OWASP cheat sheets. Use for security-focused work; `global/refs/security.md` is the lighter standalone alternative. |
 | flutter | Flutter/Dart UI standards covering widgets, state management, navigation, architecture, performance, and testing. |
 | dart | Dart 3.x language standards: null safety, patterns, sealed classes, records, class modifiers, naming, immutability, collections, async, and import organisation. |
 | nextjs | Next.js App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
@@ -160,11 +162,21 @@ defeats the cache's core guarantee that a hit never wakes the model).
 - `refs/architecture.md`: Component and state structure rules across layers.
 - `refs/api-design.md`: HTTP verb semantics, status codes, request/response shape.
 - `refs/error-handling.md`: Error architecture, propagation, and user-facing error design.
-- `refs/security.md`: UI, API, and auth security rules.
+- `refs/security.md`: General-purpose security rules (OWASP Top 10 quick-ref, parameterized queries, secret management, input validation). Usable standalone — lighter alternative to the full `security/` shelf.
 - `refs/auth.md`: Authentication and authorisation patterns.
 - `refs/performance.md`: Performance workflow and profiling discipline.
 - `refs/debug.md`: Scientific debugging method and instrumentation rules.
 - `refs/cicd.md`: CI/CD pipeline and deployment configuration.
+
+### security
+
+`standards/security/` uses two subdirectories rather than a flat `refs/` layout:
+
+**`core/`** — language-agnostic, always-applicable rules (23 files):
+- `codeguard-1-hardcoded-credentials.md`, `codeguard-1-crypto-algorithms.md`, `codeguard-1-digital-certificates.md`: always-apply P0 rules checked on every task.
+- Concern refs: additional cryptography, API/web services, auth/MFA, authorization/access control, client-side web security, cloud/Kubernetes, data storage, DevOps/CI/CD/containers, file handling, framework-and-languages, IaC, input validation/injection, logging, MCP/AI security, mobile apps, privacy/data protection, C/C++ safe functions, session management/cookies, supply chain, XML/serialization.
+
+**`owasp/`** — detailed OWASP cheat sheet guidance (90+ files): authentication, authorization, injection, XSS/DOM-XSS, CSRF, session management, crypto storage, transport security, HTTP headers, OAuth2, JWT, SAML, IDOR, mass assignment, file upload, XXE, deserialization, Docker, Kubernetes, CI/CD, microservices, zero trust, and framework-specific sheets (Node.js, Django, Java, PHP, Ruby, .NET).
 
 ### flutter
 
