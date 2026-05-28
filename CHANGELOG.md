@@ -4,18 +4,18 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [3aa98de] — 2026-05-28 · Compress OWASP codeguard security standards
+## [3aa98de] — 2026-05-28 · Compress OWASP security standards
 
-**refactor(standards/security): compress OWASP codeguard standards to new template format.**
+**refactor(standards/security): compress OWASP standards to new template format.**
 
-- All `standards/security/owasp/` and `standards/security/core/` files reformatted to the streamlined CodeGuard template (terse rules, no prose filler).
+- All `standards/security/owasp/` and `standards/security/core/` files reformatted to the streamlined template (terse rules, no prose filler).
 - `standards/security/SKILL.md`: concern-mapping table updated to match compressed filenames and new signal keywords.
 
 ## [77b2472] — 2026-05-28 · Comprehensive security standards library
 
 **feat(standards/security): add OWASP and core security guidelines library.**
 
-The `standards/security/` shelf is a granular, Project CodeGuard–based security library. It is the deep counterpart to `standards/global/refs/security.md`, which remains a general-purpose standalone for light security concern routing. Use `standards/security/` for security-focused tasks; the global ref loads automatically for all other tasks.
+The `standards/security/` shelf is a granular security standards library. It is the deep counterpart to `standards/global/refs/security.md`, which remains a general-purpose standalone for light security concern routing. Use `standards/security/` for security-focused tasks; the global ref loads automatically for all other tasks.
 
 - `standards/security/SKILL.md`: main entry point — 3 always-apply P0 rules (no hardcoded credentials, approved crypto, certificate hygiene) and a 30-concern routing table.
 - `standards/security/_INDEX.md`: searchable index for prose-mode lookup across 100+ standards.

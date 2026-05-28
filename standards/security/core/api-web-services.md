@@ -9,7 +9,7 @@ alwaysApply: false
 - Expose management or admin endpoints to the internet
 - Accept JWTs without pinning the algorithm; never accept `alg: none`
 - Reuse external tokens for internal service-to-service calls — mint a separate internal identity
-- Concatenate user input into SQL, command lines, or LDAP filters (see `codeguard-0-input-validation-injection`)
+- Concatenate user input into SQL, command lines, or LDAP filters (see `input-validation-injection`)
 - Accept raw URLs from clients for outbound calls (SSRF)
 - Leave GraphQL introspection or IDE (GraphiQL) enabled in production
 - Rely on CORS for authorization
@@ -41,7 +41,7 @@ alwaysApply: false
 
 ## SOAP / WS / XML
 - Validate payloads against XSD; cap message size; enable XML signatures/encryption where required
-- Harden parsers against XXE, entity expansion, and recursive payloads (see `codeguard-0-xml-and-serialization`)
+- Harden parsers against XXE, entity expansion, and recursive payloads (see `xml-and-serialization`)
 
 ## Microservices
 - Authorize at the gateway (coarse) and at the service (fine)

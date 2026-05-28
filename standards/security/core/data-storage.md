@@ -23,7 +23,7 @@ alwaysApply: false
 - Use a dedicated, least-privilege account per app/service
 - Grant only the operations needed (SELECT/INSERT/UPDATE/DELETE as required); restrict by host where supported
 - Use separate accounts and databases across Dev / UAT / Prod
-- Source credentials from a secrets manager or env vars sourced from one (see `codeguard-1-hardcoded-credentials`)
+- Source credentials from a secrets manager or env vars sourced from one (see `hardcoded-credentials`)
 - Apply table-level, column-level, and row-level permissions where the data model warrants it
 - Run the database service under a low-privilege OS account; apply security patches on schedule
 - Remove default accounts, sample databases, and unused stored procedures

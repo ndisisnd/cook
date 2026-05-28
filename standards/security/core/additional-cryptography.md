@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Applied Cryptography & TLS
 
-> Companion to `codeguard-1-crypto-algorithms` (algorithm policy) and `codeguard-1-digital-certificates` (cert validation). This file covers applied configuration: TLS, HSTS, key lifecycle, data-at-rest, pinning.
+> Companion to `crypto-algorithms` (algorithm policy) and `digital-certificates` (cert validation). This file covers applied configuration: TLS, HSTS, key lifecycle, data-at-rest, pinning.
 
 ## NEVER
 - Use ECB mode; use CBC/CTR without an encrypt-then-MAC construction

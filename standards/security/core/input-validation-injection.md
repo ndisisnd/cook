@@ -20,7 +20,7 @@ alwaysApply: false
 - Treat all untrusted input as data, never as code — use APIs that separate the two
 - Parameterize queries/commands; if escaping is unavoidable, use a context-specific encoder
 - Anchor regexes (`^…$`) and validate the complete string
-- Validate files by content (magic bytes), size, and safe extension (see `codeguard-0-file-handling-and-uploads`)
+- Validate files by content (magic bytes), size, and safe extension (see `file-handling-and-uploads`)
 
 ## Validation playbook
 - **Syntactic:** type, format, range, length per field

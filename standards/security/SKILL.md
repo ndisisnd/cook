@@ -1,8 +1,6 @@
 ---
 name: security
-description: Software security standards based on Project CodeGuard. Use when writing, reviewing, or modifying any code to enforce secure-by-default practices and prevent common vulnerabilities (OWASP Top 10, injection, auth, crypto, supply chain, etc.).
-codeguard-version: "0.1.0"
-framework: "Project CodeGuard"
+description: Software security standards. Use when writing, reviewing, or modifying any code to enforce secure-by-default practices and prevent common vulnerabilities (OWASP Top 10, injection, auth, crypto, supply chain, etc.).
 purpose: "Embed secure-by-default practices into AI coding workflows"
 metadata:
   triggers:
@@ -52,9 +50,9 @@ metadata:
       - gdpr
 ---
 
-# Software Security Skill (Project CodeGuard)
+# Software Security Skill
 
-Comprehensive security guidance for AI coding agents to generate secure code and prevent common vulnerabilities. Based on **Project CodeGuard**, an open-source, model-agnostic framework that embeds secure-by-default practices into AI coding workflows.
+Comprehensive security guidance for AI coding agents to generate secure code and prevent common vulnerabilities.
 
 ## When to Use This Skill
 
@@ -74,9 +72,9 @@ Check these on **every** code operation, regardless of language or context:
 
 | Rule | File | What it governs |
 | ---- | ---- | --------------- |
-| No hardcoded secrets | `core/codeguard-1-hardcoded-credentials.md` | Passwords, API keys, tokens, and credentials must never appear in source code |
-| Approved crypto only | `core/codeguard-1-crypto-algorithms.md` | Only modern, unbroken algorithms (no MD5, RC4, DES, static RSA, etc.) |
-| Certificate hygiene | `core/codeguard-1-digital-certificates.md` | Certificate validation, pinning, and lifecycle management |
+| No hardcoded secrets | `core/hardcoded-credentials.md` | Passwords, API keys, tokens, and credentials must never appear in source code |
+| Approved crypto only | `core/crypto-algorithms.md` | Only modern, unbroken algorithms (no MD5, RC4, DES, static RSA, etc.) |
+| Certificate hygiene | `core/digital-certificates.md` | Certificate validation, pinning, and lifecycle management |
 
 ### Step 2 — Concern-Specific Rules
 
@@ -85,35 +83,35 @@ Load the files for each security domain that applies to the task:
 <!-- LANGUAGE_MAPPINGS_START -->
 | Concern | Signals (keywords / file patterns) | Load |
 | ------- | ---------------------------------- | ---- |
-| **Credentials & secrets** | `secret`, `api key`, `password`, `.env`, `config`, hardcoded value | `core/codeguard-1-hardcoded-credentials.md` *(always-apply)* |
-| **Cryptography & key management** | `encrypt`, `decrypt`, `hash`, `hmac`, `aes`, `rsa`, `key`, `pem`, `certificate`, `crypto` | `core/codeguard-1-crypto-algorithms.md`, `core/codeguard-1-digital-certificates.md`, `core/codeguard-0-additional-cryptography.md`, `owasp/codeguard-0-cryptographic-storage.md`, `owasp/codeguard-0-key-management.md`, `owasp/codeguard-0-cw-cryptographic-security-guidelines.md` |
-| **Authentication & MFA** | `auth`, `login`, `password`, `mfa`, `2fa`, `otp`, `sso`, `oauth`, `oidc`, `saml`, `credential stuffing`, `forgot password`, `account recovery` | `core/codeguard-0-authentication-mfa.md`, `owasp/codeguard-0-authentication.md`, `owasp/codeguard-0-multifactor-authentication.md`, `owasp/codeguard-0-password-storage.md`, `owasp/codeguard-0-credential-stuffing-prevention.md`, `owasp/codeguard-0-forgot-password.md`, `owasp/codeguard-0-choosing-and-using-security-questions.md` |
-| **OAuth, JWT & SAML** | `oauth`, `oauth2`, `jwt`, `json web token`, `saml`, `openid`, `oidc`, `bearer`, `access token`, `refresh token` | `owasp/codeguard-0-oauth2.md`, `owasp/codeguard-0-json-web-token-for-java.md`, `owasp/codeguard-0-saml-security.md`, `owasp/codeguard-0-jaas.md` |
-| **Authorization & access control** | `rbac`, `abac`, `rebac`, `role`, `permission`, `privilege`, `idor`, `access control`, `mass assignment`, `least privilege`, `scope` | `core/codeguard-0-authorization-access-control.md`, `owasp/codeguard-0-authorization.md`, `owasp/codeguard-0-insecure-direct-object-reference-prevention.md`, `owasp/codeguard-0-mass-assignment.md`, `owasp/codeguard-0-transaction-authorization.md`, `owasp/codeguard-0-authorization-testing-automation.md` |
-| **Session management & cookies** | `session`, `cookie`, `session fixation`, `session timeout`, `csrf`, `csrf token`, `httponly`, `samesite`, `secure flag` | `core/codeguard-0-session-management-and-cookies.md`, `owasp/codeguard-0-session-management.md`, `owasp/codeguard-0-cross-site-request-forgery-prevention.md`, `owasp/codeguard-0-cookie-theft-mitigation.md` |
-| **Input validation & injection** | `sql injection`, `injection`, `input validation`, `parameterize`, `ldap`, `command injection`, `prototype pollution`, `soql`, `nosql injection`, `sanitize` | `core/codeguard-0-input-validation-injection.md`, `owasp/codeguard-0-input-validation.md`, `owasp/codeguard-0-injection-prevention.md`, `owasp/codeguard-0-sql-injection-prevention.md`, `owasp/codeguard-0-query-parameterization.md`, `owasp/codeguard-0-os-command-injection-defense.md`, `owasp/codeguard-0-ldap-injection-prevention.md`, `owasp/codeguard-0-prototype-pollution-prevention.md` |
-| **XSS & client-side security** | `xss`, `cross-site scripting`, `dom xss`, `dangerouslysetinnerhtml`, `innerhtml`, `csp`, `content security policy`, `clickjacking`, `x-frame-options`, `ajax`, `third-party script`, `xs-leaks` | `core/codeguard-0-client-side-web-security.md`, `owasp/codeguard-0-cross-site-scripting-prevention.md`, `owasp/codeguard-0-dom-based-xss-prevention.md`, `owasp/codeguard-0-dom-clobbering-prevention.md`, `owasp/codeguard-0-content-security-policy.md`, `owasp/codeguard-0-clickjacking-defense.md`, `owasp/codeguard-0-xss-filter-evasion.md`, `owasp/codeguard-0-xs-leaks.md`, `owasp/codeguard-0-ajax-security.md`, `owasp/codeguard-0-html5-security.md`, `owasp/codeguard-0-securing-cascading-style-sheets.md`, `owasp/codeguard-0-third-party-javascript-management.md` |
-| **API & web services** | `api`, `rest`, `graphql`, `soap`, `ssrf`, `server-side request forgery`, `openapi`, `web service`, `endpoint`, `cors`, `rate limit` | `core/codeguard-0-api-web-services.md`, `owasp/codeguard-0-rest-security.md`, `owasp/codeguard-0-rest-assessment.md`, `owasp/codeguard-0-graphql.md`, `owasp/codeguard-0-server-side-request-forgery-prevention.md`, `owasp/codeguard-0-web-service-security.md` |
-| **HTTP transport & headers** | `tls`, `ssl`, `https`, `hsts`, `http header`, `strict-transport-security`, `certificate pinning`, `transport security` | `owasp/codeguard-0-transport-layer-security.md`, `owasp/codeguard-0-http-headers.md`, `owasp/codeguard-0-http-strict-transport-security.md`, `owasp/codeguard-0-pinning.md` |
-| **Data storage & privacy** | `database`, `storage`, `pii`, `privacy`, `gdpr`, `data protection`, `encryption at rest`, `rls`, `row-level security`, `classification`, `data minimization` | `core/codeguard-0-data-storage.md`, `core/codeguard-0-privacy-data-protection.md`, `owasp/codeguard-0-database-security.md`, `owasp/codeguard-0-user-privacy-protection.md`, `owasp/codeguard-0-cryptographic-storage.md` |
-| **File handling & uploads** | `file upload`, `multipart`, `mime`, `attachment`, `file storage`, `blob`, `s3 upload` | `core/codeguard-0-file-handling-and-uploads.md`, `owasp/codeguard-0-file-upload.md` |
-| **XML & serialization** | `xml`, `xxe`, `serialization`, `deserialization`, `dtd`, `entity`, `yaml load`, `pickle`, `json deserialization` | `core/codeguard-0-xml-and-serialization.md`, `owasp/codeguard-0-xml-external-entity-prevention.md`, `owasp/codeguard-0-deserialization.md`, `owasp/codeguard-0-xml-security.md` |
-| **Logging & monitoring** | `logging`, `log`, `audit log`, `security event`, `monitoring`, `alerting`, `siem`, `redact`, `pii in logs` | `core/codeguard-0-logging.md`, `owasp/codeguard-0-error-handling.md`, `owasp/codeguard-0-logging-vocabulary.md` |
-| **Redirects** | `redirect`, `open redirect`, `url redirect`, `forward`, `location header` | `owasp/codeguard-0-open-redirect.md`, `owasp/codeguard-0-unvalidated-redirects-and-forwards.md` |
-| **Supply chain & dependencies** | `dependency`, `supply chain`, `sbom`, `npm`, `package lock`, `third-party`, `provenance`, `integrity hash` | `core/codeguard-0-supply-chain-security.md`, `owasp/codeguard-0-vulnerable-dependency-management.md`, `owasp/codeguard-0-npm-security.md` |
-| **DevOps, CI/CD & containers** | `docker`, `dockerfile`, `ci`, `cd`, `pipeline`, `github actions`, `artifact`, `container`, `image`, `registry`, `devops`, `virtual patching` | `core/codeguard-0-devops-ci-cd-containers.md`, `owasp/codeguard-0-ci-cd-security.md`, `owasp/codeguard-0-docker-security.md`, `owasp/codeguard-0-nodejs-docker.md` |
-| **Kubernetes & cloud orchestration** | `kubernetes`, `k8s`, `helm`, `rbac`, `network policy`, `pod security`, `admission`, `secret rotation` | `core/codeguard-0-cloud-orchestration-kubernetes.md`, `owasp/codeguard-0-kubernetes-security.md` |
-| **Infrastructure as Code** | `terraform`, `cloudformation`, `pulumi`, `iac`, `bicep`, `ansible`, `infrastructure as code` | `core/codeguard-0-iac-security.md` |
-| **Microservices & zero trust** | `microservices`, `zero trust`, `service mesh`, `network segmentation`, `mtls`, `sidecar` | `owasp/codeguard-0-microservices-security.md`, `owasp/codeguard-0-zero-trust-architecture.md`, `owasp/codeguard-0-network-segmentation.md` |
-| **Mobile security** | `ios`, `android`, `mobile`, `swift`, `kotlin`, `flutter`, `biometric`, `keychain`, `keystore`, `certificate pinning` | `core/codeguard-0-mobile-apps.md`, `owasp/codeguard-0-mobile-application-security.md` |
-| **MCP & AI security** | `mcp`, `model context protocol`, `llm`, `ai tool`, `agentic`, `tool use`, `prompt injection` | `core/codeguard-0-mcp-security.md` |
-| **C/C++ memory safety** | `c`, `c++`, `buffer overflow`, `memory safety`, `strcpy`, `sprintf`, `gets`, `string safety`, `toolchain hardening` | `core/codeguard-0-safe-c-functions.md`, `owasp/codeguard-0-safe-c-functions.md`, `owasp/codeguard-0-cw-memory-string-usage-guidelines.md`, `owasp/codeguard-0-c-based-toolchain-hardening.md` |
-| **Framework: Node.js** | `node.js`, `nodejs`, `express`, `fastify`, `nestjs`, `hono` | `core/codeguard-0-framework-and-languages.md`, `owasp/codeguard-0-nodejs-security.md`, `owasp/codeguard-0-nodejs-docker.md`, `owasp/codeguard-0-npm-security.md` |
-| **Framework: Python / Django** | `django`, `drf`, `flask`, `python`, `fastapi` | `core/codeguard-0-framework-and-languages.md`, `owasp/codeguard-0-django-security.md`, `owasp/codeguard-0-django-rest-framework.md` |
-| **Framework: Java** | `java`, `spring`, `jakarta`, `jvm`, `maven`, `gradle` | `core/codeguard-0-framework-and-languages.md`, `owasp/codeguard-0-java-security.md`, `owasp/codeguard-0-jaas.md`, `owasp/codeguard-0-bean-validation.md` |
-| **Framework: PHP** | `php`, `laravel`, `symfony` | `core/codeguard-0-framework-and-languages.md`, `owasp/codeguard-0-php-configuration.md`, `owasp/codeguard-0-laravel.md`, `owasp/codeguard-0-symfony.md` |
-| **Framework: Ruby** | `ruby`, `rails`, `sinatra` | `core/codeguard-0-framework-and-languages.md`, `owasp/codeguard-0-ruby-on-rails.md` |
-| **Framework: .NET** | `dotnet`, `.net`, `c#`, `asp.net`, `blazor` | `core/codeguard-0-framework-and-languages.md`, `owasp/codeguard-0-dotnet-security.md` |
+| **Credentials & secrets** | `secret`, `api key`, `password`, `.env`, `config`, hardcoded value | `core/hardcoded-credentials.md` *(always-apply)* |
+| **Cryptography & key management** | `encrypt`, `decrypt`, `hash`, `hmac`, `aes`, `rsa`, `key`, `pem`, `certificate`, `crypto` | `core/crypto-algorithms.md`, `core/digital-certificates.md`, `core/additional-cryptography.md`, `owasp/cryptographic-storage.md`, `owasp/key-management.md`, `owasp/cw-cryptographic-security-guidelines.md` |
+| **Authentication & MFA** | `auth`, `login`, `password`, `mfa`, `2fa`, `otp`, `sso`, `oauth`, `oidc`, `saml`, `credential stuffing`, `forgot password`, `account recovery` | `core/authentication-mfa.md`, `owasp/authentication.md`, `owasp/multifactor-authentication.md`, `owasp/password-storage.md`, `owasp/credential-stuffing-prevention.md`, `owasp/forgot-password.md`, `owasp/choosing-and-using-security-questions.md` |
+| **OAuth, JWT & SAML** | `oauth`, `oauth2`, `jwt`, `json web token`, `saml`, `openid`, `oidc`, `bearer`, `access token`, `refresh token` | `owasp/oauth2.md`, `owasp/json-web-token-for-java.md`, `owasp/saml-security.md`, `owasp/jaas.md` |
+| **Authorization & access control** | `rbac`, `abac`, `rebac`, `role`, `permission`, `privilege`, `idor`, `access control`, `mass assignment`, `least privilege`, `scope` | `core/authorization-access-control.md`, `owasp/authorization.md`, `owasp/insecure-direct-object-reference-prevention.md`, `owasp/mass-assignment.md`, `owasp/transaction-authorization.md`, `owasp/authorization-testing-automation.md` |
+| **Session management & cookies** | `session`, `cookie`, `session fixation`, `session timeout`, `csrf`, `csrf token`, `httponly`, `samesite`, `secure flag` | `core/session-management-and-cookies.md`, `owasp/session-management.md`, `owasp/cross-site-request-forgery-prevention.md`, `owasp/cookie-theft-mitigation.md` |
+| **Input validation & injection** | `sql injection`, `injection`, `input validation`, `parameterize`, `ldap`, `command injection`, `prototype pollution`, `soql`, `nosql injection`, `sanitize` | `core/input-validation-injection.md`, `owasp/input-validation.md`, `owasp/injection-prevention.md`, `owasp/sql-injection-prevention.md`, `owasp/os-command-injection-defense.md`, `owasp/ldap-injection-prevention.md`, `owasp/prototype-pollution-prevention.md` |
+| **XSS & client-side security** | `xss`, `cross-site scripting`, `dom xss`, `dangerouslysetinnerhtml`, `innerhtml`, `csp`, `content security policy`, `clickjacking`, `x-frame-options`, `ajax`, `third-party script`, `xs-leaks` | `core/client-side-web-security.md`, `owasp/xss-prevention.md`, `owasp/dom-clobbering-prevention.md`, `owasp/content-security-policy.md`, `owasp/clickjacking-defense.md`, `owasp/xs-leaks.md`, `owasp/ajax-security.md`, `owasp/html5-security.md`, `owasp/securing-cascading-style-sheets.md`, `owasp/third-party-javascript-management.md` |
+| **API & web services** | `api`, `rest`, `graphql`, `soap`, `ssrf`, `server-side request forgery`, `openapi`, `web service`, `endpoint`, `cors`, `rate limit` | `core/api-web-services.md`, `owasp/rest-security.md`, `owasp/rest-assessment.md`, `owasp/graphql.md`, `owasp/server-side-request-forgery-prevention.md`, `owasp/web-service-security.md` |
+| **HTTP transport & headers** | `tls`, `ssl`, `https`, `hsts`, `http header`, `strict-transport-security`, `certificate pinning`, `transport security` | `owasp/transport-layer-security.md`, `owasp/http-headers.md`, `owasp/pinning.md` |
+| **Data storage & privacy** | `database`, `storage`, `pii`, `privacy`, `gdpr`, `data protection`, `encryption at rest`, `rls`, `row-level security`, `classification`, `data minimization` | `core/data-storage.md`, `core/privacy-data-protection.md`, `owasp/database-security.md`, `owasp/user-privacy-protection.md`, `owasp/cryptographic-storage.md` |
+| **File handling & uploads** | `file upload`, `multipart`, `mime`, `attachment`, `file storage`, `blob`, `s3 upload` | `core/file-handling-and-uploads.md`, `owasp/file-upload.md` |
+| **XML & serialization** | `xml`, `xxe`, `serialization`, `deserialization`, `dtd`, `entity`, `yaml load`, `pickle`, `json deserialization` | `core/xml-and-serialization.md`, `owasp/xml-external-entity-prevention.md`, `owasp/deserialization.md`, `owasp/xml-security.md` |
+| **Logging & monitoring** | `logging`, `log`, `audit log`, `security event`, `monitoring`, `alerting`, `siem`, `redact`, `pii in logs` | `core/logging.md`, `owasp/error-handling.md` |
+| **Redirects** | `redirect`, `open redirect`, `url redirect`, `forward`, `location header` | `owasp/redirects.md` |
+| **Supply chain & dependencies** | `dependency`, `supply chain`, `sbom`, `npm`, `package lock`, `third-party`, `provenance`, `integrity hash` | `core/supply-chain-security.md`, `owasp/vulnerable-dependency-management.md`, `owasp/npm-security.md` |
+| **DevOps, CI/CD & containers** | `docker`, `dockerfile`, `ci`, `cd`, `pipeline`, `github actions`, `artifact`, `container`, `image`, `registry`, `devops`, `virtual patching` | `core/devops-ci-cd-containers.md`, `owasp/ci-cd-security.md`, `owasp/docker-security.md`, `owasp/nodejs-docker.md` |
+| **Kubernetes & cloud orchestration** | `kubernetes`, `k8s`, `helm`, `rbac`, `network policy`, `pod security`, `admission`, `secret rotation` | `core/cloud-orchestration-kubernetes.md`, `owasp/kubernetes-security.md` |
+| **Infrastructure as Code** | `terraform`, `cloudformation`, `pulumi`, `iac`, `bicep`, `ansible`, `infrastructure as code` | `core/iac-security.md` |
+| **Microservices & zero trust** | `microservices`, `zero trust`, `service mesh`, `network segmentation`, `mtls`, `sidecar` | `owasp/microservices-security.md`, `owasp/zero-trust-architecture.md`, `owasp/network-segmentation.md` |
+| **Mobile security** | `ios`, `android`, `mobile`, `swift`, `kotlin`, `flutter`, `biometric`, `keychain`, `keystore`, `certificate pinning` | `core/mobile-apps.md`, `owasp/mobile-application-security.md` |
+| **MCP & AI security** | `mcp`, `model context protocol`, `llm`, `ai tool`, `agentic`, `tool use`, `prompt injection` | `core/mcp-security.md` |
+| **C/C++ memory safety** | `c`, `c++`, `buffer overflow`, `memory safety`, `strcpy`, `sprintf`, `gets`, `string safety`, `toolchain hardening` | `core/safe-c-functions.md` |
+| **Framework: Node.js** | `node.js`, `nodejs`, `express`, `fastify`, `nestjs`, `hono` | `core/framework-and-languages.md`, `owasp/nodejs-security.md`, `owasp/nodejs-docker.md`, `owasp/npm-security.md` |
+| **Framework: Python / Django** | `django`, `drf`, `flask`, `python`, `fastapi` | `core/framework-and-languages.md`, `owasp/django-security.md`, `owasp/django-rest-framework.md` |
+| **Framework: Java** | `java`, `spring`, `jakarta`, `jvm`, `maven`, `gradle` | `core/framework-and-languages.md`, `owasp/java-security.md`, `owasp/jaas.md`, `owasp/bean-validation.md` |
+| **Framework: PHP** | `php`, `laravel`, `symfony` | `core/framework-and-languages.md`, `owasp/php-configuration.md`, `owasp/laravel.md`, `owasp/symfony.md` |
+| **Framework: Ruby** | `ruby`, `rails`, `sinatra` | `core/framework-and-languages.md`, `owasp/ruby-on-rails.md` |
+| **Framework: .NET** | `dotnet`, `.net`, `c#`, `asp.net`, `blazor` | `core/framework-and-languages.md`, `owasp/dotnet-security.md` |
 <!-- LANGUAGE_MAPPINGS_END -->
 
 ### Step 3 — Proactive Security
@@ -128,7 +126,7 @@ Beyond avoiding vulnerabilities, actively implement secure patterns:
 ## Workflow
 
 ### Before writing code
-- Will this handle credentials? → Load `core/codeguard-1-hardcoded-credentials.md`
+- Will this handle credentials? → Load `core/hardcoded-credentials.md`
 - What language / framework? → Identify applicable framework rules from the table
 - What security domains are involved? → Load relevant concern files from the table
 
