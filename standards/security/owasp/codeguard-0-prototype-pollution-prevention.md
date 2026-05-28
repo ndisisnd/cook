@@ -1,64 +1,40 @@
 ---
-description: Prototype Pollution Prevention
-languages:
-- javascript
-- typescript
+description: Prevent prototype pollution in JavaScript/TypeScript by using safe data structures and freezing built-in prototypes
 alwaysApply: false
 ---
 
-# Prototype Pollution Prevention Guideline
+# Prototype Pollution Prevention
 
-## Explanation
+Attackers who can write to `__proto__` or `constructor.prototype` can escalate privileges or achieve RCE.
 
-Prototype Pollution is a critical vulnerability that can allow attackers to manipulate an application's JavaScript objects and properties, leading to serious security issues such as unauthorized access to data, privilege escalation, and even remote code execution.
+## NEVER
+- Use plain `{}` object literals as key-value stores for untrusted data
+- Merge/clone user input into objects without sanitizing `__proto__` and `constructor` keys
+- Allow unchecked access to `__proto__`, `constructor`, or `prototype` from external data
 
-## Suggested protection mechanisms
+## ALWAYS
+- Prefer `new Map()` or `new Set()` over plain objects for dynamic key-value storage
+- When objects are required, create with `Object.create(null)` to strip prototype chain
+- Freeze built-in prototypes in high-risk contexts: `Object.freeze(Object.prototype)`
+- Run Node.js with `--disable-proto=delete` as a defense-in-depth measure
 
-### Use "new Set()" or "new Map()"
-
-Developers should use `new Set()` or `new Map()` instead of using object literals:
-
-```javascript
-let allowedTags = new Set();
-allowedTags.add('b');
-if(allowedTags.has('b')){
-  //...
-}
-
-let options = new Map();
-options.set('spaces', 1);
-let spaces = options.get('spaces')
-```
-
-### If objects or object literals are required
-
-If objects have to be used then they should be created using the `Object.create(null)` API to ensure they don't inherit from the Object prototype:
+## Safe Data Structures
 
 ```javascript
-let obj = Object.create(null);
+// Prefer Map/Set
+const allowedTags = new Set(['b', 'i']);
+const options = new Map([['spaces', 1]]);
+
+// When object required — no prototype
+const obj = Object.create(null);
+// Last resort with literal
+const obj2 = { __proto__: null };
 ```
 
-If object literals are required then as a last resort you could use the `__proto__` property:
-
-```javascript
-let obj = {__proto__:null};
-```
-
-### Use object "freeze" and "seal" mechanisms
-
-You can also use the `Object.freeze()` and `Object.seal()` APIs to prevent built-in prototypes from being modified however this can break the application if the libraries they use modify the built-in prototypes.
-
-### Node.js configuration flag
-
-Node.js also offers the ability to remove the `__proto__` property completely using the `--disable-proto=delete` flag. Note this is a defense in depth measure.
-
-Prototype pollution is still possible using `constructor.prototype` properties but removing `__proto__` helps reduce attack surface and prevent certain attacks.
-
-### Other resources
-
-- [What is prototype pollution? (Portswigger Web Security Academy)](https://portswigger.net/web-security/prototype-pollution)
-- [Prototype pollution (Snyk Learn)](https://learn.snyk.io/lessons/prototype-pollution/javascript/)
-
-### Credits
-
-Credit to [Gareth Hayes](https://garethheyes.co.uk/) for providing the original protection guidance [in this comment](https://github.com/OWASP/ASVS/issues/1563#issuecomment-1470027723).
+## Checklist
+- [ ] Dynamic key-value stores use `Map`/`Set`, not `{}`
+- [ ] Objects built from external input created with `Object.create(null)`
+- [ ] No merge/clone utility writes `__proto__` or `constructor` keys
+- [ ] `Object.freeze(Object.prototype)` applied where appropriate
+- [ ] Node.js deployed with `--disable-proto=delete`
+- [ ] Dependencies audited for prototype pollution vulnerabilities

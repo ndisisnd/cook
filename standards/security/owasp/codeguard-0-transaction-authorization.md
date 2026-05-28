@@ -1,195 +1,53 @@
 ---
-description: Transaction Authorization Security
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
+description: Enforce server-side transaction authorization with WYSIWYS, unique credentials, and replay/downgrade protection
 alwaysApply: false
 ---
 
-## Transaction Authorization Security
+# Transaction Authorization
 
-Secure implementation of transaction authorization to prevent bypassing of sensitive operations like wire transfers through robust user confirmation and server-side enforcement.
+Applies to any sensitive operation requiring explicit user consent: wire transfers, privilege changes, account unlocks, data modifications.
 
-### Transaction Authorization Concept
+## NEVER
+- Perform authorization checks client-side or allow client to influence authorization results
+- Reuse authentication credentials for transaction authorization
+- Allow authorization method parameters to be manipulated client-side
+- Allow downgrade to a less secure authorization method
+- Skip authorization for transactions matching attack patterns (adding/removing parameters)
+- Allow transaction data to be modified after authorization begins without restarting the flow
+- Accept the same authorization credentials across multiple transactions (replay risk)
+- Build new authorization flows on top of old insecure codebases
 
-Transaction authorization requires users to submit a second factor to verify authorization for sensitive operations. This applies beyond financial systems to any operation requiring explicit user consent (account unlocks, privilege changes, data modifications).
+## ALWAYS
+- Enforce all authorization logic server-side with default-deny
+- Apply What You See Is What You Sign (WYSIWYS): display critical transaction data (target account, amount, type) before the user authorizes
+- Separate the authentication process from the transaction authorization process
+- Require re-authorization via the current method for any change to authorization tokens or methods
+- Generate unique, time-limited credentials per transaction (timestamp, sequence number, or random value)
+- Enforce sequential state transitions — prevent step skipping and out-of-order execution
+- Invalidate authorization data immediately if transaction data is modified; reset the flow
+- Encrypt all client-server transaction data for confidentiality and integrity; verify server-side
+- Implement brute-force protection: restart full transaction flow after failed attempts; apply throttling
+- Generate and store all significant transaction data server-side; pass to authorization component without client touch
+- Log and monitor authorization modification attempts
+- Use secure elements (TEE, TPM, smart cards) for signing key storage; protect with second factor
 
-Authorization methods include:
-- Time-based one-time password (OTP) tokens (OATH TOTP)
-- OTP sent by SMS or phone
-- Digital signatures from smart cards or smartphones
-- Challenge-response tokens including unconnected card readers
-- Transaction authorization cards with unique numbers
+## Transaction State Flow
 
-### Functional Requirements
-
-#### User Identification and Acknowledgment (What You See Is What You Sign)
-Transaction authorization must allow users to identify and acknowledge significant transaction data.
-
-Key principles:
-- User must verify all significant transaction data during authorization process
-- Display critical information: target account, amount, transaction type
-- Balance security requirements with user experience and technical constraints
-- For external devices with limited displays, show minimum significant data (partial account number, amount)
-- Ensure meaningful prompts to prevent social engineering and malware abuse
-
-#### Authorization Token and Method Changes
-- Changes to authorization tokens require authorization using current authorization credentials
-- Changes to authorization methods require authorization using current authorization method
-- Prevent malware from downgrading to least secure authorization method
-- Inform users about potential dangers of different authorization methods
-
-#### Authentication vs Authorization Separation
-Distinguish authentication process from transaction authorization process to prevent credential reuse attacks.
-
-Prevention strategies:
-- Use different methods for authentication and transaction authorization
-- Employ different actions in external security components
-- Present clear messages about what users are signing
-- Prevent malware from using authentication credentials for transaction authorization
-
-#### Unique Authorization per Transaction
-Each transaction requires unique authorization credentials to prevent replay attacks and credential reuse during sessions.
-
-### Non-Functional Requirements
-
-#### Server-Side Enforcement
-All authorization checks must be performed and enforced server-side.
-
-Implementation requirements:
-- Never allow client-side influence on authorization results
-- Prevent tampering with transaction data parameters
-- Prevent adding/removing parameters that disable authorization checks
-- Apply security programming best practices (default deny, no debug code in production)
-- Encrypt data for confidentiality and integrity, verify server-side
-
-#### Authorization Method Enforcement
-Server-side must enforce chosen authorization method or application policies.
-
-Security considerations:
-- Prevent client-side manipulation of authorization method parameters
-- Avoid building new authorization methods on old insecure codebases
-- Ensure attackers cannot downgrade to older, less secure methods
-
-#### Server-Side Transaction Verification
-Generate and store all significant transaction data server-side.
-
-Requirements:
-- All transaction data must be verified by user and generated server-side
-- Pass data to authorization component without client tampering possibility
-- Prevent malware manipulation of transaction data display
-
-#### Brute-Force Protection
-Implement protections against authorization credential brute-force attacks.
-
-Controls:
-- Restart entire transaction authorization process after failed attempts
-- Apply throttling and retry limits
-- Use additional automation prevention techniques
-
-#### Transaction State Control
-Enforce sequential transaction state transitions.
-
-Standard transaction flow:
+```
 1. User enters transaction data
-2. User requests authorization from application
-3. Application initializes authorization mechanism
-4. User verifies/confirms transaction data
-5. User responds with authorization credentials
-6. Application validates authorization and executes transaction
+2. User requests authorization
+3. App initializes authorization mechanism (server-side)
+4. User verifies/confirms displayed transaction data (WYSIWYS)
+5. User submits authorization credentials
+6. App validates credentials server-side → executes transaction
+```
 
-Protection measures:
-- Prevent out-of-order step execution
-- Prevent step skipping
-- Protect against transaction data overwriting before authorization
-- Prevent skipping transaction authorization entirely
-
-#### Transaction Data Protection
-Protect transaction data against modification during authorization process.
-
-Implementation strategies:
-- Invalidate authorization data if transaction data is modified
-- Reset authorization process on transaction data modifications
-- Log, monitor, and investigate modification attempts
-- Prevent Time of Check to Time of Use vulnerabilities
-
-#### Data Confidentiality
-Protect transaction data privacy during all client-server communications throughout the authorization process.
-
-#### Transaction Execution Verification
-Implement final control gate before transaction execution.
-
-Verification requirements:
-- Verify transaction was properly authorized by user
-- Prevent Time of Check to Time of Use attacks
-- Prevent authorization check bypass in transaction entry process
-
-#### Time-Limited Authorization
-Limit authorization credential validity to prevent delayed abuse by malware.
-
-Controls:
-- Restrict time window between challenge/OTP generation and authorization completion
-- Balance security with normal user behavior
-- Help prevent resource exhaustion attacks
-
-#### Unique Authorization Credentials
-Generate unique authorization credentials for every operation to prevent replay attacks.
-
-Generation methods:
-- Use timestamps in signed transaction data
-- Include sequence numbers in challenges
-- Use random values in authorization components
-
-### Implementation Considerations
-
-#### Risk-Based Authorization
-Determine which transactions require authorization based on:
-- Risk analysis of specific application
-- Risk exposure assessment
-- Other implemented safeguards
-
-#### Cryptographic Protection
-Implement cryptographic operations to ensure:
-- Transaction integrity
-- Data confidentiality
-- Non-repudiation of transactions
-
-#### Secure Key Management
-Protect device signing keys during device pairing and signing protocol.
-
-Security measures:
-- Prevent malware injection/replacement of signing keys
-- Use second factors for key protection (passwords, biometrics)
-- Leverage secure elements (TEE, TPM, smart cards)
-
-#### User Awareness
-Train users on secure practices:
-- Verify transaction data from trusted sources, not computer screens
-- Understand risks of different authorization mechanisms
-- Recognize social engineering attempts
-
-#### Anti-Malware Integration
-Deploy anti-malware solutions as additional protection layer while recognizing they cannot provide 100% effectiveness.
-
-### Security Controls Summary
-
-1. Implement What You See Is What You Sign principle for transaction data verification
-2. Separate authentication from transaction authorization processes
-3. Use unique, time-limited authorization credentials per transaction
-4. Enforce all authorization logic server-side without client trust
-5. Protect authorization token and method changes through re-authorization
-6. Prevent authorization method downgrade attacks
-7. Implement brute-force protection with transaction resets
-8. Enforce sequential transaction state transitions
-9. Protect transaction data against modification during authorization
-10. Secure all client-server communications with encryption
-11. Verify proper authorization before transaction execution
-12. Use cryptographic signing and secure key storage for integrity
-13. Monitor and log suspicious authorization activities
-14. Provide user education on authorization security practices
+## Checklist
+- [ ] Authorization logic is entirely server-side; no client influence on result
+- [ ] Authentication and transaction authorization use distinct methods/credentials
+- [ ] WYSIWYS: critical transaction data shown to user before credential submission
+- [ ] Authorization credentials are unique per transaction and time-limited
+- [ ] Transaction data modification resets the entire authorization flow
+- [ ] Sequential state transitions enforced; skipping steps is impossible
+- [ ] Brute-force protection: throttling and full restart after failures
+- [ ] Authorization method downgrade to weaker method is blocked

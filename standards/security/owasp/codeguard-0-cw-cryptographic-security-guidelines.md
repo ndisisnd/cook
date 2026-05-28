@@ -1,113 +1,49 @@
 ---
-description: Cryptographic Security Guidelines
-languages:
-- c
+description: C/OpenSSL cryptographic API rules — banned algorithms, deprecated functions, and EVP replacements
 alwaysApply: false
 ---
 
-### Cryptographic Security Guidelines
+# Cryptographic Security Guidelines (C / OpenSSL)
 
-#### Deprecated SSL/Crypto APIs - FORBIDDEN
-**NEVER use these deprecated functions. Use the replacement APIs listed below:**
+## NEVER
+- Use deprecated low-level APIs: `AES_encrypt/decrypt`, `RSA_new/free`, `SHA1_Init/Update/Final`, `CMAC_Init`, `HMAC()` with SHA1, `DSA_sign()`, `DH_check()`, `AES_wrap/unwrap_key()`
+- Use banned hash algorithms: MD2, MD4, MD5, SHA-0
+- Use banned symmetric ciphers: RC2, RC4, Blowfish, DES, 3DES
+- Use static RSA key exchange or Anonymous Diffie-Hellman (no forward secrecy)
+- Leave key material in memory after use — zero it explicitly
 
-##### Symmetric Encryption (AES)
-- **Deprecated**: `AES_encrypt()`, `AES_decrypt()`
-- **Replacement**: Use EVP high-level APIs:
-  ```c
-  EVP_EncryptInit_ex()
-  EVP_EncryptUpdate()
-  EVP_EncryptFinal_ex()
-  EVP_DecryptInit_ex()
-  EVP_DecryptUpdate()
-  EVP_DecryptFinal_ex()
-  ```
+## ALWAYS
+- Use EVP high-level APIs for all crypto operations
+- Use SHA-256, SHA-384, or SHA-512 for hashing
+- Use AES-128, AES-256, or ChaCha20 for symmetric encryption
+- Use ECDHE or DHE (with proper validation) for key exchange
+- Handle all `errno_t` / return values from crypto operations — never ignore errors
 
-##### RSA Operations
-- **Deprecated**: `RSA_new()`, `RSA_up_ref()`, `RSA_free()`, `RSA_set0_crt_params()`, `RSA_get0_n()`
-- **Replacement**: Use EVP key management APIs:
-  ```c
-  EVP_PKEY_new()
-  EVP_PKEY_up_ref()
-  EVP_PKEY_free()
-  ```
+## API Replacements
 
-##### Hash Functions
-- **Deprecated**: `SHA1_Init()`, `SHA1_Update()`, `SHA1_Final()`
-- **Replacement**: Use EVP digest APIs:
-  ```c
-  EVP_DigestInit_ex()
-  EVP_DigestUpdate()
-  EVP_DigestFinal_ex()
-  EVP_Q_digest()  // For simple one-shot hashing
-  ```
+| Deprecated | Replacement |
+|------------|-------------|
+| `AES_encrypt()`, `AES_decrypt()` | `EVP_EncryptInit_ex()`, `EVP_EncryptUpdate()`, `EVP_EncryptFinal_ex()` |
+| `RSA_new()`, `RSA_free()`, `RSA_*` | `EVP_PKEY_new()`, `EVP_PKEY_up_ref()`, `EVP_PKEY_free()` |
+| `SHA1_Init/Update/Final()` | `EVP_DigestInit_ex()`, `EVP_DigestUpdate()`, `EVP_DigestFinal_ex()` |
+| `CMAC_Init()`, `HMAC()` w/ SHA1 | `EVP_Q_MAC()` with SHA-256 |
+| `AES_wrap_key()` | EVP key-wrapping APIs |
+| `DSA_sign()`, `DH_check()` | Corresponding EVP APIs |
 
-##### MAC Operations
-- **Deprecated**: `CMAC_Init()`, `HMAC()` (especially with SHA1)
-- **Replacement**: Use EVP MAC APIs:
-  ```c
-  EVP_Q_MAC()  // For simple MAC operations
-  ```
+## Secure AES-GCM Pattern
 
-##### Key Wrapping
-- **Deprecated**: `AES_wrap_key()`, `AES_unwrap_key()`
-- **Replacement**: Use EVP key wrapping APIs or implement using EVP encryption
-
-##### Other Deprecated Functions
-- **Deprecated**: `DSA_sign()`, `DH_check()`
-- **Replacement**: Use corresponding EVP APIs for DSA and DH operations
-
-#### Banned Insecure Algorithms - STRICTLY FORBIDDEN
-**These algorithms MUST NOT be used in any form:**
-
-##### Hash Algorithms (Banned)
-- MD2, MD4, MD5, SHA-0
-- **Reason**: Cryptographically broken, vulnerable to collision attacks
-- **Use Instead**: SHA-256, SHA-384, SHA-512
-
-##### Symmetric Ciphers (Banned)
-- RC2, RC4, Blowfish, DES, 3DES
-- **Reason**: Weak key sizes, known vulnerabilities
-- **Use Instead**: AES-128, AES-256, ChaCha20
-
-##### Key Exchange (Banned)
-- Static RSA key exchange
-- Anonymous Diffie-Hellman
-- **Reason**: No forward secrecy, vulnerable to man-in-the-middle attacks
-- **Use Instead**: ECDHE, DHE with proper validation
-
-#### Broccoli Project Specific Requirements
-- **HMAC() with SHA1**: Deprecated per Broccoli project requirements
-- **Replacement**: Use HMAC with SHA-256 or stronger:
-  ```c
-  // Instead of HMAC() with SHA1
-  EVP_Q_MAC(NULL, "HMAC", NULL, "SHA256", NULL, key, key_len, data, data_len, out, out_size, &out_len);
-  ```
-
-#### Secure Crypto Implementation Pattern
 ```c
-// Example: Secure AES encryption
 EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-if (!ctx) handle_error();
-
-if (EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, key, iv) != 1)
-    handle_error();
-
-int len, ciphertext_len;
-if (EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len) != 1)
-    handle_error();
-ciphertext_len = len;
-
-if (EVP_EncryptFinal_ex(ctx, ciphertext + len, &len) != 1)
-    handle_error();
-ciphertext_len += len;
-
+EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, key, iv);
+EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len);
+EVP_EncryptFinal_ex(ctx, ciphertext + len, &len);
 EVP_CIPHER_CTX_free(ctx);
 ```
 
-#### Code Review Checklist
-- [ ] No deprecated SSL/crypto APIs used
-- [ ] No banned algorithms (MD5, DES, RC4, etc.)
-- [ ] HMAC uses SHA-256 or stronger (not SHA1)
-- [ ] All crypto operations use EVP high-level APIs
-- [ ] Proper error handling for all crypto operations
-- [ ] Key material properly zeroed after use
+## Checklist
+- [ ] No deprecated SSL/crypto APIs (`AES_*`, `RSA_*`, `SHA1_*`, `CMAC_*`, `HMAC` w/ SHA1)
+- [ ] No banned algorithms (MD5, DES, RC4, 3DES, Blowfish, SHA-0)
+- [ ] HMAC uses SHA-256 or stronger
+- [ ] All crypto via EVP high-level APIs
+- [ ] All crypto return values checked and errors handled
+- [ ] Key material zeroed after use

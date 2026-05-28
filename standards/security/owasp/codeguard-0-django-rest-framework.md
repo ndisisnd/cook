@@ -1,57 +1,46 @@
 ---
-description: Django REST Framework Security Best Practices
-languages:
-- python
-- yaml
+description: Secure Django REST Framework APIs — auth, serializers, throttling, injection prevention
 alwaysApply: false
 ---
 
-## Django REST Framework Security Guidelines
+# Django REST Framework Security
 
-This rule advises on critical security practices when developing Django REST Framework APIs to protect against common risks:
+## NEVER
+- Leave `DEFAULT_PERMISSION_CLASSES` as `AllowAny` on non-public endpoints
+- Use `Meta.exclude` or `Meta.fields = "__all__"` in serializers or ModelForms
+- Use raw SQL with user input: `raw()`, `extra()`, `cursor.execute()` with unsanitized values
+- Use `eval()`, `exec()`, or `yaml.load()` on untrusted input
+- Hardcode `SECRET_KEY`, API keys, or passwords in source code
+- Set `DEBUG = True` or `DEBUG_PROPAGATE_EXCEPTIONS = True` in production
+- Log passwords, tokens, or PII
 
-- Authentication & Authorization  
-  - Always set `DEFAULT_AUTHENTICATION_CLASSES` with appropriate authentication schemes for all non-public endpoints.  
-  - When using SessionAuthentication, ensure CSRF protection is enabled and properly configured.
-  - Never leave `DEFAULT_PERMISSION_CLASSES` as `AllowAny`; explicitly restrict access using proper permission classes.  
-  - When overriding `get_object()`, always call `self.check_object_permissions(request, obj)` to enforce object-level access control.  
-  - Avoid per-view overrides of authentication, permission, or throttle classes unless fully confident in their implications.
+## ALWAYS
+- Set explicit `fields = [...]` allowlists in all DRF serializers
+- Call `self.check_object_permissions(request, obj)` when overriding `get_object()`
+- Set `DEFAULT_AUTHENTICATION_CLASSES` for all non-public endpoints
+- Enable CSRF protection with `SessionAuthentication`
+- Configure `DEFAULT_THROTTLE_CLASSES` for DoS defence; prefer gateway/WAF enforcement
+- Inject secrets via environment variables or a secrets manager
+- Validate and sanitize all incoming data with Django forms or DRF serializer validators
+- Set security headers: `SECURE_CONTENT_TYPE_NOSNIFF`, `X_FRAME_OPTIONS = 'DENY'`, `SECURE_BROWSER_XSS_FILTER`
+- Implement CSP via django-csp middleware
+- Disable unused HTTP methods at the API level
+- Log auth failures and authorization denials with sufficient context (no sensitive data)
 
-- Serializer Security  
-  - In DRF Serializers, specify explicit `fields = [...]` allowlists; do not use `exclude`.
-  - For Django ModelForms (when used outside DRF), always use `Meta.fields` allowlist instead of `Meta.exclude` or `"__all__"`.
-  - DO NOT use `Meta.exclude` (denylist approach) or `ModelForms.Meta.fields = "__all__"`.
+## Injection Prevention
 
-- Rate Limiting & Throttling  
-  - Configure `DEFAULT_THROTTLE_CLASSES` to enable API rate limiting as a DoS defense layer.  
-  - Prefer to enforce rate limiting at the gateway or WAF level; DRF throttling is a last-resort safeguard.
+| Dangerous | Safe alternative |
+|-----------|-----------------|
+| `raw(user_input)` | ORM queryset with params |
+| `extra(where=[user_input])` | parameterized `.filter()` |
+| `yaml.load(data)` | `yaml.safe_load(data)` |
+| `eval(user_input)` | validate + whitelist logic |
 
-- Security Configuration  
-  - Ensure `DEBUG` and `DEBUG_PROPAGATE_EXCEPTIONS` are set to `False` in production environments.  
-  - Never hardcode secrets such as `SECRET_KEY`; inject them via environment variables or secrets managers.  
-  - Disable all unused or dangerous HTTP methods (e.g., PUT, DELETE) at the API level.  
-  - Validate, sanitize, and filter all incoming data rigorously.
-  - Set secure HTTP headers: `SECURE_CONTENT_TYPE_NOSNIFF = True`, `X_FRAME_OPTIONS = 'DENY'`, `SECURE_BROWSER_XSS_FILTER = True`.
-  - Implement Content Security Policy (CSP) using django-csp middleware to prevent XSS and clickjacking attacks.
-
-- Prevent Injection Attacks  
-  - Avoid raw SQL queries with user input; use ORM or parameterized queries exclusively.
-  - DO NOT add user input to dangerous methods (`raw()`, `extra()`, `cursor.execute()`).
-  - For YAML parsing, use safe loaders (`yaml.SafeLoader`); never parse YAML or pickle data from untrusted sources.
-  - DO NOT use `eval()`, `exec()`, or similar dynamic code execution functions on user input.
-
-- Secret Management  
-  - Never hardcode secrets such as `SECRET_KEY`; inject them via environment variables or secrets managers.
-  - DO NOT hardcode API keys, database passwords, or other sensitive credentials in source code.
-
-- Input Validation  
-  - Validate, sanitize, and filter all client-provided data rigorously.
-  - Use Django's built-in form validation or DRF serializers with proper validation methods.
-
-- Logging Security  
-  - Log authentication failures, authorization denials, and validation errors with sufficient context.
-  - DO NOT log sensitive data (passwords, tokens, PII) in application logs.
-  - Include stack traces, error messages, and user context in security-relevant log entries.
-
-Summary:  
-Always enforce object-level permissions with `check_object_permissions()`, use explicit field allowlists in serializers, avoid dangerous functions with user input, never hardcode secrets, implement proper input validation, and ensure security-aware logging practices.
+## Checklist
+- [ ] `DEFAULT_PERMISSION_CLASSES` restricts access; `AllowAny` only on explicitly public views
+- [ ] All serializers use explicit `fields` allowlist, not `exclude` or `"__all__"`
+- [ ] `check_object_permissions()` called on every `get_object()` override
+- [ ] `DEBUG` and `DEBUG_PROPAGATE_EXCEPTIONS` are `False` in production
+- [ ] No raw SQL or dynamic code execution on user input
+- [ ] Secrets injected from environment; none hardcoded
+- [ ] Throttling and security headers configured

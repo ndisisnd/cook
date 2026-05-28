@@ -1,59 +1,40 @@
 ---
-description: Docker Security Best Practices
-languages:
-- docker
-- yaml
+description: Secure Docker containers — non-root users, capabilities, secrets, networking, images
 alwaysApply: false
 ---
 
-## Docker Security Guidelines
+# Docker Security
 
-This rule advises on critical Docker container security practices to protect against common risks:
+## NEVER
+- Run containers as root; never omit or set `USER root` in Dockerfiles
+- Mount `/var/run/docker.sock` into containers
+- Enable TCP Docker daemon socket without TLS (`-H tcp://0.0.0.0:XXX`)
+- Use `--privileged` flag
+- Use `--net=host` or share the host network namespace
+- Embed secrets, passwords, or API keys in Dockerfiles or environment variables in image layers
+- Use `latest` tags for base images in production
+- Use `ADD` when `COPY` suffices (no archive extraction needed)
+- Curl-bash in `RUN` directives when package managers are available
+- Disable seccomp, AppArmor, or SELinux security profiles
 
-- Container User Security
-  - Always specify a non-root user in Dockerfiles using `USER` directive.
-  - Never run containers as root; use `docker run -u <user>` or Kubernetes `securityContext.runAsUser`.
-  - Avoid `USER root` or missing `USER` directives in Dockerfiles.
+## ALWAYS
+- Specify a non-root `USER` in Dockerfiles; use `docker run -u <user>` or `securityContext.runAsUser`
+- Drop all capabilities (`--cap-drop all`) and add only required ones (`--cap-add`)
+- Set `--security-opt=no-new-privileges`; set `allowPrivilegeEscalation: false` in Kubernetes
+- Use read-only root filesystems (`--read-only` / `readOnlyRootFilesystem: true`)
+- Mount volumes `:ro` when write access is not needed; use `--tmpfs` for temporary writes
+- Use Docker Secrets or Kubernetes encrypted secrets for sensitive data
+- Define custom Docker networks; avoid default bridge networking
+- Limit memory and CPU resources in compose/Kubernetes specs
+- Include `HEALTHCHECK` in Dockerfiles
+- Use minimal base images (alpine, distroless); remove package managers from production images
+- Scan images for vulnerabilities before deployment
 
-- Docker Daemon Socket Protection
-  - DO NOT expose `/var/run/docker.sock` to containers via volume mounts.
-  - DO NOT enable TCP Docker daemon socket (`-H tcp://0.0.0.0:XXX`) without TLS.
-  - Avoid `- "/var/run/docker.sock:/var/run/docker.sock"` in docker-compose files.
-
-- Capability and Privilege Management
-  - Drop all capabilities (`--cap-drop all`) and add only required ones (`--cap-add`).
-  - DO NOT use `--privileged` flag in container configurations.
-  - Set `allowPrivilegeEscalation: false` in Kubernetes security contexts.
-  - Use `--security-opt=no-new-privileges` to prevent privilege escalation.
-
-- Dockerfile Security Practices
-  - Pin base image versions (avoid `latest` tags in production).
-  - Use `COPY` instead of `ADD` when not extracting archives.
-  - DO NOT include secrets, passwords, or API keys in Dockerfiles.
-  - Avoid curl bashing in `RUN` directives; use package managers when possible.
-  - Include `HEALTHCHECK` instructions for container health monitoring.
-
-- Resource and Filesystem Security
-  - Limit container resources (memory, CPU) in docker-compose or Kubernetes specs.
-  - Use read-only root filesystems (`--read-only` or `readOnlyRootFilesystem: true`).
-  - Mount volumes as read-only (`:ro`) when write access is not needed.
-  - Use `--tmpfs` for temporary writable storage instead of persistent volumes.
-
-- Network and Runtime Security
-  - Avoid default bridge networking; define custom Docker networks.
-  - DO NOT share host network namespace (`--net=host`).
-  - DO NOT expose unnecessary ports in Dockerfiles or container configs.
-  - Enable default security profiles (seccomp, AppArmor, SELinux); do not disable them.
-
-- Secret Management
-  - Use Docker Secrets or Kubernetes encrypted secrets for sensitive data.
-  - DO NOT embed secrets in environment variables or Dockerfile layers.
-  - Avoid hardcoded credentials in container configurations.
-
-- Container Image Security
-  - Scan images for vulnerabilities before deployment.
-  - Use minimal base images (alpine, distroless) to reduce attack surface.
-  - Remove package managers and unnecessary tools from production images.
-
-Summary:  
-Always run containers as non-root users, never expose Docker daemon socket, drop unnecessary capabilities, use secure Dockerfile practices, implement resource limits and read-only filesystems, configure proper networking, manage secrets securely, and scan images for vulnerabilities.
+## Checklist
+- [ ] Non-root `USER` set in all Dockerfiles
+- [ ] No `docker.sock` volume mount; no TCP daemon without TLS
+- [ ] `--cap-drop all` applied; no `--privileged`
+- [ ] Read-only root filesystem enabled; `--tmpfs` for ephemeral writes
+- [ ] No secrets in Dockerfile or image layers; Docker/Kubernetes secrets used
+- [ ] Base image pinned to specific version; image scanned before deployment
+- [ ] No `--net=host`; custom networks defined; unnecessary ports unexposed

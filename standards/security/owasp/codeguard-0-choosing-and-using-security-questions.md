@@ -1,53 +1,46 @@
 ---
-description: Security Questions Implementation Guidelines
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
+description: Security questions are weak — prefer MFA/email recovery; strict safeguards required if used
 alwaysApply: false
 ---
 
-Security questions are no longer considered a strong authentication factor in authentication systems. Modern best practices strongly recommend against using them as a standalone method for authentication or account recovery.
+# Security Questions
 
-### Preferred Alternatives to Security Questions
+Security questions are not a strong authentication factor. Prefer MFA, one-time recovery codes, or email-based recovery links.
 
-*   **Multi-Factor Authentication (MFA):** Implement time-based one-time passwords (TOTP), push notifications, or hardware security keys as your primary account recovery mechanism.
-*   **One-Time Recovery Codes:** Generate and provide users with a set of single-use recovery codes when they set up their account.
-*   **Email-Based Recovery:** Send a time-limited, single-use recovery link to a verified email address.
+## NEVER
+- Use security questions as the sole recovery mechanism for new systems
+- Allow free-form user-created questions — use a curated predefined list only
+- Store answers in plaintext or with weak/fast hashing
+- Rotate to a different question after a failed answer — keep the same question to block answer enumeration
+- Present security questions before verifying ownership of the recovery email address
+- Allow unlimited answer attempts without rate limiting
+- Use answers that are easily discoverable via social media or public records
 
-### If You Must Use Security Questions (Legacy Systems)
+## ALWAYS
+- Prefer: TOTP/push MFA, hardware security keys, one-time recovery codes, or time-limited email recovery links
+- If questions are required: use a curated list of memorable, stable, confidential, and specific questions
+- Hash answers with Argon2id or bcrypt, unique per-answer salt, system-wide pepper; store data encrypted at rest (AES-256)
+- Normalize answers before comparison: lowercase, trim spaces, strip punctuation
+- Enforce minimum answer length; block weak answers ("password", "123456", username, email)
+- Require multiple questions together for increased security
+- Verify the recovery email address before presenting any security questions
+- Rate-limit answer attempts: max 5/hour, progressive delays, CAPTCHA after 3 failures, account lockout on abuse
+- Require re-authentication (password or MFA) before allowing changes to questions or answers
+- Use HTTPS/TLS 1.3+ on all recovery endpoints
 
-If your organization requires security questions for legacy or compliance reasons, implement these critical safeguards:
+## Answer quality criteria
+| Criterion | Requirement |
+|---|---|
+| Memorable | User can recall it consistently over years |
+| Stable | Answer does not change over lifetime |
+| Confidential | Not findable via social media or public records |
+| Specific | Single precise answer, not many valid options |
 
-#### 1. Question Selection
-
-*   **Provide a Curated List:** Offer a predefined set of strong questions rather than allowing free-form user-created ones.
-*   **Question Quality:** Choose questions that are:
-    *   **Memorable:** Users can consistently recall the answer over time.
-    *   **Stable:** The answer doesn't change over the user's lifetime.
-    *   **Confidential:** Not easily discoverable through social media or public records.
-    *   **Specific:** Has a single, precise answer rather than multiple possible answers.
-
-#### 2. Answer Handling
-
-*   **Secure Storage:** Hash all answers using Argon2id or bcrypt with per-answer unique salt and system-wide pepper. Store data encrypted at rest with AES-256.
-*   **Normalization:** Before comparing answers, normalize them by removing extra spaces, converting to lowercase, and removing punctuation.
-*   **Input Validation:**
-    *   Enforce a minimum length but allow legitimate short answers.
-    *   Implement a denylist for weak answers like "password", "123456", or the user's own username/email.
-
-#### 3. Implementation Best Practices
-
-*   **Multi-Layered Security:** Use multiple questions together for increased security.
-*   **Consistent Question:** When a user fails to answer correctly, don't rotate to a different question—this helps prevent attackers from learning all the answers through multiple attempts.
-*   **Brute-Force Protection:** Implement rate limiting (max 5 attempts per hour), progressive delays, CAPTCHA after 3 failed attempts, and account lockout to prevent automated attacks.
-*   **Verify Email First:** Always verify ownership of the recovery email address before presenting security questions.
-*   **Require Authentication:** Require re-authentication (password or MFA) before allowing users to change their security questions or answers.
-*   **Secure Transport:** Use HTTPS/TLS 1.3+ for all recovery endpoints and implement certificate pinning where possible to prevent man-in-the-middle attacks.
-
-By following these guidelines, you can minimize the risks associated with security questions while working toward implementing more secure authentication methods.
+## Checklist
+- [ ] MFA or email recovery offered as primary alternative to security questions
+- [ ] Answers hashed with Argon2id/bcrypt + per-answer salt + pepper; encrypted at rest
+- [ ] Answers normalized (lowercase, trim, strip punctuation) before compare
+- [ ] Weak answers blocked via denylist
+- [ ] Rate limiting + CAPTCHA + lockout on recovery attempts
+- [ ] Recovery email verified before security questions are shown
+- [ ] Re-authentication required to change questions/answers

@@ -1,130 +1,64 @@
 ---
-description: Content Security Policy (CSP) Best Practices
-languages:
-- c
-- html
-- javascript
-- php
-- typescript
+description: Configure Content Security Policy headers to mitigate XSS, clickjacking, and injection
 alwaysApply: false
 ---
 
-## Content Security Policy (CSP): A Defense-in-Depth Strategy
+# Content Security Policy (CSP)
 
-Implementing a strong Content Security Policy (CSP) is one of the most effective ways to mitigate cross-site scripting (XSS), clickjacking, and other injection attacks. CSP works by declaring which dynamic resources are allowed to load, effectively creating an allowlist that the browser enforces.
+CSP complements — but does not replace — input validation, output encoding, and other secure coding practices.
 
-### Implementation
+## NEVER
+- Use `<meta http-equiv="Content-Security-Policy">` when HTTP headers are available — it lacks full directive support
+- Use `'unsafe-eval'` or `'unsafe-inline'` in `script-src` without compensating nonce/hash controls
+- Skip `object-src 'none'` — plugins (Flash, Java applets) are an injection vector
+- Skip `base-uri 'none'` — base tag injection enables phishing redirects
 
-#### 1. Deliver CSP via HTTP Headers
+## ALWAYS
+- Deliver CSP via HTTP response header (`Content-Security-Policy`)
+- Start with `Content-Security-Policy-Report-Only` to monitor before enforcing
+- Use nonce-based or hash-based `script-src` over domain allowlisting
+- Generate nonces per-request using CSPRNG (≥128 bits, base64-encoded)
+- Set `frame-ancestors` to control framing (supersedes `X-Frame-Options`)
+- Set a `report-uri` or `report-to` endpoint to collect violations
 
-The most effective way to implement CSP is through HTTP response headers:
+## Key Directives
+
+| Directive | Recommended Value | Purpose |
+|-----------|-------------------|---------|
+| `default-src` | `'self'` | Fallback for unlisted fetch directives |
+| `script-src` | `'nonce-{random}' 'strict-dynamic'` | JS sources; prefer nonce/hash |
+| `style-src` | `'self'` (add `'unsafe-inline'` only if needed) | CSS sources |
+| `object-src` | `'none'` | Block Flash/plugins |
+| `base-uri` | `'none'` | Prevent base tag injection |
+| `frame-ancestors` | `'none'` or `'self'` | Anti-clickjacking |
+| `form-action` | `'self'` | Restrict form submission targets |
+| `upgrade-insecure-requests` | (flag) | Auto-upgrade HTTP → HTTPS |
+
+## Nonce-Based Script Policy
 
 ```http
-Content-Security-Policy: default-src 'self'; script-src 'self' https://trusted-cdn.com;
+Content-Security-Policy: script-src 'nonce-RANDOM_BASE64' 'strict-dynamic'; object-src 'none'; base-uri 'none';
 ```
-
-When testing a new policy, use the report-only mode to monitor without blocking:
-
-```http
-Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self';
-```
-
-**Note:** Avoid using the meta tag approach (`<meta http-equiv="Content-Security-Policy"...>`) except when you cannot modify HTTP headers, as it provides less protection and doesn't support all directives.
-
-#### 2. Adopt a Strict CSP Strategy
-
-Modern CSP best practices favor nonce-based or hash-based approaches over domain whitelisting:
-
-**Nonce-based approach:**
-
-```http
-Content-Security-Policy: script-src 'nonce-random123' 'strict-dynamic';
-```
-
-With corresponding HTML:
 
 ```html
-<script nonce="random123">alert('Hello');</script>
+<script nonce="RANDOM_BASE64">/* inline script */</script>
 ```
 
-**Important:** Generate a unique, cryptographically strong nonce for each page load. The nonce should be at least 128 bits of entropy encoded in base64.
-
-**Server-side nonce generation examples:**
-
+Server-side nonce generation:
 ```javascript
-// Node.js: crypto.randomBytes(16).toString('base64')
-// Python: base64.b64encode(secrets.token_bytes(16)).decode('utf-8')
+// Node.js
+const nonce = crypto.randomBytes(16).toString('base64');
 ```
 
-**Hash-based alternative:**
-```http
-Content-Security-Policy: script-src 'sha256-hashOfYourScriptContent' 'strict-dynamic';
-```
+## Refactoring for CSP Compatibility
+- Move inline `onclick="..."` handlers to external `.js` files with `addEventListener`
+- Move inline `style="..."` attributes to CSS classes in external stylesheets
 
-#### 3. Baseline CSP for Getting Started
-
-```http
-Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'; form-action 'self'; object-src 'none'; base-uri 'none'; upgrade-insecure-requests;
-```
-
-This policy:
-- Restricts resources to the same origin
-- Allows inline styles (necessary for many applications initially)
-- Prevents clickjacking by controlling framing
-- Limits form submissions to the same origin
-- Blocks plugin content (Flash, Java applets)
-- Prevents base tag injection attacks
-- Automatically upgrades HTTP requests to HTTPS (when `upgrade-insecure-requests` is used)
-
-#### 4. Refactor Your Code for CSP Compatibility
-
-To make CSP implementation easier:
-
-1. **Move inline code to external files:**
-   ```html
-   <!-- Instead of this -->
-   <button onclick="doSomething()">
-
-   <!-- Do this -->
-   <button id="myButton">
-   <script src="buttons.js"></script> <!-- With event listeners -->
-   ```
-
-2. **Eliminate inline styles:**
-   ```html
-   <!-- Instead of this -->
-   <div style="color: red">
-
-   <!-- Do this -->
-   <div class="red-text">
-   ```
-
-#### 5. Key CSP Directives You Should Know
-
-- **`default-src`**: The fallback for other fetch directives
-- **`script-src`**: Controls JavaScript sources
-- **`style-src`**: Controls CSS sources - use `'self'` for external stylesheets, add `'unsafe-inline'` only if needed for inline styles
-- **`img-src`**: Controls image sources
-- **`connect-src`**: Controls fetch, XHR, WebSocket connections
-- **`object-src`**: Controls `<object>`, `<embed>`, and `<applet>` elements - set to `'none'` to block Flash/plugins
-- **`frame-ancestors`**: Controls which sites can embed your pages (replaces X-Frame-Options) - use `'none'` to prevent all framing
-- **`form-action`**: Controls where forms can be submitted
-- **`upgrade-insecure-requests`**: Automatically upgrades HTTP requests to HTTPS
-
-#### 6. Enable Violation Reporting
-
-Set up a reporting endpoint to collect CSP violations:
-
-```http
-Content-Security-Policy: default-src 'self'; report-uri https://your-domain.com/csp-reports;
-```
-
-#### 7. Implementation Steps
-
-1. Start with `Content-Security-Policy-Report-Only`
-2. Analyze violation reports
-3. Gradually tighten policy
-4. Switch to enforcing mode
-5. Continue monitoring
-
-Remember that CSP is a defense-in-depth measure. It complements, but does not replace, proper input validation, output encoding, and other secure coding practices.
+## Checklist
+- [ ] CSP delivered via HTTP header (not meta tag)
+- [ ] `object-src 'none'` and `base-uri 'none'` set
+- [ ] `script-src` uses nonce or hash — no bare `'unsafe-inline'`
+- [ ] Nonces are cryptographically random and unique per page load
+- [ ] `frame-ancestors` directive configured
+- [ ] Reporting endpoint active and violations monitored
+- [ ] Policy graduated from Report-Only to enforcing

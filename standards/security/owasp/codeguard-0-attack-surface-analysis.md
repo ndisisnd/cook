@@ -1,62 +1,45 @@
 ---
-description: Attack Surface Analysis Best Practices
-languages:
-- c
-- go
-- java
-- javascript
-- matlab
-- php
-- python
-- ruby
-- typescript
-- yaml
+description: Attack surface analysis — catalog, reduce, and monitor all application entry/exit points
 alwaysApply: false
 ---
 
-Understanding and managing your application's attack surface is a fundamental part of building secure software. Your application's attack surface is the sum of all points where an unauthorized user (an attacker) can try to enter data, extract data, or invoke execution. Here’s how to approach it:
+# Attack Surface Analysis
 
-### 1. Identify and Document Your Attack Surface
+## NEVER
+- Leave undocumented or deprecated endpoints active without explicit security controls
+- Allow unlimited request rates to authentication or critical API endpoints
+- Add third-party dependencies without auditing their transitive attack surface
+- Skip security review when new endpoints or integrations are introduced
+- Trust data formats (JSON, XML, serialized objects) without schema validation
 
-You can't protect what you don't know about. The first step is to map out all the entry and exit points of your application.
+## ALWAYS
+- Catalog all entry/exit points: UIs, REST/GraphQL APIs, file uploads, DB connections, message queues, webhooks
+- Document data flows — what enters, how it's processed, how it exits, and what formats are used
+- Run automated endpoint discovery and OpenAPI spec validation in CI to flag new or changed surfaces
+- Classify each entry point by exposure (public vs. internal) and data sensitivity
+- Enforce auth (OAuth2/JWT), input validation, and rate limiting on every API endpoint
+- Apply principle of least privilege — remove or disable any feature, endpoint, or dependency not actively needed
+- Regularly audit third-party libraries; remove unused dependencies
+- Deploy WAF rules targeting common attack patterns (SQLi, XSS) plus application-specific vectors
+- Implement rate limiting per endpoint and DDoS protection at the infrastructure level
+- Monitor for anomalous traffic patterns, failed auth attempts, and unexpected data access; alert on deviations
+- Use network segmentation (firewalls, IaC-enforced rules) to restrict inter-component communication
+- Conduct threat modelling as part of design — identify attack vectors before code is written
 
-**Best Practices:**
+## Surface inventory
+| Component | Document |
+|---|---|
+| Entry points | All URLs, API paths, upload endpoints, queue consumers |
+| Auth/Authz | Which roles access which resources; deprecated endpoint status |
+| Data formats | JSON/XML schemas, serialized object types |
+| Dependencies | Third-party libs, external credentials/permissions |
+| IaC rules | Firewall / network segmentation config files |
 
-*   **Catalog Entry Points:** Identify all user interfaces (UIs), APIs (REST, GraphQL, etc.), file uploads, database connections, message queue consumers, and webhooks. Examples include `/api/users`, file upload endpoints, database connection strings, and Redis/RabbitMQ consumers.
-*   **Map Data Flows:** Document how data enters, is processed, and exits your system. This includes data formats being used (e.g., JSON, XML, serialized objects).
-*   **Integrate with CI/CD:** Add automated checks in your CI/CD pipeline to detect new endpoints or changes to existing ones. Use tools like OpenAPI spec validation or endpoint discovery to flag changes for security review.
-*   **Keep Documentation Current:** Maintain a living document, such as a `ATTACK_SURFACE.md` file in your repository, that details these components. Assign responsibility for updates to the development team lead and review quarterly.
-
-### 2. Analyze and Prioritize
-
-Once you have a map, you need to assess the risk associated with each part of the attack surface.
-
-**Best Practices:**
-
-*   **Categorize Components:** Classify each entry point based on its exposure (e.g., public-facing vs. internal) and the sensitivity of the data it handles.
-*   **Secure APIs and Integrations:** For each API endpoint, ensure proper input validation, rate limiting (e.g., 100 requests/minute per user), authentication (OAuth2, JWT), and authorization checks. Regularly review third-party integration credentials and permissions.
-*   **Handle Authentication and Authorization:** Implement proper access controls for all endpoints. Document which user roles can access which resources. Regularly audit deprecated endpoints and remove or secure them properly.
-*   **Prioritize Reviews:** Focus your security efforts, such as code reviews and penetration testing, on the most exposed and highest-risk components. An unauthenticated public API handling user data is a higher priority than an internal admin dashboard.
-*   **Threat Model:** Use threat modeling to think like an attacker and identify potential vulnerabilities in your design.
-
-### 3. Reduce and Monitor
-
-A smaller attack surface is easier to defend.
-
-**Best Practices:**
-
-*   **Principle of Least Privilege:** If a feature, endpoint, or dependency is not needed, remove it. Disable unused features and interfaces.
-*   **Minimize Dependencies:** Every third-party library you add can potentially increase your attack surface. Regularly audit and remove unused dependencies.
-*   **Continuously Reassess:** Your application is always evolving. Make attack surface analysis a regular part of your development lifecycle, not a one-time activity.
-
-### 4. Implement Runtime Defenses
-
-Secure coding is essential, but it should be part of a defense-in-depth strategy with operational controls.
-
-**Best Practices:**
-
-*   **Deploy Web Application Firewalls (WAFs):** Configure WAF rules to block common attack patterns (SQL injection, XSS) and implement custom rules for your application's specific attack vectors.
-*   **Implement Rate Limiting:** Set up application-level rate limiting for critical endpoints (e.g., login, API calls) and infrastructure-level DDoS protection.
-*   **Enable Anomaly Detection:** Monitor for unusual traffic patterns, failed authentication attempts, and unexpected data access patterns. Set up alerts for suspicious activity.
-*   **Network Segmentation:** Use firewalls and network controls to limit communication between components. These are often defined in Infrastructure-as-Code (IaC) files (e.g., Terraform, CloudFormation), which should be reviewed for security.
-*   **Regular Security Monitoring:** Implement logging and monitoring for all entry points, with weekly reviews of security logs and monthly assessments of attack surface changes.
+## Checklist
+- [ ] All entry/exit points catalogued and owners assigned
+- [ ] CI/CD flags new endpoints for security review
+- [ ] Rate limiting and auth enforced on every public endpoint
+- [ ] Unused endpoints, features, and dependencies removed
+- [ ] WAF and anomaly detection active; alerts configured
+- [ ] Threat model updated with each significant architecture change
+- [ ] Security logs reviewed regularly; attack surface reassessed quarterly

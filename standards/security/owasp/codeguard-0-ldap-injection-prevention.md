@@ -1,96 +1,51 @@
 ---
-description: LDAP Injection Prevention
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
-- xml
-- yaml
+description: LDAP injection prevention — escaping, input validation, and least-privilege binding for directory queries
 alwaysApply: false
 ---
 
-## LDAP Injection Prevention Guidelines
+# LDAP Injection Prevention
 
-Essential practices for preventing LDAP injection vulnerabilities in applications that use directory services.
+## NEVER
+- Concatenate untrusted user input directly into LDAP search filters or DNs
+- Use administrative or write-capable accounts for application LDAP bindings
+- Allow anonymous connections or unauthenticated binds
+- Write custom escaping routines; use established security libraries instead
 
-### Understanding LDAP Injection
+## ALWAYS
+- Escape all untrusted data before incorporating it into LDAP queries
+- Use context-appropriate escaping: DN escaping differs from search filter escaping
+- Validate input against an allowlist of known-safe characters before query construction
+- Normalize user input before validation
+- Use read-only, least-privilege binding accounts for application connections
+- Configure LDAP with bind authentication to enforce verification and authorization
 
-LDAP injection occurs when untrusted user input is improperly incorporated into LDAP queries, potentially allowing attackers to bypass authentication, access unauthorized data, or modify directory information.
+## Escaping Reference
 
-Two main components vulnerable to injection:
-- **Distinguished Names (DNs)**: Unique identifiers like `cn=Richard Feynman, ou=Physics Department, dc=Caltech, dc=edu`
-- **Search Filters**: Query criteria using boolean logic in Polish notation
+| Context | Characters requiring escaping |
+|---|---|
+| Distinguished Name (DN) | `\ # + < > , ; " =` and leading/trailing spaces |
+| Search Filter | `* ( ) \ NUL` |
 
-### Primary Defense: Proper Escaping
+Characters allowed unescaped in DNs: `* ( ) . & - _ [ ] \` ~ | @ $ % ^ ? : { } ! '`
 
-#### Distinguished Name Escaping
+## Library Implementations
 
-Characters that must be escaped in DNs: `\ # + < > , ; " =` and leading or trailing spaces.
+| Platform | API |
+|---|---|
+| Java (ESAPI) | `encodeForLDAP(String)`, `encodeForDN(String)` |
+| .NET | `Encoder.LdapFilterEncode()` (RFC 4515), `Encoder.LdapDistinguishedNameEncode()` (RFC 2253) |
+| .NET Framework 4.5 | LINQ to LDAP (automatic encoding) |
 
-Characters allowed in DNs (no escaping needed): `* ( ) . & - _ [ ] ` ~ | @ $ % ^ ? : { } ! '`
-
-#### Search Filter Escaping
-
-Characters that must be escaped in search filters: `* ( ) \ NUL`
-
-### Safe Java Example
-
-The original OWASP document provides this allowlist validation approach:
-
+Java allowlist pattern (validate before building filter):
 ```java
-// String userSN = "Sherlock Holmes"; // Valid
-// String userPassword = "secret2"; // Valid
-// ... beginning of LDAPInjection.searchRecord()...
-sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
-String base = "dc=example,dc=com";
-
-if (!userSN.matches("[\\w\\s]*") || !userPassword.matches("[\\w]*")) {
- throw new IllegalArgumentException("Invalid input");
-}
-
-String filter = "(&(sn = " + userSN + ")(userPassword=" + userPassword + "))";
-// ... remainder of LDAPInjection.searchRecord()... 
+if (!userSN.matches("[\\w\\s]*") || !userPassword.matches("[\\w]*"))
+    throw new IllegalArgumentException("Invalid input");
 ```
 
-### Safe .NET Encoding
-
-Use .NET AntiXSS (now the Encoder class) LDAP encoding functions:
-- `Encoder.LdapFilterEncode(string)` - encodes according to RFC4515
-- `Encoder.LdapDistinguishedNameEncode(string)` - encodes according to RFC2253
-- `LdapDistinguishedNameEncode(string, bool, bool)` - with optional initial/final character escaping
-
-### Framework-Based Protection
-
-Use frameworks that automatically protect from LDAP injection:
-- **Java**: OWASP ESAPI with `encodeForLDAP(String)` and `encodeForDN(String)`
-- **.NET**: LINQ to LDAP (for .NET Framework 4.5 or lower) provides automatic LDAP encoding
-
-### Additional Defenses
-
-#### Least Privilege
-- Minimize privileges assigned to LDAP binding accounts
-- Use read-only accounts where possible
-- Avoid administrative accounts for application connections
-
-#### Bind Authentication
-- Configure LDAP with bind authentication to add verification and authorization checks
-- Prevent anonymous connections and unauthenticated binds
-
-#### Allow-List Input Validation
-- Validate input against known-safe characters before LDAP query construction
-- Normalize user input before validation
-- Store sensitive data in sanitized form
-
-### Key Security Requirements
-
-- Always escape untrusted data before incorporating into LDAP queries
-- Use context-appropriate escaping (DN vs search filter)
-- Implement comprehensive input validation with allowlists
-- Use established security libraries rather than custom escaping
-- Apply principle of least privilege to LDAP connections
-- Enable proper authentication mechanisms to prevent bypass attacks
+## Checklist
+- [ ] All user input escaped with context-correct method (DN vs filter) before LDAP query
+- [ ] Established library used for escaping (ESAPI, .NET Encoder) — no custom routines
+- [ ] Input validated against allowlist of safe characters prior to query construction
+- [ ] LDAP binding account is read-only and least-privilege
+- [ ] Anonymous and unauthenticated binds disabled
+- [ ] Sensitive data stored in sanitized form

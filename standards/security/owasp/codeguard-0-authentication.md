@@ -1,31 +1,50 @@
 ---
-description: Authentication Security Best Practices
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
+description: Authentication security — passwords, MFA, sessions, recovery, and federated auth
 alwaysApply: false
 ---
 
-Secure authentication is one of the most critical aspects of application development.
+# Authentication
 
-- Use non-public, random, and unique identifiers for users internally. For login, allow users to use their verified email address or a username, but ensure error messages are generic (e.g., "Invalid username or password") to prevent attackers from guessing valid accounts.
-- Implement proper password strength controls: minimum 8 characters, maximum 64+ characters to support passphrases, allow all characters including unicode and whitespace, and avoid composition rules (no requirements for uppercase/lowercase/numbers/special characters).
-- Block common and previously breached passwords using services like HaveIBeenPwned's Pwned Passwords API, and include a password strength meter to help users create stronger passwords.
-- Store user passwords using a modern, strong, and slow hashing algorithm like Argon2 (preferred) or bcrypt with recommended parameters. Use a unique salt for each user.
-- Support Password Managers: Use standard `<input type="password">` fields and allow pasting to ensure compatibility with password managers.
-- Use TLS Everywhere: All communication transmitting credentials, session tokens, or any sensitive data must be over HTTPS.
-- When comparing password hashes, use a secure, constant-time comparison function to prevent timing attacks.
-- Protect against automated attacks: implement account lockout after failed login attempts, use CAPTCHA to prevent brute force attacks, and consider rate limiting on authentication endpoints.
-- Require multi-factor authentication (MFA) using TOTP (authenticator apps) or WebAuthn (hardware keys) for sensitive accounts. Consider making MFA mandatory for all users.
-- Implement secure session management: use HttpOnly and Secure flags for session cookies, rotate session IDs after login, and set appropriate session timeouts.
-- Before a user can change their password, require them to re-enter their current password. Require re-authentication for all sensitive features and transactions (password changes, email updates, financial transactions).
-- Implement secure password recovery mechanisms that don't reveal whether an account exists ("If that email address is in our database, we will send you an email to reset your password").
-- Enable comprehensive logging and monitoring: log all authentication failures, successful logins, account lockouts, and password changes for security monitoring and incident response.
-- Internal or administrative accounts should not be accessible from public login forms. Use a separate, more secure authentication system for internal users.
-- For delegated or federated authentication, use established protocols like OAuth 2.0, OpenID Connect (OIDC), or SAML. DO NOT build your own.
+## NEVER
+- Expose different error messages for "user not found" vs "wrong password"
+- Use fast/unsalted hashes (MD5, SHA-1, SHA-256-plain) for password storage
+- Skip constant-time comparison when checking password hashes
+- Use public or predictable values as internal user identifiers
+- Disable paste or interfere with `<input type="password">` (breaks password managers)
+- Allow composition rules that restrict character sets — enforce length only
+- Build custom auth or federated protocols — use OAuth 2.0/OIDC/SAML
+- Expose admin/internal login forms on public interfaces
+
+## ALWAYS
+- Return generic error messages (e.g., "Invalid username or password") on all auth failures
+- Hash passwords with Argon2id (preferred) or bcrypt; use a unique per-user salt
+- Check new passwords against breach corpora (HaveIBeenPwned k-anonymity API); reject common/breached passwords
+- Enforce minimum 8-char and maximum 64+-char password limits; allow all Unicode/whitespace
+- Include a password strength meter in the UI
+- Use TLS for all endpoints transmitting credentials, session tokens, or sensitive data
+- Rate-limit login attempts; implement account lockout/throttling + CAPTCHA against brute force
+- Require MFA (TOTP or WebAuthn) for sensitive accounts
+- Issue session cookies with `HttpOnly` + `Secure` flags; rotate session ID after login; set timeouts
+- Require re-authentication before password changes, email updates, or financial transactions
+- Send password-reset responses identically whether the account exists or not
+- Log all auth failures, successful logins, lockouts, and password changes
+
+## Password strength parameters
+- Minimum: 8 chars; maximum: 64+ to support passphrases
+- Allow all characters including Unicode and whitespace
+- No composition rules (no forced uppercase/number/symbol requirements)
+- Block: breach corpora hits, "password", "123456", and username/email matches
+
+## Session management
+- `HttpOnly` + `Secure` flags on session cookies
+- Rotate session ID immediately after login
+- Enforce idle and absolute session timeouts appropriate to sensitivity
+
+## Checklist
+- [ ] Generic error messages on all auth failure paths; uniform response timing
+- [ ] Argon2id or bcrypt with per-user salt; constant-time hash compare
+- [ ] Breached-password check on account creation and password change
+- [ ] MFA (TOTP/WebAuthn) available and enforced for sensitive operations
+- [ ] Session cookies: `HttpOnly`, `Secure`, rotated on login, with timeouts
+- [ ] Re-authentication required before sensitive changes
+- [ ] OAuth 2.0/OIDC/SAML used for federated auth — no custom protocol

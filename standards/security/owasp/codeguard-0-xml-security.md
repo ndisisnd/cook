@@ -1,37 +1,55 @@
 ---
-description: XML Security Rule
-languages:
-- xml
+description: Harden XML parsing against XXE, SSRF, DoS, schema poisoning, and data integrity attacks
 alwaysApply: false
 ---
 
-Enforce robust XML security practices to prevent XXE, SSRF, DoS, schema poisoning, and data integrity issues in XML parsing and validation.
+# XML Security
 
-- Always reject unexpected elements, attributes, or data outside the schema definitions.
-- Perform business logic validation on XML data after schema validation (e.g., numeric ranges on payment amounts).
-- Keep XML processing libraries up to date and use secure configurations by default.
+## NEVER
+- Enable DTD processing or external entity resolution on untrusted XML
+- Load schemas over unencrypted HTTP or from untrusted remote locations
+- Allow XML parser to make unconstrained outbound network calls
+- Accept XML documents without depth/size limits
+- Store schemas with lax filesystem permissions
 
-Use a standards-compliant XML parser configured to disable DTD processing and external entity resolution to prevent XXE and entity expansion attacks.
-- Ensure your XML parser rejects malformed XML documents and halts processing on fatal errors.
-- Configure parser features such as `disallow-doctype-decl`, `external-general-entities`, and `external-parameter-entities` set to false or disabled.
+## ALWAYS
+- Use a standards-compliant parser with `disallow-doctype-decl`, `external-general-entities`, and `external-parameter-entities` disabled
+- Reject malformed XML and halt on fatal parse errors
+- Validate all XML against local, trusted XSDs with narrow type restrictions
+- Enforce explicit `maxOccurs` limits on all elements
+- Enforce nesting depth and document size limits to prevent DoS
+- Perform business logic validation after schema validation (e.g., numeric ranges on payment amounts)
+- Reject unexpected elements or attributes outside the schema
+- Keep XML processing libraries up to date with secure defaults
+- Log and monitor parse errors and rejections; alert on repeated failures
+- Audit local schema files regularly for unauthorized changes
 
-Validate all XML documents strictly against local, trusted XML Schemas (XSDs) with narrow data type restrictions and clearly defined element occurrence limits.
-- Avoid or limit the use of DTDs; prefer comprehensive XSD validation.
-- Use schemas with explicit types, length limits, regex patterns, enumerations, and xs:assertion where appropriate.
-- Set maxOccurs explicitly to control element multiplicity.
-- Store schemas locally with strict filesystem permissions and never load schemas over unencrypted HTTP.
+## Schema Design
 
-Prevent resource exhaustion by rejecting XML documents with excessive depth, nested unclosed tags, or large size to avoid DoS.
-- Enforce limits on XML element nesting depth and document size.
-- Test parser CPU usage differences between valid and malformed XML inputs.
-- Reject or timeout processing on unexpectedly complex documents.
+- Use explicit types, length limits, regex patterns, and enumerations in XSDs
+- Prefer XSD over DTD; avoid DTDs entirely where possible
+- Use `xs:assertion` for cross-field constraints where supported
+- Store all schemas locally; apply strict filesystem permissions
 
-Block or sandbox XML processing from making remote network calls to mitigate SSRF and information disclosure risks.
-- Disable external entity resolution or restrict it to local, whitelisted resources only.
-      - Validate and sanitize all external URI references in XML entities.
-- Monitor for unexpected DNS lookups or network activity during XML parsing.
+## SSRF / Network Isolation
 
-Log and monitor XML parsing errors and rejections to detect injection attempts, malformed XML attacks, or schema poisoning.
-- Capture detailed error information without exposing sensitive data.
- - Alert on repeated or suspicious XML parse failures.
-- Audit local schema files regularly for unauthorized changes.
+- Disable external entity resolution or restrict to local whitelisted resources
+- Validate and sanitize all external URI references in XML entities
+- Monitor for unexpected DNS lookups or network activity during parsing
+- Sandbox XML processing to block outbound calls
+
+## DoS Prevention
+
+- Enforce maximum element nesting depth
+- Enforce maximum document size (bytes)
+- Reject or timeout on unexpectedly complex documents
+- Test parser CPU usage differences between valid and malformed inputs
+
+## Checklist
+- [ ] Parser DTD and external-entity features disabled
+- [ ] All XML validated against local, versioned XSD schemas
+- [ ] `maxOccurs` explicit on every element; depth and size limits enforced
+- [ ] Business logic validation applied post-schema
+- [ ] Outbound network calls from parser blocked or sandboxed
+- [ ] Parse errors logged; alerts on repeated failures
+- [ ] Schema files stored locally with restricted permissions and audited

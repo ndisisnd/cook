@@ -1,92 +1,71 @@
 ---
-description: Java Security Best Practices
-languages:
-- c
-- java
-- javascript
-- typescript
-- xml
-- yaml
+description: Java security essentials — SQLi, JPA, XSS, logging, cryptography, key management
 alwaysApply: false
 ---
 
-## Java Security Guidelines
+# Java Security
 
-Key security practices for secure Java application development.
+## NEVER
+- Concatenate user input into SQL or JPQL query strings
+- Log user-controlled input via string concatenation — use parameterised logging
+- Hardcode cryptographic keys, secrets, or passwords in source code
+- Write custom cryptographic implementations
+- Use weak or deprecated algorithms (MD5, SHA-1, DES, ECB mode)
 
-### SQL Injection Prevention
+## ALWAYS
+- Use `PreparedStatement` or named JPA parameters for all database queries
+- Validate input with an allowlist regex before use
+- Encode output with `Encode.forHtml()` or equivalent before rendering
+- Use AES-GCM with a 128-bit tag and a cryptographically random 12-byte nonce
+- Generate nonces with `SecureRandom.getInstanceStrong()`
+- Use a trusted library (Google Tink or equivalent) for all cryptographic operations
+- Implement key rotation and proper key lifecycle management
+- Keep all dependencies updated with security patches
 
-Use parameterized queries to prevent SQL injection:
+## SQL / JPA
 
 ```java
-// Safe - PreparedStatement with parameters
+// PreparedStatement
 String query = "select * from color where friendly_name = ?";
-try (PreparedStatement pStatement = con.prepareStatement(query)) {
-    pStatement.setString(1, userInput);
-    try (ResultSet rSet = pStatement.executeQuery()) {
-        // Process results
-    }
-}
+PreparedStatement ps = con.prepareStatement(query);
+ps.setString(1, userInput);
+
+// JPA named parameter
+Query q = em.createQuery("select c from Color c where c.friendlyName = :name");
+q.setParameter("name", userInput);
 ```
 
-### JPA Query Security
-
-Use parameterized JPA queries:
+## XSS Prevention
 
 ```java
-// Safe - Named parameters
-String queryPrototype = "select c from Color c where c.friendlyName = :colorName";
-Query queryObject = entityManager.createQuery(queryPrototype);
-Color c = (Color) queryObject.setParameter("colorName", userInput).getSingleResult();
+// Allowlist validation
+if (!Pattern.matches("[a-zA-Z0-9\\s\\-]{1,50}", userInput)) return false;
+// Output encoding
+String safe = Encode.forHtml(policy.sanitize(outputToUser));
 ```
 
-### XSS Prevention
-
-Apply input validation and output encoding:
+## Cryptography
 
 ```java
-// Input validation with allowlist
-if (!Pattern.matches("[a-zA-Z0-9\\s\\-]{1,50}", userInput)) {
-    return false;
-}
-
-// Output sanitization
-PolicyFactory policy = new HtmlPolicyBuilder().allowElements("p", "strong").toFactory();
-String safeOutput = policy.sanitize(outputToUser);
-safeOutput = Encode.forHtml(safeOutput);
-```
-
-### Secure Logging
-
-Use parameterized logging to prevent log injection:
-
-```java
-// Safe - parameterized logging
-logger.warn("Login failed for user {}.", username);
-
-// Avoid - string concatenation
-// logger.warn("Login failed for user " + username);
-```
-
-### Cryptography Best Practices
-
-Use trusted cryptographic libraries and secure algorithms:
-
-```java
-// Use AES-GCM with proper nonce management
+// AES-GCM encryption
 Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(128, nonce);
-cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmParameterSpec);
-
-// Generate secure random nonces
 byte[] nonce = new byte[12];
 SecureRandom.getInstanceStrong().nextBytes(nonce);
+cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(128, nonce));
 ```
 
-### Key Security Requirements
+## Logging
 
-- Never hardcode cryptographic keys in source code
-- Use Google Tink or similar trusted crypto libraries when possible
-- Avoid writing custom cryptographic implementations
-- Implement proper key rotation and management
-- Keep all dependencies updated with security patches
+```java
+logger.warn("Login failed for user {}.", username); // safe — parameterised
+// NOT: logger.warn("Login failed for user " + username); // log injection risk
+```
+
+## Checklist
+- [ ] All DB queries use `PreparedStatement` or named JPA parameters
+- [ ] User input validated with allowlist regex before processing
+- [ ] HTML output encoded with `Encode.forHtml()` or equivalent
+- [ ] Logging uses parameterised calls, never string concatenation
+- [ ] Cryptography uses AES-GCM with random nonce via `SecureRandom`
+- [ ] No hardcoded keys or secrets in source
+- [ ] Trusted crypto library (Tink or equivalent) used — no custom implementations

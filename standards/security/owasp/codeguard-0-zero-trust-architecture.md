@@ -1,259 +1,65 @@
 ---
-description: Zero Trust Architecture Implementation - Security principles for designing
-  systems with no implicit trust
-languages:
-- c
-- go
-- java
-- javascript
-- kotlin
-- php
-- python
-- ruby
-- scala
-- shell
-- swift
-- typescript
-- yaml
+description: Implement Zero Trust Architecture — never trust implicitly, verify identity and device on every request
 alwaysApply: false
 ---
 
-## Implementing Zero Trust Architecture
+# Zero Trust Architecture
 
-Implementing Zero Trust Architecture (ZTA) principles in your applications is essential for modern security.
+"Never trust, always verify." Assume threats exist inside and outside the network; grant no implicit trust based on network location or asset ownership.
 
-Zero Trust is built on the principle of "never trust, always verify" and assumes that threats exist both outside and inside the network. Key concepts include:
+## NEVER
+- Grant access based on network location alone
+- Issue long-lived tokens without a revocation mechanism
+- Allow any service-to-service or client-to-service call without authentication and authorization
+- Skip device compliance checks in authorization decisions
+- Permit lateral movement by leaving internal segments open by default
 
-- No implicit trust based on network location or asset ownership
-- Continuous verification of identity and device health
-- Least privilege access to resources and data
-- Microsegmentation of networks and applications
-- Continuous monitoring and analytics for threat detection
+## ALWAYS
+- Use strong authentication (FIDO2/WebAuthn) for all identities
+- Enforce least-privilege access; scope tokens to minimum required permissions
+- Verify identity, device health, and risk score on every access request
+- Issue short-lived tokens (≤15 min); store metadata for revocation
+- Use TLS 1.3 for all service communications
+- Apply microsegmentation — default-deny between network/application segments
+- Log every access attempt with user, resource, device, IP, risk score, and outcome
+- Rate-limit all API endpoints
 
-### Authentication & Authorization
+## Authentication & Authorization
 
-- Implement Strong Authentication using FIDO2/WebAuthn
+Context-aware authorization must check all of:
+1. Identity verified
+2. Device compliant
+3. Risk score within threshold
+4. Permission granted for the specific resource + action
 
-- Implement Context-Aware Authorization
-Implement authorization that considers multiple factors:
+Short-lived token payload must include: `sub`, `device_id`, `permissions`, `exp` (≤15 min), `iat`, `jti` (unique ID for revocation).
 
-```java
-// Java example of context-aware authorization
-public class ZeroTrustAuthorizationService {
-    public boolean authorizeAccess(User user, Resource resource, AccessContext context) {
-        // 1. Verify user identity
-        if (!identityService.verifyIdentity(user)) {
-            logFailedAttempt("Identity verification failed", user, resource, context);
-            return false;
-        }
+## API Security
 
-        // 2. Check device health and compliance
-        if (!deviceService.isCompliant(context.getDeviceId())) {
-            logFailedAttempt("Device not compliant", user, resource, context);
-            return false;
-        }
+| Control | Requirement |
+|---------|-------------|
+| Transport | TLS 1.3 only |
+| Auth header | Bearer token; reject missing or revoked tokens with 401 |
+| Payload size | Cap (e.g., 100 KB); validate schema on every request |
+| Rate limiting | Per-IP window (e.g., 100 req / 15 min) |
+| Security headers | Set via `helmet` or equivalent |
 
-        // 3. Evaluate risk score based on multiple factors
-        int riskScore = riskEngine.calculateScore(user, resource, context);
-        if (riskScore > ACCEPTABLE_THRESHOLD) {
-            logFailedAttempt("Risk score too high", user, resource, context);
-            return false;
-        }
+## Network Microsegmentation
 
-        // 4. Check if user has required permissions
-        if (!permissionService.hasPermission(user, resource, context.getRequestedAction())) {
-            logFailedAttempt("Insufficient permissions", user, resource, context);
-            return false;
-        }
+- Default-deny ingress and egress between segments
+- Allow only explicit, named pod/service selectors (e.g., Kubernetes NetworkPolicy)
+- Restrict egress to only required destinations (databases, telemetry)
+- Review and audit policies on every infrastructure change
 
-        // 5. Log successful access
-        auditLogger.logAccess(user, resource, context);
-        return true;
-    }
-}
-```
+## Monitoring & Logging
 
-- Implement Short-Lived Access Tokens
+Log every security event with: `EventType`, `Timestamp`, `UserId`, `ResourceId`, `IpAddress`, `DeviceId`, `DeviceHealth`, `Location`, `RequestedPermissions`, `RiskScore`. Alert on denied access patterns and anomalies.
 
-Implement token-based authentication with short lifetimes:
-
-```python
-# Python example using JWT with short expiration
-import jwt
-from datetime import datetime, timedelta
-
-def generate_access_token(user_id, device_id, permissions):
-    # Set token to expire in 15 minutes
-    expiration = datetime.utcnow() + timedelta(minutes=15)
-
-    payload = {
-        'sub': user_id,
-        'device_id': device_id,
-        'permissions': permissions,
-        'exp': expiration,
-        'iat': datetime.utcnow(),
-        'jti': str(uuid.uuid4())  # Unique token ID
-    }
-
-    # Sign with appropriate algorithm and key
-    token = jwt.encode(payload, SECRET_KEY, algorithm='ES256')
-
-    # Store token metadata for potential revocation
-    store_token_metadata(user_id, payload['jti'], device_id, expiration)
-
-    return token
-```
-
-### Secure Communication
-
-- Implement TLS 1.3 for all communications
-
-- Implement API security measures:
-
-```typescript
-// TypeScript example of API security middleware
-import express from 'express';
-import rateLimit from 'express-rate-limit';
-import helmet from 'helmet';
-
-const app = express();
-
-// Set security headers
-app.use(helmet());
-
-// Rate limiting
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/', apiLimiter);
-
-// API authentication middleware
-app.use('/api/', (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-
-  try {
-    // Verify token and extract user info
-    const user = verifyAndDecodeToken(token);
-
-    // Check if token has been revoked
-    if (isTokenRevoked(token)) {
-      return res.status(401).json({ error: 'Token revoked' });
-    }
-
-    // Add user info to request for downstream handlers
-    req.user = user;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-});
-
-// Payload validation middleware
-app.use(express.json({
-  verify: (req, res, buf) => {
-    try {
-      // Check if JSON is valid and meets schema requirements
-      validateSchema(buf.toString(), req.path);
-    } catch (e) {
-      throw new Error('Invalid JSON payload');
-    }
-  },
-  limit: '100kb' // Limit payload size
-}));
-```
-
-### Monitoring and Logging
-
-- Implement Comprehensive Logging
-
-```csharp
-// C# example of detailed security logging
-public class SecurityLogger
-{
-    private readonly ILogger _logger;
-
-    public SecurityLogger(ILogger logger)
-    {
-        _logger = logger;
-    }
-
-    public void LogAccessAttempt(string userId, string resourceId, bool success, AccessContext context)
-    {
-        var logEvent = new SecurityEvent
-        {
-            EventType = success ? "access_granted" : "access_denied",
-            Timestamp = DateTime.UtcNow,
-            UserId = userId,
-            ResourceId = resourceId,
-            IpAddress = context.IpAddress,
-            DeviceId = context.DeviceId,
-            DeviceHealth = context.DeviceHealthStatus,
-            Location = context.GeoLocation,
-            RequestedPermissions = context.RequestedPermissions,
-            RiskScore = context.RiskScore
-        };
-
-        // Log with appropriate level
-        if (success)
-        {
-            _logger.LogInformation("Access granted: {Event}", JsonSerializer.Serialize(logEvent));
-        }
-        else
-        {
-            _logger.LogWarning("Access denied: {Event}", JsonSerializer.Serialize(logEvent));
-        }
-    }
-}
-```
-
-### Implement fine-grained network and application segmentation
-
-
-```yaml
-# Kubernetes Network Policy example for microsegmentation
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: api-backend-policy
-  namespace: production
-spec:
-  podSelector:
-    matchLabels:
-      app: api-backend
-  policyTypes:
-  - Ingress
-  - Egress
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: frontend
-    ports:
-    - protocol: TCP
-      port: 443
-  egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app: database
-    ports:
-    - protocol: TCP
-      port: 5432
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: monitoring
-      podSelector:
-        matchLabels:
-          app: telemetry
-    ports:
-    - protocol: TCP
-      port: 9090
-```
+## Checklist
+- [ ] All requests require authentication; no implicit trust from network location
+- [ ] Authorization checks identity, device compliance, risk score, and permission
+- [ ] Tokens short-lived (≤15 min) with revocation support
+- [ ] TLS 1.3 enforced on all internal and external communications
+- [ ] Microsegmentation in place; default-deny between segments
+- [ ] All access attempts logged with full context (user, device, resource, risk)
+- [ ] API rate limiting and payload size caps enforced

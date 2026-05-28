@@ -1,103 +1,49 @@
 ---
-description: OAuth 2.0 Security Best Practices
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
-- yaml
+description: OAuth 2.0 security — PKCE, grant types, token binding, and redirect URI validation
 alwaysApply: false
 ---
 
-## OAuth 2.0 Security Guidelines
+# OAuth 2.0 Security
 
-Essential security practices for implementing secure OAuth 2.0 authorization flows and protecting against common attacks.
+## NEVER
+- Use Resource Owner Password Credentials Grant — exposes credentials to the client
+- Use Implicit Grant (`response_type=token`) — use Authorization Code instead
+- Allow open redirectors: never forward browsers to arbitrary URIs from query params
+- Allow wildcard or partial redirect URI matching — use exact string matching only
+- Use `plain` PKCE code challenge method — use S256 only
+- Transmit authorization responses over unencrypted connections
+- Allow `http` redirect URIs except for native clients on loopback interface
+- Allow clients to influence their own `client_id` or `sub` values
 
-### Essential Basics
+## ALWAYS
+- Validate redirect URIs by exact string match during registration and at runtime
+- Implement PKCE for all public clients; enforce `code_verifier` at the token endpoint
+- Prevent PKCE downgrade: reject `code_verifier` when no `code_challenge` was in the auth request
+- Use one-time CSRF tokens in `state`, or rely on PKCE/nonce for CSRF protection
+- Use `iss` parameter or distinct redirect URIs to prevent mix-up attacks in multi-AS environments
+- Sender-constrain tokens with mTLS or DPoP to prevent replay
+- Apply refresh token rotation or ensure refresh tokens are sender-constrained
+- Restrict tokens to minimum scope; enforce audience restriction on Resource Servers
+- Use asymmetric client authentication (mTLS, `private_key_jwt`) over shared secrets
+- Enforce TLS end-to-end for all OAuth communications
 
-Prevent open redirectors that can enable token exfiltration:
-- Clients and Authorization Servers must not expose URLs that forward the user's browser to arbitrary URIs obtained from query parameters
-- Use exact string matching for redirect URI validation during client registration
+## Grant & Token Summary
 
-Use proper CSRF protection:
-- When Authorization Server supports PKCE, clients may rely on PKCE's CSRF protection
-- In OpenID Connect flows, the "nonce" parameter provides CSRF protection
-- Otherwise, use one-time CSRF tokens in the "state" parameter that are securely bound to the user agent
+| Concern | Requirement |
+|---------|-------------|
+| Grant type | Authorization Code (`code` or `code id_token`) only |
+| PKCE challenge | S256; never `plain` |
+| CSRF | `state` with one-time token, PKCE, or OIDC `nonce` |
+| Token binding | mTLS or DPoP |
+| Client auth | Asymmetric (mTLS, `private_key_jwt`) preferred |
+| Audience | RS must verify token was issued for it |
+| Scope | Minimum required; use `authorization_details` for fine-grained control |
 
-Prevent mix-up attacks in multi-Authorization Server environments:
-- Use the issuer "iss" parameter as a countermeasure when interacting with multiple Authorization Servers
-- Alternatively, use distinct redirect URIs to identify different authorization and token endpoints
-- Authorization Servers should avoid accidentally forwarding requests containing user credentials
-
-### PKCE - Proof Key for Code Exchange
-
-PKCE mitigates authorization code interception attacks, especially for public clients:
-
-- Use PKCE flow to prevent injection (replay) of authorization codes into authorization responses
-- Use PKCE code challenge methods that do not expose the verifier in the authorization request
-- Use S256 as the code challenge method instead of plain text
-- Authorization servers must support PKCE and enforce correct "code_verifier" usage at the token endpoint
-- Prevent PKCE downgrade attacks by accepting "code_verifier" only when "code_challenge" was present in the authorization request
-
-### Authorization Code vs Implicit Grant
-
-Prefer Authorization Code Grant over Implicit Grant:
-- Use response type "code" (authorization code grant) or "code id_token" instead of implicit flows
-- This allows the Authorization Server to detect replay attempts and reduces attack surface
-- Access tokens are not exposed in URLs and can be sender-constrained
-
-### Token Replay Prevention
-
-Implement sender-constraining mechanisms:
-- Use Mutual TLS for OAuth 2.0 or OAuth Demonstration of Proof of Possession (DPoP) to prevent token replays
-- Implement refresh token rotation or ensure refresh tokens are sender-constrained
-
-### Access Token Privilege Restriction
-
-Apply the principle of least privilege:
-- Restrict token privileges to the minimum required for the particular application or use case
-- Implement audience restriction by associating access tokens with specific Resource Servers
-- Resource Servers must verify that tokens were intended for their use
-- Restrict tokens to specific resources and actions using "scope" and "authorization_details" parameters
-- Use "scope" and "resource" parameters to determine the intended Resource Server
-
-### Avoid Insecure Grant Types
-
-Never use Resource Owner Password Credentials Grant:
-- This grant type insecurely exposes Resource Owner credentials to the client
-- Increases the attack surface of the application
-
-### Client Authentication
-
-Use strong authentication methods:
-- Implement client authentication whenever possible
-- Prefer asymmetric (public-key based) methods like mTLS or "private_key_jwt" (OpenID Connect)
-- Asymmetric methods eliminate the need to store sensitive symmetric keys on Authorization Servers
-- This approach is more robust against various attacks
-
-### Additional Security Controls
-
-Protect sensitive claims and enforce secure communications:
-- Authorization Servers must not allow clients to influence their "client_id" or "sub" values
-- Prevent clients from controlling any claims that could be confused with genuine Resource Owner data
-- Use end-to-end TLS for all communications
-- Never transmit authorization responses over unencrypted network connections
-- Prohibit redirect URIs using "http" scheme except for native clients using Loopback Interface Redirection
-
-### Implementation Summary
-
-Secure OAuth 2.0 implementations require:
-- PKCE implementation for all public clients
-- Proper CSRF protection through state parameters or nonce
-- Authorization Code Grant preference over Implicit Grant
-- Token sender-constraining mechanisms (mTLS or DPoP)
-- Strict privilege restriction and audience validation
-- Strong client authentication using asymmetric methods
-- Elimination of insecure grant types
-- Comprehensive TLS enforcement and redirect URI validation
-
-Following these practices ensures robust protection against authorization code interception, token replay, privilege escalation, and mix-up attacks while maintaining the flexibility and security benefits of OAuth 2.0.
+## Checklist
+- [ ] PKCE (S256) implemented for all public clients; downgrade attack prevented
+- [ ] Redirect URIs validated by exact string match
+- [ ] Implicit Grant and ROPC Grant absent
+- [ ] CSRF protection via `state`, PKCE, or `nonce`
+- [ ] Tokens sender-constrained (mTLS or DPoP)
+- [ ] Audience restriction enforced on Resource Servers
+- [ ] Asymmetric client authentication used

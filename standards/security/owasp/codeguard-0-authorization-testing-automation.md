@@ -1,43 +1,42 @@
 ---
-description: Authorization Testing Automation Best Practices
-languages:
-- go
-- java
-- javascript
-- python
-- ruby
-- typescript
-- xml
-- yaml
+description: Automate authorization tests driven by a formal matrix to catch access-control regressions
 alwaysApply: false
 ---
 
-Enforce Automated Authorization Testing Using a Formal Authorization Matrix
+# Authorization Testing Automation
 
-Automate authorization tests driven by a formal authorization matrix to detect regressions early and ensure reliable access control enforcement.
+## NEVER
+- Test authorization manually only — automated matrix-driven tests are required
+- Store the authorization matrix without encryption at rest and restricted write access
+- Use production tokens or production environments for authorization tests
+- Leave the authorization matrix stale after access-control changes
 
-  1. **Define a formal authorization matrix file** (preferably XML or YAML) that lists:
-    - All features/services/endpoints.
-    - Logical roles and data filters if applicable.
-    - Expected HTTP response codes for allowed and denied accesses.
-    - Optional test payloads per service for richer testing.
+## ALWAYS
+- Define a formal authorization matrix (XML or YAML) listing every endpoint, role, data filter, expected HTTP status, and optional test payload
+- Store the matrix encrypted at rest; version-control it with write access restricted to authorized personnel
+- Automate integration tests that load the matrix, generate role-based tokens (e.g., JWT), and call each endpoint as each role
+- Validate actual HTTP responses against expected allowed/denied codes; report discrepancies with role, endpoint, and unexpected status
+- Handle full token lifecycle in tests: refresh, expiration, and revocation scenarios
+- Use environment-specific matrix configs and token settings for dev, test, and production
+- Isolate test environments; use dedicated test accounts that cannot reach production resources
+- Centralize token creation, service calls, and response validation logic; keep role POVs isolated for clear failure attribution
+- Update the matrix as a living document alongside every authorization change
+- Provide an auditable view of the matrix (e.g., HTML via XSLT) for developer and auditor review
 
-  2. **Secure the authorization matrix**: Store matrix files encrypted at rest with appropriate access controls. Version control the matrix and restrict write access to authorized personnel only.
+## Matrix structure
+| Field | Purpose |
+|---|---|
+| Feature/endpoint | Scope of the permission check |
+| Logical roles | All roles that may or may not access it |
+| Data filters | Row/column-level restrictions per role |
+| Expected HTTP status | Allowed (2xx) and denied (403/404) per role |
+| Test payload | Optional request body for richer coverage |
 
-  3. **Automate integration tests** to:
-    - Dynamically load and iterate over the matrix entries.
-    - Generate role-based access tokens (e.g., JWT) matching each logical role.
-    - Handle token lifecycle: refresh, expiration, and revocation scenarios.
-    - Call each service endpoint as each role.
-    - Validate actual HTTP response codes against expected allowed/denied codes from the matrix.
-    - Report any discrepancies immediately, specifying involved role, service, and unexpected response.
-
-  4. **Environment-specific configuration**: Support different authorization matrices and token configurations for development, testing, and production environments.
-
-  5. **Secure the test environment**: Isolate test environments, use dedicated test accounts, and ensure test tokens cannot access production resources.
-
-  6. Factorize test logic to centralize token creation, service calls, and response validation while isolating role-based POVs for clear error profiling.
-
-  7. Maintain the authorization matrix as a living document alongside code; update it whenever authorization changes occur.
-
-  8. Provide a readable, auditable view of the authorization matrix (HTML via XSLT or similar) accessible to developers and auditors for verification.
+## Checklist
+- [ ] Formal authorization matrix exists for all endpoints and roles
+- [ ] Matrix encrypted at rest; write access restricted; version-controlled
+- [ ] Automated tests load matrix and exercise each role/endpoint pair
+- [ ] Token lifecycle (refresh, expiry, revocation) covered in tests
+- [ ] Environment-specific configs used; test tokens cannot reach production
+- [ ] Matrix updated with every authorization change
+- [ ] Auditable matrix view available for reviewer inspection

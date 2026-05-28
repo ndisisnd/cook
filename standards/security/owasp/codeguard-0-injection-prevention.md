@@ -1,132 +1,59 @@
 ---
-description: Injection Prevention Best Practices
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- powershell
-- python
-- ruby
-- shell
-- sql
-- typescript
+description: Prevent SQL, LDAP, OS command, and other injection attacks across all languages
 alwaysApply: false
 ---
 
-## Injection Prevention Guidelines
+# Injection Prevention
 
-This rule provides clear, actionable guidance for preventing injection flaws across multiple languages and injection types. Injection flaws occur when untrusted data is sent to an interpreter as part of a command or query.
+## NEVER
+- Concatenate user input into SQL, LDAP, or OS command strings
+- Use string interpolation to build queries or shell commands
+- Pass user input directly to OS command APIs without parameterisation and allowlist validation
+- Use denylists as the sole defence — always pair with allowlists
 
-### Introduction
+## ALWAYS
+- Use parameterised queries / prepared statements for all database access
+- Use safe ORMs/ODMs correctly — verify they don't introduce injection under the hood
+- Escape user data using the context-specific encoding function when a safe API is unavailable
+- Validate inputs with allowlists (permitted characters, length, format) before use
+- Separate command from arguments when invoking OS commands (never concatenate into one string)
 
-Injection attacks, especially SQL Injection, are unfortunately very common. Injection flaws occur when an application sends untrusted data to an interpreter. Injection flaws are very prevalent, particularly in legacy code, often found in SQL queries, LDAP queries, XPath queries, OS commands, program arguments, etc.
+## SQL Injection Defences (prefer in order)
 
-### SQL Injection Prevention
+| Defence | When to use |
+| ------- | ----------- |
+| Prepared statements / parameterised queries | Default for all DB access |
+| Stored procedures (parameterised) | Legacy DB or stored-proc architecture |
+| Allowlist input validation | Table/column names that cannot be parameterised |
+| Context-aware escaping | Last resort when none of the above is possible |
 
-Defense Option 1: Prepared Statements (with Parameterized Queries)
-
-Safe Java Prepared Statement Example:
 ```java
-// This should REALLY be validated too
-String custname = request.getParameter("customerName"); 
+// Prepared statement — correct
 String query = "SELECT account_balance FROM user_data WHERE user_name = ?";
-PreparedStatement pstmt = connection.prepareStatement( query );
-pstmt.setString( 1, custname); 
-ResultSet results = pstmt.executeQuery( );
+PreparedStatement pstmt = connection.prepareStatement(query);
+pstmt.setString(1, custname);
 ```
 
-Defense Option 2: Stored Procedures
+## LDAP Injection
+- Escape DN values with RFC 2253 encoding before inserting into LDAP queries
+- Escape search filter values with RFC 2254 encoding (escape `\`, `*`, `(`, `)`, null byte)
 
-Safe Java Stored Procedure Example:
-```java
-// This should REALLY be validated
-String custname = request.getParameter("customerName");
-try {
- CallableStatement cs = connection.prepareCall("{call sp_getAccountBalance(?)}");
- cs.setString(1, custname);
- ResultSet results = cs.executeQuery();
- // Result set handling...
-} catch (SQLException se) {
- // Logging and error handling...
-}
-```
-
-Defense Option 3: Allow-List Input Validation
-
-Defense Option 4: Escaping All User-Supplied Input
-
-### LDAP Injection Prevention
-
-Escape all variables using the right LDAP encoding function
-
-Safe Java for LDAP escaping Example:
-```java
-public String escapeDN (String name) {
- //From RFC 2253 and the / character for JNDI
- final char[] META_CHARS = {'+', '"', '<', '>', ';', '/'};
- String escapedStr = new String(name);
- //Backslash is both a Java and an LDAP escape character,
- //so escape it first
- escapedStr = escapedStr.replaceAll("\\\\\\\\","\\\\\\\\");
- //Positional characters - see RFC 2253
- escapedStr = escapedStr.replaceAll("\^#","\\\\\\\\#");
- escapedStr = escapedStr.replaceAll("\^ | $","\\\\\\\\ ");
- for (int i=0 ; i < META_CHARS.length ; i++) {
-        escapedStr = escapedStr.replaceAll("\\\\" +
-                     META_CHARS[i],"\\\\\\\\" + META_CHARS[i]);
- }
- return escapedStr;
-}
-```
+## OS Command Injection
+- Pass command and arguments as separate array elements — never as a single concatenated string
+- Validate command names against an explicit allowlist
+- Validate arguments with allowlist regex — explicitly exclude metacharacters: `& | ; $ > < \` \ !` and whitespace
 
 ```java
-public String escapeSearchFilter (String filter) {
- //From RFC 2254
- String escapedStr = new String(filter);
- escapedStr = escapedStr.replaceAll("\\\\\\\\","\\\\\\\\5c");
- escapedStr = escapedStr.replaceAll("\\\\\*","\\\\\\\\2a");
- escapedStr = escapedStr.replaceAll("\\\\(","\\\\\\\\28");
- escapedStr = escapedStr.replaceAll("\\\\)","\\\\\\\\29");
- escapedStr = escapedStr.replaceAll("\\\\" +
-               Character.toString('\u0000'), "\\\\\\\\00");
- return escapedStr;
-}
-```
-
-### Operating System Commands
-
-If it is considered unavoidable the call to a system command incorporated with user-supplied input, the following two layers of defense should be used:
-
-1. Parameterization - If available, use structured mechanisms that automatically enforce the separation between data and command
-2. Input validation - the values for commands and the relevant arguments should be both validated:
-   - Commands must be validated against a list of allowed commands
-   - Arguments should be validated using positive or allowlist input validation
-   - Allow-list Regular Expression - explicitly define a list of good characters allowed and maximum length. Ensure that metacharacters like `& | ; $ > < \` \ !` and whitespaces are not part of the Regular Expression
-
-Example regular expression: `^[a-z0-9]{3,10}$`
-
-Incorrect Usage:
-```java
-ProcessBuilder b = new ProcessBuilder("C:\DoStuff.exe -arg1 -arg2");
-```
-
-Correct Usage:
-```java
+// Correct — args separated
 ProcessBuilder pb = new ProcessBuilder("TrustedCmd", "TrustedArg1", "TrustedArg2");
-Map<String, String> env = pb.environment();
-pb.directory(new File("TrustedDir"));
-Process p = pb.start();
+// Wrong — concatenated string
+// new ProcessBuilder("C:\\DoStuff.exe -arg1 -arg2");
 ```
 
-### Injection Prevention Rules
-
-Rule #1 (Perform proper input validation)
-- Perform proper input validation. Positive or allowlist input validation with appropriate canonicalization is recommended, but is not a complete defense as many applications require special characters in their input.
-
-Rule #2 (Use a safe API)
-- The preferred option is to use a safe API which avoids the use of the interpreter entirely or provides a parameterized interface. Be careful of APIs, such as stored procedures, that are parameterized, but can still introduce injection under the hood.
-
-Rule #3 (Contextually escape user data)
-- If a parameterized API is not available, you should carefully escape special characters using the specific escape syntax for that interpreter.
+## Checklist
+- [ ] All database queries use parameterised statements or safe ORM
+- [ ] No user input concatenated into SQL, LDAP, or shell strings
+- [ ] OS commands use array-form with allowlisted command and arguments
+- [ ] LDAP DN and filter values escaped with correct RFC encoding
+- [ ] Allowlist input validation applied before data reaches any interpreter
+- [ ] Denylists not used as the sole injection defence

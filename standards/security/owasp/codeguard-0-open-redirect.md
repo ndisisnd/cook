@@ -1,21 +1,23 @@
 ---
-description: Open Redirect Prevention - Secure handling of user-controlled redirects
-  to prevent phishing attacks
-languages:
-- c
-- javascript
-- php
-- typescript
-- vlang
+description: Open redirect prevention — block user-controlled redirect targets that enable phishing
 alwaysApply: false
 ---
 
-# Avoid Open Redirects
+# Open Redirects
 
-- Never use user input directly as a redirect target (e.g., `res.redirect(userInput)` in Node.js/Express).
-- If redirection is controlled by user input:
-    - Allow only local paths (must start with `/` and not contain protocols like `http:`).
-    - OR: Allow only destinations present in a strict allowlist of trusted domains.
-- URLs must be parsed and validated using robust libraries, not simple substring checks.
-- DO NOT allow wildcard domains like `*.example.com` in any allowlist.
-- Add explicit code comments when using redirects to document how the rule is being enforced.
+## NEVER
+- Use user input directly as a redirect target (`res.redirect(userInput)`)
+- Allow wildcard domains (e.g. `*.example.com`) in any redirect allowlist
+- Validate redirect URLs with simple substring checks instead of full URL parsing
+
+## ALWAYS
+- Restrict user-controlled redirects to local paths only (must start with `/`, no protocol prefix), OR
+- Validate against a strict allowlist of trusted domains using a robust URL parsing library
+- Add an explicit code comment at every redirect documenting which rule is enforced
+
+## Checklist
+- [ ] No redirect accepts raw user input without validation
+- [ ] Local-path redirects enforced: starts with `/`, no `http:`/`https:` prefix
+- [ ] Allowlist-based redirects use exact domain matching via URL parser
+- [ ] No wildcard domains in allowlist
+- [ ] All redirect sites have explanatory code comments

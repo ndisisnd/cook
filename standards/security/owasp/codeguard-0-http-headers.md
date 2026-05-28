@@ -1,135 +1,52 @@
 ---
-description: HTTP Security Headers Best Practices
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
-- xml
+description: Required and prohibited HTTP response headers — XSS, clickjacking, MIME, transport, CORS
 alwaysApply: false
 ---
 
-## HTTP Security Headers Guidelines
+# HTTP Security Headers
 
-This rule enforces secure configuration of HTTP response headers to protect against common web vulnerabilities including XSS, Clickjacking, Information Disclosure, and MIME-type attacks.
+## NEVER
+- Emit `X-Powered-By`, `X-AspNet-Version`, or `X-AspNetMvc-Version` headers
+- Use a `Server` header that reveals software name or version
+- Set `Access-Control-Allow-Origin: *` on credentialed or sensitive endpoints
+- Rely solely on `X-XSS-Protection` for XSS defence — use CSP instead
 
-### Required Security Headers
+## ALWAYS
+- Set `Content-Security-Policy` with at least `default-src`, `script-src`, and `frame-ancestors`
+- Set `Strict-Transport-Security: max-age=31536000; includeSubDomains` (min 1-year max-age)
+- Set `X-Content-Type-Options: nosniff`
+- Set `Cache-Control: no-store, max-age=0` on sensitive responses
+- Set `Cross-Origin-Embedder-Policy`, `Cross-Origin-Resource-Policy`, and `Cross-Origin-Opener-Policy`
+- Set session/sensitive cookies with `Secure; HttpOnly; SameSite=Strict`
+- Restrict `Access-Control-Allow-Origin` to an explicit origin allowlist
 
-1. Content Security Policy (CSP)
-   - Must include default-src directive
-   - Must include script-src directive with appropriate restrictions
-   - Must include frame-ancestors directive for clickjacking protection
-   - Example: `Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'none'`
+## Required Headers
 
-2. Cookie Security
-   - All session/sensitive cookies must have Secure flag
-   - All session/sensitive cookies must have HttpOnly flag
-   - All cookies must have SameSite attribute (Strict or Lax)
-   - Example: `Set-Cookie: session=123; Secure; HttpOnly; SameSite=Strict`
+| Header | Required value / guidance |
+| ------ | ------------------------- |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; frame-ancestors 'none'` (harden per app) |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Cache-Control` (sensitive) | `no-store, max-age=0` |
+| `Cross-Origin-Embedder-Policy` | `require-corp` |
+| `Cross-Origin-Resource-Policy` | `same-origin` |
+| `Cross-Origin-Opener-Policy` | `same-origin` |
 
-3. Cross-Origin Isolation
-   - Must set Cross-Origin-Embedder-Policy (COEP)
-   - Must set Cross-Origin-Resource-Policy (CORP)
-   - Must set Cross-Origin-Opener-Policy (COOP)
-   - Examples:
-     ```
-     Cross-Origin-Embedder-Policy: require-corp
-     Cross-Origin-Resource-Policy: same-origin
-     Cross-Origin-Opener-Policy: same-origin
-     ```
+## Clickjacking & XSS Protection
+- Use `CSP: frame-ancestors 'none'` **or** `X-Frame-Options: DENY` — both preferred
+- CSP `script-src` must restrict inline/eval; do not use `unsafe-inline` or `unsafe-eval` without hash/nonce
 
-4. Transport Security
-   - Must set Strict-Transport-Security (HSTS)
-   - Must include appropriate max-age (minimum 1 year)
-   - Example: `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+## Prohibited Headers — Remove Before Response
+- `X-Powered-By`
+- `Server` (or set to a non-revealing static value)
+- `X-AspNet-Version`
+- `X-AspNetMvc-Version`
 
-5. Cache Control
-   - Must set appropriate Cache-Control for sensitive data
-   - Example: `Cache-Control: no-store, max-age=0`
-
-6. Content Type Protection
-   - Must set X-Content-Type-Options
-   - Example: `X-Content-Type-Options: nosniff`
-
-### Prohibited Headers
-
-The following headers must not be present or must be removed:
-- X-Powered-By
-- Server (or must contain non-revealing value)
-- X-AspNet-Version
-- X-AspNetMvc-Version
-
-### Required Header Combinations
-
-Certain security features require multiple headers to work effectively:
-
-1. Clickjacking Protection:
-   - Must use CSP frame-ancestors OR
-   - Must use X-Frame-Options: DENY
-
-2. XSS Protection:
-   - Must use CSP with appropriate script-src
-   - Must not rely solely on X-XSS-Protection
-
-3. CORS Security:
-   - Must not use Access-Control-Allow-Origin: *
-   - Must explicitly list allowed origins
-
-### Implementation Examples
-
-PHP:
-```php
-header("X-Frame-Options: DENY");
-```
-
-Apache (.htaccess):
-```apache
-<IfModule mod_headers.c>
-Header always set X-Frame-Options "DENY"
-</IfModule>
-```
-
-IIS (Web.config):
-```xml
-<system.webServer>
-...
- <httpProtocol>
-   <customHeaders>
-     <add name="X-Frame-Options" value="DENY" />
-   </customHeaders>
- </httpProtocol>
-...
-</system.webServer>
-```
-
-HAProxy:
-```
-http-response set-header X-Frame-Options DENY
-```
-
-Nginx:
-```nginx
-add_header "X-Frame-Options" "DENY" always;
-```
-
-Express.js:
-```javascript
-const helmet = require('helmet');
-const app = express();
-// Sets "X-Frame-Options: SAMEORIGIN"
-app.use(
- helmet.frameguard({
-   action: "sameorigin",
- })
-);
-```
-
-### Testing Tools
-
-Mozilla Observatory is an online tool which helps you to check your website's header status.
-
-SmartScanner has a dedicated test profile for testing security of HTTP headers. Online tools usually test the homepage of the given address. But SmartScanner scans the whole website, ensuring all web pages have the right HTTP Headers in place.
+## Checklist
+- [ ] CSP present with `default-src`, `script-src`, and `frame-ancestors`
+- [ ] HSTS set with `max-age ≥ 31536000`
+- [ ] `X-Content-Type-Options: nosniff` present
+- [ ] `Cross-Origin-*` isolation headers set
+- [ ] Server/version-revealing headers stripped
+- [ ] `Access-Control-Allow-Origin` is not `*` on credentialed endpoints
+- [ ] Session cookies have `Secure; HttpOnly; SameSite=Strict`

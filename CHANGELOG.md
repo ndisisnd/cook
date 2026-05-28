@@ -4,6 +4,10 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased]
+
+- Compress and refactor security standards with streamlined template format
+
 ## [pending] — 2026-05-28 · Comprehensive security standards library
 
 **feat(standards/security): add OWASP and core security guidelines library.**

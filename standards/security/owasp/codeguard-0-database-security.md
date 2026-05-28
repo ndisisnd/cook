@@ -1,76 +1,60 @@
 ---
-description: Database Security Best Practices
-languages:
-- c
-- java
-- javascript
-- python
-- sql
-- yaml
+description: Secure database configuration — isolation, TLS, authentication, least privilege, and hardening
 alwaysApply: false
 ---
 
-## Database Security Guidelines
+# Database Security
 
-This rule advises on securely configuring SQL and NoSQL databases to protect against data breaches and unauthorized access:
+## NEVER
+- Allow direct connections from thick clients to backend databases
+- Store credentials in application source code or version control
+- Grant application accounts administrative or database-owner rights
+- Use built-in root/sa/SYS accounts for application connections
+- Share database accounts across Development, UAT, and Production environments
+- Disable authentication for local connections
+- Allow unencrypted database connections
 
-- Backend Database Protection
-  - Isolate database servers from other systems and limit host connections.
-  - Disable network (TCP) access when possible; use local socket files or named pipes.
-  - Configure database to bind only on localhost when appropriate.
-  - Restrict network port access to specific hosts with firewall rules.
-  - Place database server in separate DMZ isolated from application server.
-  - Never allow direct connections from thick clients to backend database.
+## ALWAYS
+- Isolate database servers; bind to localhost or restrict to specific hosts via firewall
+- Disable TCP/network access where possible — use local socket files or named pipes
+- Place database in a separate DMZ isolated from the application server
+- Enforce encrypted connections (TLSv1.2+ with AES-GCM or ChaCha20 ciphers)
+- Verify digital certificate validity in all client applications
+- Require authentication for every connection including local server connections
+- Apply principle of least privilege — grant only SELECT/UPDATE/DELETE as actually needed
+- Use one dedicated account per application or service
+- Store credentials in environment variables or a secrets manager, outside the web root
+- Set restrictive file permissions on credential config files
+- Remove or disable accounts when applications are decommissioned
+- Rotate passwords when staff leave or compromise is suspected
+- Run database service under a low-privileged OS user account
+- Remove default accounts, sample databases, and unnecessary stored procedures
+- Install security patches regularly
+- Store transaction logs on a separate disk from main database files
+- Maintain regular encrypted backups with proper access controls
+- Implement database activity monitoring and alerting
 
-- Transport Layer Security
-  - Configure database to only allow encrypted connections.
-  - Install trusted digital certificates on database servers.
-  - Use TLSv1.2+ with modern ciphers (AES-GCM, ChaCha20) for client connections.
-  - Verify digital certificate validity in client applications.
-  - Ensure all database traffic is encrypted, not just initial authentication.
+## Platform-Specific Hardening
 
-- Secure Authentication Configuration
-  - Always require authentication, including from local server connections.
-  - Protect accounts with strong, unique passwords.
-  - Use dedicated accounts per application or service.
-  - Configure minimum required permissions only.
-  - Regularly review accounts and permissions.
-  - Remove accounts when applications are decommissioned.
-  - Change passwords when staff leave or compromise is suspected.
+| Platform | Key Actions |
+|----------|-------------|
+| SQL Server | Disable `xp_cmdshell`, CLR execution, SQL Browser service, Mixed Mode Auth (unless required) |
+| MySQL/MariaDB | Run `mysql_secure_installation`; disable `FILE` privilege for application users |
+| PostgreSQL | Follow official PostgreSQL security documentation |
+| MongoDB | Implement MongoDB security checklist |
+| Redis | Follow Redis security guide |
 
-- Database Credential Storage
-  - Never store credentials in application source code.
-  - Store credentials in configuration files outside web root.
-  - Set appropriate file permissions for credential access.
-  - Never check credential files into source code repositories.
-  - Encrypt credential storage using built-in functionality when available.
-  - Use environment variables or secrets management solutions.
+## Permission Model
+- Implement table-level, column-level, and row-level permissions where sensitive data requires it
+- Avoid making accounts database owners — prevents privilege escalation
+- Review all accounts and permissions regularly
 
-- Secure Permission Management
-  - Apply principle of least privilege to all database accounts.
-  - Do not use built-in root, sa, or SYS accounts.
-  - Do not grant administrative rights to application accounts.
-  - Restrict account connections to allowed hosts only.
-  - Use separate databases and accounts for Development, UAT, and Production.
-  - Grant only required permissions (SELECT, UPDATE, DELETE as needed).
-  - Avoid making accounts database owners to prevent privilege escalation.
-  - Implement table-level, column-level, and row-level permissions when needed.
-
-- Database Configuration and Hardening
-  - Install required security updates and patches regularly.
-  - Run database services under low-privileged user accounts.
-  - Remove default accounts and sample databases.
-  - Store transaction logs on separate disk from main database files.
-  - Configure regular encrypted database backups with proper permissions.
-  - Disable unnecessary stored procedures and dangerous features.
-  - Implement database activity monitoring and alerting.
-
-- Platform-Specific Hardening
-  - SQL Server: Disable xp_cmdshell, CLR execution, SQL Browser service, Mixed Mode Authentication (unless required).
-  - MySQL/MariaDB: Run mysql_secure_installation, disable FILE privilege for users.
-  - PostgreSQL: Follow PostgreSQL security documentation guidelines.
-  - MongoDB: Implement MongoDB security checklist requirements.
-  - Redis: Follow Redis security guide recommendations.
-
-Summary:  
-Isolate database systems, enforce encrypted connections, implement strong authentication, store credentials securely using secrets management, apply least privilege permissions, harden database configurations, and maintain regular security updates and monitoring.
+## Checklist
+- [ ] Database not reachable from public network; firewall restricts to allowed hosts only
+- [ ] All connections use TLSv1.2+ with modern ciphers; certificates validated
+- [ ] Application uses dedicated least-privilege account (no root/sa/SYS)
+- [ ] Credentials stored in secrets manager or env vars — not in source code
+- [ ] Credential files outside web root with restrictive permissions, not in VCS
+- [ ] Separate accounts and databases for Dev/UAT/Prod
+- [ ] Default accounts, sample DBs, and unnecessary features removed
+- [ ] Activity monitoring and alerting configured

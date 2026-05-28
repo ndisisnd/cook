@@ -1,72 +1,48 @@
 ---
-description: Cookie Theft Mitigation Best Practices
-languages:
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
+description: Detect and mitigate session cookie theft via server-side fingerprinting and risk-based response
 alwaysApply: false
 ---
 
-## Cookie Theft Mitigation Guidelines
+# Cookie Theft Mitigation
 
-This rule advises on detecting and mitigating session cookie theft through server-side monitoring:
+## NEVER
+- Store session fingerprint data client-side — always server-side only
+- Rely on a single header change as the sole theft signal — use multiple detection vectors
+- Skip session ID regeneration when hijacking is suspected
 
-- Session Fingerprinting
-  - Store session environment information when sessions are established: IP address, User-Agent, Accept-Language, Date.
-  - Save additional headers for enhanced detection: Accept, Accept-Encoding, sec-ch-ua headers (when available).
-  - Associate fingerprint data with session ID for comparison on subsequent requests.
+## ALWAYS
+- Capture session environment at login: IP, User-Agent, Accept-Language, date
+- Save additional headers for enhanced detection: Accept, Accept-Encoding, sec-ch-ua
+- Compare fingerprint on every request to detect anomalous changes
+- Account for legitimate variation (IP subnet roaming, browser updates) to reduce false positives
+- Regenerate session ID when potential hijacking is detected
+- Store fingerprint data using framework-provided secure session storage (encrypted)
+- Log all suspicious session activity with sufficient context for investigation
 
-- Cookie Theft Detection
-  - Monitor for significant changes in session environment information across requests.
-  - Compare current request headers against stored session fingerprint data.
-  - Account for legitimate variations (IP subnet changes, browser updates) vs. suspicious changes.
-  - Use multiple detection vectors rather than relying on single header changes.
+## Detection and Response
 
-- Risk-Based Response to Anomalies
-  - For high-risk operations: require re-authentication when suspicious changes detected.
-  - For medium-risk operations: implement CAPTCHA challenges or additional verification.
-  - For low-risk operations: log suspicious activity and continue monitoring.
-  - Always regenerate session ID when potential hijacking is detected.
+| Risk Level | Trigger | Response |
+|------------|---------|----------|
+| High | IP geo-range mismatch, UA replaced | Require re-authentication |
+| Medium | Multiple header changes simultaneously | CAPTCHA or step-up verification |
+| Low | Single minor header drift | Log, continue monitoring |
 
-- Session Validation Implementation
-  - Implement detection as middleware that runs before sensitive operations.
-  - Apply validation selectively to high-value endpoints to manage performance impact.
-  - Log all suspicious session activities with sufficient context for investigation.
-  - Handle false positives gracefully to maintain user experience.
+## Middleware Pattern
 
-- Secure Session Storage
-  - Store session fingerprint data securely on server-side (never client-side).
-  - Use secure session storage mechanisms provided by your framework.
-  - Ensure session data is properly encrypted and protected.
-
-Code Example (from OWASP):
 ```js
-const session = SessionStorage.create()
-session.save({
-  ip: req.clientIP,
-  user_agent: req.headers.userAgent,
-  date: req.headers.date,
-  accept_language: req.headers.acceptLanguage,
-  // ...
-})
-
 function cookieTheftDetectionMiddleware(req, res) {
-  const currentIP = req.clientIP
-  const expectedIP = req.session.ip
-  if (checkGeoIPRange(currentIP, expected) === false) {
-     // Validation
-  }
-  const currentUA = req.userAgent
-  const expectedUA = req.session.ua
-  if (checkUserAgent(currentUA, expectedUA)) {
-    // Validation
-  }
-  // ...
+  if (!checkGeoIPRange(req.clientIP, req.session.ip)) { /* high-risk response */ }
+  if (!checkUserAgent(req.userAgent, req.session.ua)) { /* risk-based response */ }
+  // check Accept-Language, sec-ch-ua, etc.
 }
 ```
 
-Summary:  
-Implement server-side session fingerprinting to detect cookie theft, monitor environment changes across requests, apply risk-based responses to suspicious activity, and maintain secure session storage. Consider future standards like Device Bound Session Credentials for enhanced protection.
+Apply this middleware selectively to high-value endpoints to manage performance impact.
+
+## Checklist
+- [ ] Session fingerprint (IP, UA, Accept-Language) stored server-side at login
+- [ ] Fingerprint compared on each sensitive request
+- [ ] Risk-based response applied (re-auth / CAPTCHA / log) by severity
+- [ ] Session ID regenerated on detected anomaly
+- [ ] Legitimate variation (subnet roaming, browser updates) handled gracefully
+- [ ] Suspicious activity logged with full context

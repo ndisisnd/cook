@@ -1,51 +1,28 @@
 ---
-description: Cryptographic Storage Best Practices
-languages:
-- c
-- go
-- java
-- javascript
-- kotlin
-- matlab
-- python
-- ruby
-- swift
-- typescript
+description: Protect data at rest with approved algorithms, authenticated modes, and formal key management
 alwaysApply: false
 ---
 
-## Introduction
+# Cryptographic Storage
 
-This rule provides a simple model to follow when implementing solutions to protect data at rest.
+## NEVER
+- Implement custom cryptographic algorithms
+- Use insecure random generators (`Math.random()`, `java.util.Random`, `random` module, etc.) for security purposes
+- Hard-code encryption keys in source code or version control
+- Use deprecated/broken algorithms: MD5, SHA-1, DES, RC4, ECB mode
+- Store keys with the encrypted data without proper separation
+- Generate keys from passwords, phrases, or predictable patterns
 
-Passwords should not be stored using reversible encryption - secure password hashing algorithms should be used instead. The [Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html) contains further guidance on storing passwords.
+## ALWAYS
+- Use authenticated encryption (GCM or CCM preferred; CTR/CBC only with Encrypt-then-MAC)
+- Use AES with ≥128-bit keys (256-bit preferred) for symmetric encryption
+- Use Curve25519 or RSA ≥2048 bits for asymmetric; enable OAEP/PKCS#1 random padding for RSA
+- Generate unique random keys per operation using a CSPRNG
+- Use vetted cryptographic libraries only
+- Minimize sensitive data storage — tokenize when storage is unavoidable
+- Have key rotation procedures ready and tested before compromise occurs
 
-## Rule 1: Architectural Design Requirements
-
-**YOU MUST consider the overall architecture** of the system, as this will have a huge impact on the technical implementation.
-
-* **Application level** - REQUIRED for database compromise protection
-* **Database level** (SQL Server TDE) - Additional data-at-rest protection  
-* **Filesystem level** (BitLocker, LUKS) - Physical theft protection
-* **Hardware level** (encrypted RAID/SSDs) - Hardware-based protection
-
-**YOU MUST minimize sensitive data storage** - avoid storing credit card details and implement data minimization policies. Use tokenization when storage is unavoidable.
-
-## Rule 2: Algorithm Requirements
-
-**YOU MUST use approved algorithms:**
-* **Symmetric:** AES with ≥128-bit keys (256-bit preferred)
-* **Asymmetric:** Curve25519 (ECC preferred) or RSA ≥2048 bits
-* **Custom algorithms:** PROHIBITED
-
-**YOU MUST use authenticated cipher modes:**
-1. **GCM** or **CCM** (preferred)
-2. **CTR/CBC** only with separate authentication (Encrypt-then-MAC)
-3. **ECB:** PROHIBITED
-
-**For RSA: YOU MUST enable Random Padding** (OAEP/PKCS#1).
-
-**YOU MUST use cryptographically secure random generators:**
+## Approved Random Generators
 
 | Platform | PROHIBITED | REQUIRED |
 |----------|------------|----------|
@@ -57,66 +34,30 @@ Passwords should not be stored using reversible encryption - secure password has
 | Go | `math/rand` | `crypto/rand` |
 | Node.js | `Math.random()` | `crypto.randomBytes()`, `crypto.randomInt()` |
 
-**UUIDs:** Version 1 UUIDs are NOT random. Only trust Version 4 UUIDs if implementation uses CSPRNG.
+Note: UUID v1 is not random. UUID v4 is only safe if the implementation uses a CSPRNG.
 
-## Rule 3: Key Management Requirements
+## Key Management
 
-**YOU MUST implement formal processes for:**
-* Key generation using cryptographically secure functions
-* Secure key distribution and deployment
-* Regular key rotation and secure decommissioning
+**Storage** — use in order of preference:
+1. Physical/Virtual HSM
+2. Cloud key vault (AWS KMS, Azure Key Vault, GCP KMS)
+3. External secrets manager (HashiCorp Vault, Conjur)
+4. Framework secure API (ProtectedData, Keychain)
 
-**Key Generation:** YOU ARE PROHIBITED from using passwords, phrases, or predictable patterns. Multiple keys MUST be fully independent.
+**Key Encryption:** wrap Data Encryption Keys (DEK) with a Key Encryption Key (KEK); store KEK separately; KEK must be ≥ as strong as DEK.
 
-**Key Rotation Requirements - YOU MUST rotate keys when:**
-* Key compromise is suspected
-* Cryptoperiod expires (see NIST SP 800-57)
-* Usage limits reached (2^35 bytes for 64-bit keys, 2^68 bytes for 128-bit)
-* Algorithm security changes
+**Rotate keys when:** compromise suspected · cryptoperiod expires (NIST SP 800-57) · usage limits reached (2^35 bytes for 64-bit, 2^68 for 128-bit) · algorithm security degrades.
 
-**YOU MUST have rotation processes ready BEFORE compromise.**
+## Architecture Layers
+- Application-level encryption: required for database-compromise protection
+- Database-level (TDE): additional at-rest protection
+- Filesystem-level (BitLocker, LUKS): physical theft protection
+- Hardware-level (encrypted RAID/SSDs): hardware protection
 
-## Rule 4: Key Storage Requirements
-
-**YOU MUST use secure storage mechanisms where available:**
-* Physical/Virtual HSMs
-* Cloud key vaults (AWS KMS, Azure Key Vault, Google Cloud KMS)
-* External secrets management (HashiCorp Vault, Conjur)
-* Framework secure APIs (ProtectedData, Keychain)
-
-**Basic Storage Rules (when secure mechanisms unavailable):**
-* PROHIBITED: Hard-coding keys in source code or version control
-* REQUIRED: Restrictive permissions on config files
-* AVOID: Environment variables (exposure risk)
-
-**Key Separation:** YOU MUST store keys separately from encrypted data where possible.
-
-**Key Encryption:** YOU MUST encrypt stored keys using separate Key Encryption Keys (KEK):
-* Data Encryption Key (DEK) encrypts data
-* Key Encryption Key (KEK) encrypts DEK
-* KEK MUST be stored separately and be ≥ as strong as DEK
-
-## Rule 5: Defense in Depth Requirements
-
-**YOU MUST design applications to be secure even if cryptographic controls fail:**
-* Additional security layers for encrypted information
-* Strong access control (not relying on encrypted URL parameters alone)
-* Logging and monitoring of encrypted data access
-
-## Critical Security Requirements
-
-**COMPLIANCE IS MANDATORY** for all systems handling sensitive data.
-
-**YOU ARE ABSOLUTELY PROHIBITED FROM:**
-* Implementing custom cryptographic algorithms
-* Using insecure random generators for security purposes
-* Hard-coding encryption keys in source code
-* Using deprecated algorithms (MD5, SHA-1, DES, RC4)
-* Storing keys with encrypted data without proper separation
-
-**YOU MUST ALWAYS:**
-* Use authenticated encryption modes where available
-* Generate unique, random keys for each operation
-* Implement proper key lifecycle management
-* Use vetted cryptographic libraries only
-* Test key rotation procedures before needed
+## Checklist
+- [ ] Only approved algorithms and modes in use (AES-GCM/CCM; no ECB, DES, RC4, MD5, SHA-1)
+- [ ] CSPRNG used for all key and nonce generation
+- [ ] No keys hard-coded; keys stored in HSM/vault/secrets manager
+- [ ] DEK wrapped by KEK; stored separately from encrypted data
+- [ ] Key rotation process documented and tested
+- [ ] Defense-in-depth: access controls and monitoring on encrypted data, not crypto alone

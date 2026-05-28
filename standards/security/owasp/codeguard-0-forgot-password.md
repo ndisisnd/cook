@@ -1,71 +1,46 @@
 ---
-description: Forgot Password Security Best Practices
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
+description: Secure password reset — prevent enumeration, token abuse, and unauthorized access
 alwaysApply: false
 ---
 
-## Forgot Password Security Guidelines
+# Forgot Password Security
 
-This rule advises on secure password reset implementation to prevent user enumeration, token abuse, and unauthorized access:
+## NEVER
+- Return different responses for existing vs non-existent accounts (user enumeration)
+- Generate reset tokens with non-cryptographic random sources
+- Store reset tokens in plaintext — hash them (same standard as passwords)
+- Allow tokens to be reused after successful reset
+- Automatically log users in after password reset
+- Lock accounts in response to password reset requests
+- Log tokens, passwords, or PII in application logs
+- Build reset URLs from user-supplied `Host` headers
 
-- Password Reset Request Security
-  - Return consistent messages for both existent and non-existent accounts to prevent user enumeration.
-  - Ensure consistent response times by using asynchronous processing or identical code paths.
-  - Implement rate limiting per account and IP address to prevent flooding attacks.
-  - Apply input validation and SQL injection prevention to reset request forms.
-  - Use CSRF tokens to protect password reset forms and endpoints.
+## ALWAYS
+- Return identical messages and response times for existing and non-existent accounts (use async dispatch or identical code paths)
+- Generate tokens with a cryptographically secure RNG; minimum 32 bytes of entropy
+- Link tokens to a specific user with a server-stored expiry; invalidate on use
+- Invalidate all existing sessions after a successful password reset
+- Enforce the application's password policy during reset
+- Require the new password to be entered twice
+- Send reset confirmation emails without including the actual password
+- Use hardcoded or allowlist-validated domains for reset URLs; enforce HTTPS; add `Referrer-Policy: no-referrer`
+- Rate-limit reset requests per account and per IP
+- Apply CSRF tokens to reset forms and endpoints
+- Use security questions only as an additional layer, never sole mechanism; validate answers with secure comparison
+- Log reset attempts with IP, user agent, and timestamp — never log tokens
 
-- Token Generation and Storage
-  - Generate tokens using cryptographically secure random number generators.
-  - Make tokens sufficiently long to protect against brute-force attacks (minimum 32 bytes).
-  - Store password reset tokens securely using hashing (same practices as password storage).
-  - Link tokens to individual users in the database with expiration times.
-  - Make tokens single-use and invalidate immediately after successful use.
+## PIN vs URL Token
 
-- Password Reset Process Security
-  - Require users to confirm new passwords by entering twice.
-  - Enforce consistent password policy throughout the application.
-  - Store new passwords following secure password storage practices.
-  - Send confirmation emails without including the actual password.
-  - Never automatically log users in after password reset.
-  - Invalidate all existing user sessions after successful password reset.
+| Mechanism | Requirements |
+|-----------|-------------|
+| URL token | ≥32 bytes entropy; HTTPS; no-referrer policy; short expiry |
+| PIN | 6–12 digits; CSPRNG; single-use; limited session for reset only; spaces for readability |
 
-- URL Token Implementation
-  - Generate secure tokens and attach to URL query strings for email delivery.
-  - Use hardcoded or validated trusted domains for reset URLs (avoid Host header injection).
-  - Enforce HTTPS for all password reset URLs.
-  - Add referrer policy with 'noreferrer' value to prevent referrer leakage.
-  - Implement rate limiting to prevent token brute-forcing attempts.
-
-- PIN Implementation
-  - Generate PINs between 6-12 digits using cryptographically secure methods.
-  - Create limited sessions from PINs that only permit password reset operations.
-  - Format PINs with spaces for better user readability.
-  - Apply same security practices as tokens (single-use, expiration, secure storage).
-
-- Security Questions Integration
-  - Use security questions only as additional layer, never as sole mechanism.
-  - Follow secure question selection practices from OWASP guidance.
-  - Validate security question answers using secure comparison methods.
-
-- Logging and Monitoring (Code-Level)
-  - Log password reset attempts with user context but never log tokens or passwords.
-  - Implement structured logging for security monitoring integration.
-  - Include sufficient context for security analysis (IP, user agent, timestamp).
-  - Never log sensitive information in application logs.
-
-- Account Lockout Prevention
-  - Never lock accounts in response to password reset requests.
-  - Implement alternative abuse prevention through rate limiting and monitoring.
-  - Separate password reset abuse protection from authentication lockout mechanisms.
-
-Summary:  
-Implement secure password reset functionality through consistent response handling, cryptographically secure token generation and storage, CSRF protection, proper session management, and comprehensive logging while preventing user enumeration and account lockout attacks.
+## Checklist
+- [ ] Identical response messages and timing for all accounts
+- [ ] Tokens generated with CSPRNG; ≥32 bytes; stored hashed; single-use
+- [ ] All sessions invalidated after successful reset
+- [ ] Rate limiting per account and IP; CSRF protection on forms
+- [ ] Reset URL uses trusted/hardcoded domain over HTTPS with `no-referrer`
+- [ ] No automatic login post-reset; password policy enforced
+- [ ] No tokens or passwords in logs

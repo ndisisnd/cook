@@ -1,182 +1,57 @@
 ---
-description: JSON Web Token Security for Java
-languages:
-- c
-- java
-- javascript
-- typescript
-- xml
-- yaml
+description: JWT security for Java — algorithm pinning, sidejacking prevention, revocation, storage
 alwaysApply: false
 ---
 
-## JSON Web Token Security for Java
+# JWT Security (Java)
 
-Key security practices for implementing JWT in Java applications.
+## NEVER
+- Accept the `none` algorithm or allow the algorithm to be specified by the token header
+- Store the HMAC key as a `String` in JVM memory — use `transient byte[]`
+- Store JWT tokens in `localStorage` — use `sessionStorage` or `HttpOnly` cookies
+- Hardcode HMAC secrets or RSA/ECDSA private keys in source code
+- Issue tokens without an expiry (`exp` claim)
 
-### Algorithm Security
+## ALWAYS
+- Pin the expected algorithm explicitly in the verifier (e.g., `Algorithm.HMAC256(key)`)
+- Set `typ: JWT` in the header; include `iss`, `iat`, `nbf`, and `exp` claims
+- Use short-lived tokens — 15 minutes is a reasonable default
+- Bind tokens to a user fingerprint cookie to prevent sidejacking
+- Store the fingerprint hash (SHA-256) in the token, not the raw value
+- Check the revocation denylist on every token verification
+- Use a shared DB for the denylist to support multi-instance deployments
+- Prefer RSA or ECDSA over HMAC for better security properties
+- HMAC secrets must be cryptographically random, minimum 64 characters
 
-Always specify the expected algorithm explicitly:
+## Algorithm Pinning
 
 ```java
-// Prevent 'none' algorithm attack
 JWTVerifier verifier = JWT.require(Algorithm.HMAC256(keyHMAC)).build();
-DecodedJWT decodedToken = verifier.verify(token);
+DecodedJWT decoded = verifier.verify(token);
 ```
 
-### Token Sidejacking Prevention
+## Sidejacking Prevention (fingerprint pattern)
+- On login: generate 50-byte random fingerprint; set as `__Secure-Fgp` cookie with `SameSite=Strict; HttpOnly; Secure`
+- Store SHA-256 hash of fingerprint in the `userFingerprint` JWT claim (not the raw value — prevents XSS extraction)
+- On verification: hash the cookie value, compare to claim; reject if mismatch
 
-Code to create the token after successful authentication.
+## Token Revocation
+- On logout: compute SHA-256 of the ciphered token; store hex digest in `revoked_token` DB table
+- Check denylist before trusting any verified token
+- Use a DB (not in-process cache) so all instances share the revocation state
 
-``` java
-// HMAC key - Block serialization and storage as String in JVM memory
-private transient byte[] keyHMAC = ...;
-// Random data generator
-private SecureRandom secureRandom = new SecureRandom();
-
-...
-
-//Generate a random string that will constitute the fingerprint for this user
-byte[] randomFgp = new byte[50];
-secureRandom.nextBytes(randomFgp);
-String userFingerprint = DatatypeConverter.printHexBinary(randomFgp);
-
-//Add the fingerprint in a hardened cookie - Add cookie manually because
-//SameSite attribute is not supported by javax.servlet.http.Cookie class
-String fingerprintCookie = "__Secure-Fgp=" + userFingerprint
-                           + "; SameSite=Strict; HttpOnly; Secure";
-response.addHeader("Set-Cookie", fingerprintCookie);
-
-//Compute a SHA256 hash of the fingerprint in order to store the
-//fingerprint hash (instead of the raw value) in the token
-//to prevent an XSS to be able to read the fingerprint and
-//set the expected cookie itself
-MessageDigest digest = MessageDigest.getInstance("SHA-256");
-byte[] userFingerprintDigest = digest.digest(userFingerprint.getBytes("utf-8"));
-String userFingerprintHash = DatatypeConverter.printHexBinary(userFingerprintDigest);
-
-//Create the token with a validity of 15 minutes and client context (fingerprint) information
-Calendar c = Calendar.getInstance();
-Date now = c.getTime();
-c.add(Calendar.MINUTE, 15);
-Date expirationDate = c.getTime();
-Map<String, Object> headerClaims = new HashMap<>();
-headerClaims.put("typ", "JWT");
-String token = JWT.create().withSubject(login)
-   .withExpiresAt(expirationDate)
-   .withIssuer(this.issuerID)
-   .withIssuedAt(now)
-   .withNotBefore(now)
-   .withClaim("userFingerprint", userFingerprintHash)
-   .withHeader(headerClaims)
-   .sign(Algorithm.HMAC256(this.keyHMAC));
-```
-
-Code to validate the token.
-
-``` java
-// HMAC key - Block serialization and storage as String in JVM memory
-private transient byte[] keyHMAC = ...;
-
-...
-
-//Retrieve the user fingerprint from the dedicated cookie
-String userFingerprint = null;
-if (request.getCookies() != null && request.getCookies().length > 0) {
- List<Cookie> cookies = Arrays.stream(request.getCookies()).collect(Collectors.toList());
- Optional<Cookie> cookie = cookies.stream().filter(c -> "__Secure-Fgp"
-                                            .equals(c.getName())).findFirst();
- if (cookie.isPresent()) {
-   userFingerprint = cookie.get().getValue();
- }
-}
-
-//Compute a SHA256 hash of the received fingerprint in cookie in order to compare
-//it to the fingerprint hash stored in the token
-MessageDigest digest = MessageDigest.getInstance("SHA-256");
-byte[] userFingerprintDigest = digest.digest(userFingerprint.getBytes("utf-8"));
-String userFingerprintHash = DatatypeConverter.printHexBinary(userFingerprintDigest);
-
-//Create a verification context for the token
-JWTVerifier verifier = JWT.require(Algorithm.HMAC256(keyHMAC))
-                              .withIssuer(issuerID)
-                              .withClaim("userFingerprint", userFingerprintHash)
-                              .build();
-
-//Verify the token, if the verification fail then an exception is thrown
-DecodedJWT decodedToken = verifier.verify(token);
-```
-
-
-### Token Revocation
-
-Implement token blacklist for logout functionality:
-
-
-Code in charge of adding a token to the denylist and checking if a token is revoked.
-
-``` java
-/**
-* Handle the revocation of the token (logout).
-* Use a DB in order to allow multiple instances to check for revoked token
-* and allow cleanup at centralized DB level.
-*/
-public class TokenRevoker {
-
- /** DB Connection */
- @Resource("jdbc/storeDS")
- private DataSource storeDS;
-
- /**
-  * Verify if a digest encoded in HEX of the ciphered token is present
-  * in the revocation table
-  *
-  * @param jwtInHex Token encoded in HEX
-  * @return Presence flag
-  * @throws Exception If any issue occur during communication with DB
-  */
- public boolean isTokenRevoked(String jwtInHex) throws Exception {
-     boolean tokenIsPresent = false;
-     if (jwtInHex != null && !jwtInHex.trim().isEmpty()) {
-         //Decode the ciphered token
-         byte[] cipheredToken = DatatypeConverter.parseHexBinary(jwtInHex);
-
-         //Compute a SHA256 of the ciphered token
-         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-         byte[] cipheredTokenDigest = digest.digest(cipheredToken);
-         String jwtTokenDigestInHex = DatatypeConverter.printHexBinary(cipheredTokenDigest);
-
-         //Search token digest in HEX in DB
-         try (Connection con = this.storeDS.getConnection()) {
-             String query = "select jwt_token_digest from revoked_token where jwt_token_digest = ?";
-             try (PreparedStatement pStatement = con.prepareStatement(query)) {
-                 pStatement.setString(1, jwtTokenDigestInHex);
-                 try (ResultSet rSet = pStatement.executeQuery()) {
-                     tokenIsPresent = rSet.next();
-                 }
-             }
-         }
-     }
-
-     return tokenIsPresent;
- }
-
-
-### Secure Client Storage
-
-Store tokens in sessionStorage with fingerprint binding:
+## Client Storage
 
 ```javascript
-// Store in sessionStorage, not localStorage
-sessionStorage.setItem("token", data.token);
-
-// Send as Bearer token
+sessionStorage.setItem("token", data.token);           // not localStorage
 xhr.setRequestHeader("Authorization", "bearer " + token);
 ```
 
-### Strong Secrets
-
-Use strong HMAC secrets or RSA keys:
-- HMAC secrets: minimum 64 characters, cryptographically random
-- Prefer RSA or ECDSA over HMAC for better security
-- Never hardcode secrets in source code
+## Checklist
+- [ ] Algorithm pinned explicitly — `none` and algorithm confusion impossible
+- [ ] Token includes `exp`, `iss`, `iat`, `nbf` claims
+- [ ] HMAC key stored as `transient byte[]`, never as `String`
+- [ ] Fingerprint cookie set `HttpOnly; Secure; SameSite=Strict`; hash stored in token
+- [ ] Revocation denylist checked on every verification
+- [ ] Tokens stored in `sessionStorage` or `HttpOnly` cookie, not `localStorage`
+- [ ] HMAC secret ≥ 64 random chars, or RSA/ECDSA key used instead

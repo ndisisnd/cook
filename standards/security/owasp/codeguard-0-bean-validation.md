@@ -1,91 +1,52 @@
 ---
-description: Bean Validation Security Best Practices
-languages:
-- java
-- xml
+description: Java Bean Validation — centralized declarative input validation with Hibernate Validator
 alwaysApply: false
 ---
 
-Using a declarative, centralized approach to validation is crucial for security and maintainability. The Java Bean Validation standard (now Jakarta Validation) and its primary implementation, Hibernate Validator, provide a powerful way to handle this.
+# Bean Validation (Java / Jakarta)
 
-### Why Use Bean Validation?
+## NEVER
+- Scatter validation logic across the business layer — centralize on domain models
+- Expose system internals or stack traces in validation error responses
+- Use `@NotNull`/`@NotBlank` without accompanying `@Size` constraints on sensitive fields
+- Trust client-supplied data without server-side constraint validation
 
-Instead of scattering validation logic throughout your business layer, you define validation rules directly on your domain models (your "beans"). This keeps your validation logic in one place, making it consistent and easy to manage.
+## ALWAYS
+- Define all validation constraints as annotations on domain model fields
+- Combine `@NotNull`/`@NotBlank` with `@Size` on sensitive fields
+- Use `@Valid` in controllers to trigger validation automatically
+- Annotate nested objects with `@Valid @NotNull` to cascade validation
+- Handle `BindingResult` errors: log the field errors, return `400 Bad Request`, never expose sensitive system info
+- Create custom constraint annotations for complex business rules not covered by standard annotations
 
-### 1. Setting Up Your Project
+## Key annotations
 
-Add Hibernate Validator to your `pom.xml`:
+| Annotation | Use |
+|---|---|
+| `@NotNull` / `@NotBlank` | Required fields; `@NotBlank` also rejects whitespace-only |
+| `@Size(min, max)` | Length bounds for strings and collections |
+| `@Email` | Email format; combine with `@Size(max=254)` |
+| `@Pattern(regexp)` | Allowlist character set for passwords/codes |
+| `@Min` / `@Max` | Numeric range bounds |
+| `@Valid` | Cascade validation into nested objects |
 
-```xml
-<dependency>
-    <groupId>org.hibernate.validator</groupId>
-    <artifactId>hibernate-validator</artifactId>
-    <version>8.0.0.Final</version>
-</dependency>
-```
-
-If you're using Spring Boot, the `spring-boot-starter-web` dependency includes Hibernate Validator automatically.
-
-### 2. Annotating Your Beans
-
-Apply standard validation annotations directly to the fields of your model classes. **Always combine @NotNull/@NotBlank with @Size constraints for sensitive fields.**
-
-**Example (`UserForm.java`):**
+## Controller pattern
 ```java
-public class UserForm {
-
-    @NotBlank @Size(min = 2, max = 50)
-    private String name;
-
-    @NotBlank @Email @Size(max = 254)
-    private String email;
-
-    @NotBlank @Size(min = 8, max = 128)
-    @Pattern(regexp = "[A-Za-z0-9@#$%^&+=]+")
-    private String password;
-
-    // ... getters and setters
-}
-```
-
-### 3. Triggering Validation
-
-In a web context (like a Spring MVC controller), use the `@Valid` annotation on your model attribute to trigger the validation process automatically.
-
-**Example (Spring Controller):**
-```java
-@RestController
-public class UserController {
-
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody UserForm form, BindingResult result) {
-        if (result.hasErrors()) {
-            logger.warn("Validation failed: {}", result.getFieldErrors());
-            return ResponseEntity.badRequest().body(result.getFieldErrors());
-        }
-
-        userService.create(form);
-        return ResponseEntity.ok("Success");
+@PostMapping("/register")
+public ResponseEntity<?> register(@Valid @RequestBody UserForm form, BindingResult result) {
+    if (result.hasErrors()) {
+        logger.warn("Validation failed: {}", result.getFieldErrors());
+        return ResponseEntity.badRequest().body(result.getFieldErrors());
     }
+    userService.create(form);
+    return ResponseEntity.ok("Success");
 }
 ```
 
-### 4. Validating Nested Objects
-
-If your model contains other objects that also need validation, just annotate them with `@Valid`.
-
-**Example:**
-```java
-public class Order {
-    @Valid @NotNull
-    private Address shippingAddress;
-}
-```
-
-### Best Practices Summary
-
-*   **Centralize Rules:** Define validation constraints on your domain models.
-*   **Use Standard Annotations:** Leverage the rich set of built-in annotations (`@NotNull`, `@Size`, `@Pattern`, `@Min`, `@Max`, `@Email`, etc.).
-*   **Automate with `@Valid`:** Let your framework trigger validation automatically in your controllers.
-*   **Handle Errors Gracefully:** Use `BindingResult` to capture validation errors and return a meaningful `400 Bad Request` response. Never expose sensitive system information in error messages.
-*   **Create Custom Constraints:** For complex business rules that aren't covered by standard annotations, create your own custom validation constraints.
+## Checklist
+- [ ] Validation constraints declared on domain model fields, not scattered in services
+- [ ] Sensitive fields have both `@NotBlank` and `@Size` constraints
+- [ ] Controller methods use `@Valid` to trigger automatic validation
+- [ ] Nested objects annotated with `@Valid @NotNull`
+- [ ] Validation errors return `400` with field details; no system internals exposed
+- [ ] Custom constraints implemented for business rules not covered by built-ins

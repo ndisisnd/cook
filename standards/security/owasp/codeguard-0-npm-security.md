@@ -1,97 +1,52 @@
 ---
-description: NPM Security Best Practices
-languages:
-- javascript
+description: npm package security — dependency integrity, secret leakage prevention, and registry hygiene
 alwaysApply: false
 ---
 
-## NPM Security Guidelines
+# NPM Security
 
-Essential security practices for managing NPM packages and dependencies in JavaScript projects.
+## NEVER
+- Expose npm tokens in source code, logs, CI env vars, or config files committed to VCS
+- Install packages without vetting credibility (check source repo + registry metadata)
+- Upgrade to a new version immediately — allow community review time
+- Allow wildcard package names or typosquatted variants (verify with `npm info <pkg>`)
+- Use `npm install` in CI or production (non-deterministic; use `npm ci` instead)
 
-### Prevent Secret Leakage
+## ALWAYS
+- Use `npm ci` in CI/CD and production; `yarn install --frozen-lockfile` for Yarn
+- Run `npm publish --dry-run` before actual publish; use `files` in package.json as allowlist
+- Use `--ignore-scripts` when installing from unknown or unvetted sources
+- Enable 2FA with `npm profile enable-2fa auth-and-writes`
+- Create tokens with minimum required permissions; restrict to IP CIDR ranges where possible
+- Audit tokens regularly with `npm token list`; revoke unused or compromised tokens immediately
+- Run `npm audit` on every CI run; triage and fix findings
+- Use a private registry (e.g. Verdaccio) for access control and routing
 
-Avoid publishing sensitive data to the npm registry:
-- Use the `files` property in package.json as an allowlist to control what gets published
-- Be cautious with `.gitignore` and `.npmignore` - if both exist, `.npmignore` takes precedence
-- Run `npm publish --dry-run` to review the tarball contents before actual publishing
-- NPM automatically revokes tokens detected in published packages, but prevention is better
+## Publish Safety
+- `files` field in package.json acts as allowlist for published content
+- If both `.gitignore` and `.npmignore` exist, `.npmignore` takes precedence — audit both
+- NPM auto-revokes tokens it detects in published packages, but prevention is mandatory
 
-### Enforce Deterministic Builds
+## Typosquatting Defense
+- Verify package name + metadata: `npm info <package>`
+- Confirm repository link points to expected maintainer
+- Stay logged out of npm during regular development
+- Check for look-alike names when copy-pasting install commands
 
-Ensure consistent dependency installation across environments:
-- Use `npm ci` instead of `npm install` in CI/CD and production builds
-- Use `yarn install --frozen-lockfile` if using Yarn
-- Never commit changes to package.json without updating the corresponding lockfile
-- Lockfile inconsistencies can pull unintended package versions and compromise security
+## Token Management
 
-### Minimize Script Execution Risks
+| Action | Command |
+|--------|---------|
+| Create read-only token | `npm token create --read-only` |
+| Restrict to CIDR | `npm token create --cidr=<range>` |
+| List tokens | `npm token list` |
+| Revoke token | `npm token revoke <token>` |
 
-Reduce attack surface from package installation scripts:
-- Add `--ignore-scripts` when installing packages: `npm install --ignore-scripts`
-- Consider adding `ignore-scripts=true` to your `.npmrc` configuration
-- Always vet third-party packages for credibility before installation
-- Avoid immediate upgrades to new versions; allow time for community review
-- Review changelog and release notes before upgrading dependencies
-
-### Monitor Package Health
-
-Regularly assess the state of your dependencies:
-- Use `npm outdated` to identify packages that need updates
-- Run `npm doctor` to verify healthy npm installation and environment
-- Monitor for known vulnerabilities in dependencies using `npm audit`
-- Scan for security vulnerabilities in third-party open source projects
-- Set up monitoring for new CVEs that impact your project dependencies
-
-### Use Private Registry Solutions
-
-Consider using local npm proxies for enhanced control:
-- Verdaccio provides a lightweight private registry solution
-- Private registries offer package access control and authenticated users
-- Proxy capabilities reduce duplicate downloads and save bandwidth
-- Enable routing dependencies to different registries for security control
-- Useful for testing environments and mono-repo projects
-
-### Enable Account Security
-
-Protect your npm publishing capabilities:
-- Enable two-factor authentication with `npm profile enable-2fa auth-and-writes`
-- Use auth-and-writes mode for comprehensive protection of profile, login, and package management
-- Auth-only mode provides protection for login and profile changes only
-- Use authentication apps like Google Authenticator for 2FA tokens
-
-### Manage Access Tokens Securely
-
-Control programmatic access to npm registry:
-- Create tokens with minimal required permissions using `npm token create`
-- Use read-only tokens when write access is not needed
-- Restrict tokens to specific IP ranges with `--cidr` option
-- Regularly audit tokens with `npm token list`
-- Revoke unused or compromised tokens immediately with `npm token revoke`
-- Never expose tokens in source code, logs, or environment variables
-
-### Defend Against Typosquatting
-
-Protect against malicious package substitution:
-- Verify package names and metadata with `npm info <package>` before installation
-- Be extra careful when copy-pasting installation commands from untrusted sources
-- Check source code repositories and npm registry to confirm package legitimacy
-- Default to being logged out of npm during daily development work
-- Use `--ignore-scripts` when installing packages from unknown sources
-
-### Follow Responsible Disclosure
-
-Handle security vulnerabilities appropriately:
-- Follow responsible disclosure programs when reporting vulnerabilities
-- Coordinate with package maintainers before public disclosure
-- Allow time for fixes and upgrade paths before publicizing security issues
-- Use proper channels to report security concerns to package authors
-
-### Package Naming Best Practices
-
-Understand npm naming rules and security implications:
-- Package names limited to 214 characters, lowercase only
-- Cannot start with dot, underscore, or contain special characters like "~\'!()*"
-- Be aware that typosquatting attacks target popular package names
-- NPM uses spam detection mechanisms for new package publications
-- Reserved names include node_modules and favicon.ico
+## Checklist
+- [ ] `npm ci` used in all CI and production installs
+- [ ] No tokens, credentials, or secrets in committed files
+- [ ] `npm publish --dry-run` verified before every publish
+- [ ] 2FA enabled with `auth-and-writes` mode
+- [ ] Tokens scoped to minimum permissions; unused tokens revoked
+- [ ] `npm audit` passing in CI; vulnerabilities triaged
+- [ ] Packages vetted before install; `--ignore-scripts` for untrusted sources

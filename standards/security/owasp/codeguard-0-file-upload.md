@@ -1,73 +1,48 @@
 ---
-description: File Upload Security Best Practices
-languages:
-- c
-- go
-- java
-- javascript
-- php
-- python
-- ruby
-- typescript
+description: Secure file uploads — extension/content validation, safe filenames, storage, access control
 alwaysApply: false
 ---
 
-## File Upload Security Guidelines
+# File Upload Security
 
-This rule advises on secure file upload practices to prevent malicious file attacks and protect system integrity:
+## NEVER
+- Trust client-supplied `Content-Type` headers
+- Use user-supplied filenames directly — always generate server-side names
+- Allow double extensions (`.jpg.php`) or null byte injection (`.php%00.jpg`)
+- Store uploaded files inside the webroot with execute permissions
+- Mount `/var/run/docker.sock` — unrelated but commonly co-located mistake; store files outside webroot
+- Allow ZIP uploads without safe extraction; avoid ZIP when possible due to attack vectors
+- Use denylist approach for file extensions — use allowlist only
+- Allow unauthenticated file uploads
 
-- Extension Validation
-  - List allowed extensions only for business-critical functionality.
-  - Ensure input validation is applied before validating extensions.
-  - Avoid double extensions (e.g., `.jpg.php`) and null byte injection (e.g., `.php%00.jpg`).
-  - Use allowlist approach rather than denylist for file extensions.
-  - Validate extensions after decoding filename to prevent bypass attempts.
+## ALWAYS
+- Validate extensions against an explicit allowlist after decoding the filename
+- Validate file signatures (magic numbers) alongside MIME type — neither alone is sufficient
+- Generate random UUIDs/GUIDs as stored filenames; if user filename needed, enforce max length and restrict to `[a-zA-Z0-9 ._-]`, no leading `.` or `-`
+- Store files on a separate server or outside webroot with admin-only filesystem access
+- If webroot storage unavoidable, set write-only permissions; serve via application handler mapping IDs to filenames
+- Rewrite images to destroy embedded malicious content; use Apache POI for Office docs
+- Require authentication and enforce least-privilege filesystem permissions
+- Set upload size limits; apply post-decompression size limits for archives
+- Protect upload endpoints with CSRF tokens
+- Integrate antivirus / CDR scanning for applicable file types
+- Log all upload activity; keep file processing libraries updated
 
-- Content Type and File Signature Validation
-  - Never trust client-supplied Content-Type headers as they can be spoofed.
-  - Validate file signatures (magic numbers) in conjunction with Content-Type checking.
-  - Implement allowlist approach for MIME types as a quick protection layer.
-  - Use file signature validation but not as a standalone security measure.
+## Validation Layers
 
-- Filename Security
-  - Generate random filenames (UUID/GUID) instead of using user-supplied names.
-  - If user filenames required, implement maximum length limits.
-  - Restrict characters to alphanumeric, hyphens, spaces, and periods only.
-  - Prevent leading periods (hidden files) and sequential periods (directory traversal).
-  - Avoid leading hyphens or spaces for safer shell script processing.
+| Layer | What to check |
+|-------|--------------|
+| Extension | Allowlist; decode filename first; no double ext or null bytes |
+| MIME / magic bytes | Validate signature; never trust `Content-Type` header alone |
+| Filename | UUID generated; max length; restricted charset |
+| Content | Image rewrite; AV scan; CDR for Office/PDF |
+| Size | Upload limit; decompressed size limit for archives |
 
-- File Content Validation
-  - For images, apply image rewriting techniques to destroy malicious content.
-  - For Microsoft documents, use Apache POI for validation.
-  - Avoid ZIP files due to numerous attack vectors.
-  - Implement manual file review in sandboxed environments when resources allow.
-  - Integrate antivirus scanning and Content Disarm & Reconstruct (CDR) for applicable file types.
-
-- Storage Security
-  - Store files on different servers for complete segregation when possible.
-  - Store files outside webroot with administrative access only.
-  - If storing in webroot, set write-only permissions with proper access controls.
-  - Use application handlers that map IDs to filenames for public access.
-  - Consider database storage for specific use cases with DBA expertise.
-
-- Access Control and Authentication
-  - Require user authentication before allowing file uploads.
-  - Implement proper authorization levels for file access and modification.
-  - Set filesystem permissions on principle of least privilege.
-  - Scan files before execution if execution permission is required.
-
-- Upload and Download Limits
-  - Set proper file size limits for upload protection.
-  - Consider post-decompression size limits for compressed files.
-  - Implement request limits for download services to prevent DoS attacks.
-  - Use secure methods to calculate ZIP file sizes safely.
-
-- Additional Security Measures
-  - Protect file upload endpoints from CSRF attacks.
-  - Keep all file processing libraries securely configured and updated.
-  - Implement logging and monitoring for upload activities.
-  - Provide user reporting mechanisms for illegal content.
-  - Use secure extraction methods for compressed files.
-
-Summary:  
-Implement defense-in-depth for file uploads through multi-layered validation, secure storage practices, proper access controls, and comprehensive monitoring. Never rely on single validation methods and always generate safe filenames to prevent attacks.
+## Checklist
+- [ ] Extension allowlist enforced after filename decoding
+- [ ] File signatures validated; `Content-Type` not trusted alone
+- [ ] Server-generated UUID filenames used; no user-supplied names
+- [ ] Files stored outside webroot or with write-only perms; served via ID-mapping handler
+- [ ] Authentication required; least-privilege permissions applied
+- [ ] CSRF protection on upload endpoint
+- [ ] Size limits and AV/CDR scanning in place

@@ -1,141 +1,60 @@
 ---
-description: Node.js Docker Security Best Practices
-languages:
-- d
-- javascript
+description: Node.js Docker security — hardened image construction for production deployments
 alwaysApply: false
 ---
 
-## Node.js Docker Security Guidelines
+# Node.js Docker Security
 
-Essential security practices for building optimized and secure Node.js Docker images for production deployment.
+## NEVER
+- Use `FROM node` or `FROM node:latest` (non-deterministic)
+- Run the container as root — always switch to the `node` user
+- Use `CMD "npm" "start"` — npm doesn't forward OS signals
+- Use bare `CMD ["node", "server.js"]` with Node as PID 1 — signals not handled
+- Copy secrets (`.npmrc`, credentials) into final image layers
+- Omit a `.dockerignore` file
 
-### Use Explicit and Deterministic Base Images
+## ALWAYS
+- Pin base image with tag AND SHA256 digest: `FROM node:lts-alpine@sha256:<hash>`
+- Install production deps only: `RUN npm ci --omit=dev`
+- Set `ENV NODE_ENV production`
+- Run as `node` user; `COPY --chown=node:node` all app files
+- Use an init process (`dumb-init`) as PID 1
+- Use multi-stage builds to separate build from production image
+- Mount secrets via BuildKit — never `COPY` them
+- Regularly scan images for vulnerabilities
 
-Always use specific, pinned base image tags to ensure deterministic builds:
-- Avoid `FROM node` or `FROM node:latest` which introduces non-deterministic behavior
-- Use minimal base images to reduce attack surface and image size
-- Pin images with both tag and SHA256 digest for maximum security
+## Dockerfile pattern
 
-Recommended pattern:
 ```dockerfile
-FROM node:lts-alpine@sha256:b2da3316acdc2bec442190a1fe10dc094e7ba4121d029cb32075ff59bb27390a
-```
-
-### Install Only Production Dependencies
-
-Use deterministic dependency installation that excludes development packages:
-```dockerfile
-RUN npm ci --omit=dev
-```
-
-This approach:
-- Prevents surprises in CI by halting if lockfile deviations exist
-- Reduces security risk from development dependencies
-- Decreases image size by excluding unnecessary packages
-
-### Optimize for Production Environment
-
-Set the production environment variable to enable framework optimizations:
-```dockerfile
-ENV NODE_ENV production
-```
-
-Many frameworks like Express only enable performance and security optimizations when this variable is set to "production".
-
-### Run as Non-Root User
-
-Follow the principle of least privilege to minimize security risks:
-```dockerfile
-COPY --chown=node:node . /usr/src/app
-USER node
-```
-
-The official node images include a least-privileged `node` user. Ensure all copied files are owned by this user to prevent permission issues.
-
-### Handle Process Signals Properly
-
-Use a proper init system to handle process signals correctly:
-```dockerfile
+FROM node:lts-alpine@sha256:<hash>
 RUN apk add dumb-init
+ENV NODE_ENV production
+USER node
+WORKDIR /usr/src/app
+COPY --chown=node:node --from=build /usr/src/app/node_modules ./node_modules
+COPY --chown=node:node . .
 CMD ["dumb-init", "node", "server.js"]
 ```
 
-Avoid these problematic patterns:
-- `CMD "npm" "start"` - npm doesn't forward signals
-- `CMD "node" "server.js"` - Node.js as PID 1 doesn't handle signals properly
+## Graceful shutdown
 
-### Implement Graceful Shutdown
-
-Add signal handlers in your Node.js application code:
 ```javascript
-    async function closeGracefully(signal) {
-       console.log(`*^!@4=> Received signal to terminate: ${signal}`)
-     
-       await fastify.close()
-       // await db.close() if we have a db connection in this app
-       // await other things we should cleanup nicely
-       process.exit()
-    }
-    process.on('SIGINT', closeGracefully)
-    process.on('SIGTERM', closeGracefully)
+async function closeGracefully(signal) {
+  await server.close()
+  process.exit()
+}
+process.on('SIGINT', closeGracefully)
+process.on('SIGTERM', closeGracefully)
 ```
 
-### Use Multi-Stage Builds
+## .dockerignore (required)
+`node_modules`, `npm-debug.log`, `Dockerfile`, `.git`, `.gitignore`, `.npmrc`
 
-Separate build and production stages to minimize final image size and prevent secret leakage:
-
-```dockerfile
-# --------------> The build image
-FROM node:latest AS build
-WORKDIR /usr/src/app
-COPY package*.json /usr/src/app/
-RUN --mount=type=secret,mode=0644,id=npmrc,target=/usr/src/app/.npmrc npm ci --omit=dev
-
-# --------------> The production image
-FROM node:lts-alpine@sha256:b2da3316acdc2bec442190a1fe10dc094e7ba4121d029cb32075ff59bb27390a
-RUN apk add dumb-init
-ENV NODE_ENV production
-USER node
-WORKDIR /usr/src/app
-COPY --chown=node:node --from=build /usr/src/app/node_modules /usr/src/app/node_modules
-COPY --chown=node:node . /usr/src/app
-CMD ["dumb-init", "node", "server.js"]
-```
-
-### Use .dockerignore File
-
-Create a `.dockerignore` file to exclude unnecessary and sensitive files:
-```
-node_modules
-npm-debug.log
-Dockerfile
-.git
-.gitignore
-.npmrc
-```
-
-This prevents:
-- Copying modified local `node_modules/` over the container-built version
-- Including sensitive files like credentials or local configuration
-- Cache invalidation from log files or temporary files
-
-### Mount Secrets Securely
-
-Use Docker BuildKit secrets to handle sensitive files like `.npmrc`:
-```dockerfile
-RUN --mount=type=secret,mode=0644,id=npmrc,target=/usr/src/app/.npmrc npm ci --omit=dev
-```
-
-Build command:
-```bash
-docker build . -t nodejs-tutorial --secret id=npmrc,src=.npmrc
-```
-
-This ensures secrets are never copied into the final Docker image layers.
-
-### Security Scanning
-
-Regularly scan your Docker images for vulnerabilities using static analysis tools and keep dependencies updated.
-
-By following these practices, you'll create secure, optimized, and maintainable Node.js Docker images suitable for production deployment.
+## Checklist
+- [ ] Base image pinned with tag and SHA256
+- [ ] `npm ci --omit=dev` used; no dev deps in production image
+- [ ] `NODE_ENV=production` set
+- [ ] Container runs as `node` user, not root
+- [ ] `dumb-init` (or equivalent) is PID 1
+- [ ] Multi-stage build separates build and runtime
+- [ ] Secrets mounted via BuildKit, not copied into layers
