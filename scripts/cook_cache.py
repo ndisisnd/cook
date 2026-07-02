@@ -191,6 +191,13 @@ def derive_domains(files, frameworks, project: Path):
             hints.add("flutter" if has_flutter else "dart")
         elif suf == ".swift":
             hints.add("swift")
+        elif suf in (".css", ".scss", ".sass", ".less", ".pcss", ".postcss"):
+            # A stylesheet extension unambiguously means the css shelf regardless
+            # of framework — like .swift→swift and .dart→dart. Utility-framework
+            # (Tailwind) classes inside .tsx/.html are caught by keyword routing,
+            # not here, so a JSX file still routes to its framework shelf and the
+            # css shelf co-loads only when the classifier sees Tailwind signals.
+            hints.add("css")
 
     # Supabase platform domain — a SEPARATE second pass, NOT folded into the
     # elif chain above. The chain's `.sql` arm already fires for

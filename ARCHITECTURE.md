@@ -22,6 +22,7 @@ SKILL.md (cook)
     ├── macos/           macOS app platform (SwiftUI/AppKit) — pairs with swift
     ├── nextjs/          Next.js App Router
     ├── react/           React (non-Next)
+    ├── css/             CSS presentation layer (cascade, layout, theming) + Tailwind ref
     ├── typescript/      TypeScript 5 language
     ├── nodejs/          Node.js runtime (event loop, streams, process lifecycle)
     ├── database/        PostgreSQL + Redis
@@ -132,6 +133,7 @@ defeats the cache's core guarantee that a hit never wakes the model).
 | macos | macOS app development standards: SwiftUI/AppKit app structure, scenes/windows, menu bar apps, App Sandbox/TCC, signing/notarization, distribution, persistence choice, localization, and HIG conventions. Scoped to macOS only (not iOS/iPadOS/watchOS/visionOS). |
 | nextjs | Next.js App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
 | react | React + TypeScript standards: hook rules, component structure, prop typing, and boundary safety for non-Next.js projects. |
+| css | CSS presentation-layer standards: the cascade and specificity, cascade layers (`@layer`), modern layout (Flexbox/Grid/container queries), responsive units, theming with custom properties, the accessibility/performance floors, and a Tailwind sub-standard. Co-loads with framework shelves. |
 | typescript | TypeScript 5.x language standards: type safety, narrowing, generics, modules, and async code. |
 | nodejs | Node.js runtime standards: event-loop safety, streams/backpressure, process lifecycle, Buffer safety, runtime pinning, installs, env loading, and logging. |
 | database | Database standards for PostgreSQL schema/migration/query design and Redis caching and cache invalidation. |
@@ -246,6 +248,17 @@ defeats the cache's core guarantee that a hit never wakes the model).
 - `refs/state-management.md`: Local, context, and external store patterns.
 - `refs/testing.md`: React Testing Library conventions and coverage rules.
 - `refs/tooling.md`: Vite, ESLint, and React toolchain configuration.
+
+### css
+
+- `refs/architecture.md`: Cascade layers (`@layer`), methodology selection (BEM/ITCSS/utility-first/CSS Modules), `@scope`, specificity strategy, and file organization.
+- `refs/layout.md`: Flexbox vs Grid, subgrid, container queries, logical properties, intrinsic sizing, `aspect-ratio`, fluid `clamp()` type, and breakpoint strategy.
+- `refs/theming.md`: Custom-property token layering, `color-scheme`/`light-dark()` dark mode, `oklch()`/`color-mix()`/relative colour, and `@property`.
+- `refs/performance.md`: Compositor-only animation, `contain`/`content-visibility`, `will-change` discipline, critical CSS, and web-font loading.
+- `refs/accessibility.md`: `:focus-visible`, `prefers-reduced-motion`, `forced-colors`/`prefers-contrast`, contrast, target sizes, and screen-reader-only utilities.
+- `refs/tailwind.md`: TailwindCSS (v4 CSS-first `@theme` + v3 config), utility-first discipline, `cn()`/`tailwind-merge`, `cva` variants, arbitrary values, and dark mode.
+- `refs/tooling.md`: Stylelint, Prettier, PostCSS/Lightning CSS, `browserslist`, and Sass `@use`/`@forward` and native nesting.
+- `refs/security.md`: CSS injection, attribute-selector data exfiltration, third-party/`@import` risk, clickjacking overlays, and user-generated-style sanitization.
 
 ### typescript
 

@@ -35,6 +35,20 @@ A bare domain flag loads the full shelf: `standards/<domain>/SKILL.md` + all ref
 A sub-ref flag (`--<domain>:<ref>`) loads only that one ref — no SKILL.md.  
 Combine both to get SKILL.md + one ref: `--react --react:hooks`.
 
+### `--css`
+
+| Flag | Loads |
+|---|---|
+| `--css` | `standards/css/SKILL.md` + all refs |
+| `--css:accessibility` | `standards/css/refs/accessibility.md` |
+| `--css:architecture` | `standards/css/refs/architecture.md` |
+| `--css:layout` | `standards/css/refs/layout.md` |
+| `--css:performance` | `standards/css/refs/performance.md` |
+| `--css:security` | `standards/css/refs/security.md` |
+| `--css:tailwind` | `standards/css/refs/tailwind.md` |
+| `--css:theming` | `standards/css/refs/theming.md` |
+| `--css:tooling` | `standards/css/refs/tooling.md` |
+
 ### `--dart`
 
 | Flag | Loads |

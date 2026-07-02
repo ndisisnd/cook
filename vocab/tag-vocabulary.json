@@ -138,6 +138,27 @@
         "NSUndoManager", "@Observable", "@Bindable", "NavigationStack", "TCA", "FormatStyle"
       ]
     },
+    "css": {
+      "routes_to": ["domain:css"],
+      "aliases": [
+        "css", "stylesheet", "style", "styles", "scss", "sass", "less", "postcss",
+        "pcss", "cascade", "specificity", "cascade layer", "@layer", ":where", ":is",
+        "@scope", "css modules", "BEM", "ITCSS", "flexbox", "flex", "grid", "subgrid",
+        "container query", "@container", "media query", "logical property", "clamp",
+        "min()", "max()", "aspect-ratio", "gap", "custom property", "css variable",
+        "design token", "theming", "dark mode", "color-scheme", "light-dark", "oklch",
+        "color-mix", "@property", "z-index", "stacking context", "keyframes", "animation",
+        "transition", "will-change", "contain", "content-visibility", "critical css",
+        "font-display", "focus-visible", "prefers-reduced-motion", "forced-colors",
+        "sr-only", "tailwind", "tailwindcss", "@apply", "@theme", "utility class",
+        "utility-first", "cn", "tailwind-merge", "clsx", "cva", "class-variance-authority",
+        "arbitrary value", "tailwind.config", "stylelint", "autoprefixer", "lightningcss",
+        "@use", "@forward", "browserslist", "nesting", "box-sizing", "!important",
+        "methodology", "breakpoint", "intrinsic", "compositor", "reflow", "repaint",
+        "target size", "contrast", "a11y", "css injection", "exfiltration",
+        "third-party css", "@import", "clickjacking", "sanitize styles", "expression"
+      ]
+    },
     "data-model": {
       "routes_to": ["concern:architecture"],
       "aliases": [

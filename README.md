@@ -61,7 +61,7 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 
 **Concerns (8):** `--security`, `--auth`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd` — each loads one ref from `standards/global/refs/`; no P0.
 
-**Domains (11):** `--react`, `--nextjs`, `--flutter`, `--dart`, `--swift`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
+**Domains (12):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
 
 **Sub-ref flags:** `--<domain>:<ref>` loads a single ref from a domain shelf without loading the domain SKILL.md. The `ref` is a file stem under `standards/<domain>/refs/`. Combine with the domain flag to load both: `--react --react:hooks`.
 
@@ -87,6 +87,7 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 | --- | --- |
 | Global | Universal rules loaded on every task: architecture, API design, error handling, security, auth, performance, debugging, and CI/CD. Includes `refs/security.md` — a general-purpose security standard usable standalone |
 | Security | Granular security standards library for security-focused work: credentials, cryptography, auth/MFA, OAuth/JWT/SAML, authorization, session management, input validation, XSS, API security, transport, data storage, file handling, serialization, logging, supply chain, CI/CD, containers, Kubernetes, IaC, microservices, mobile, MCP/AI, C/C++ memory safety, and framework-specific rules (Node.js, Python, Java, PHP, Ruby, .NET). Covers 100+ OWASP cheat sheets. See `refs/security.md` in global for the standalone general version |
+| CSS | Presentation-layer standards: the cascade and specificity, cascade layers (`@layer`), modern layout (Flexbox/Grid/subgrid/container queries), responsive units and logical properties, theming with custom properties and `oklch()`/`light-dark()` dark mode, the accessibility floor (`:focus-visible`, reduced motion, contrast, `forced-colors`), rendering performance (compositor animation, `content-visibility`, font loading), tooling (Stylelint/PostCSS/Sass), CSS security, and a **TailwindCSS** sub-standard (v4 `@theme`, `cn()`/`tailwind-merge`, `cva`). Co-loads with the framework shelves |
 | Dart | Language correctness, sealed/record/pattern matching, async, naming conventions, tooling (build_runner, dart format), and testing (mocktail, fake_async) |
 | Database | PostgreSQL schema design, expand-contract migrations, query optimisation, indexing, RLS, and Redis caching strategy (TTL, eviction, pipeline safety) |
 | Flutter | Widget best practices, state management (Bloc/Riverpod/GetX), navigation (GoRouter), architecture (feature-domain), networking (Dio), error handling (Either/dartz), and DI (GetIt) |

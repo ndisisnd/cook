@@ -4,6 +4,25 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-07-02 · Add css domain shelf with Tailwind sub-standard
+
+**feat(standards): add CSS presentation-layer standards with a TailwindCSS sub-standard.**
+
+- `standards/css/`: SKILL.md — deliberately lightweight and principle-driven (CSS is styles, not correctness-critical): six battle-tested principles (keep specificity low, scope by default, tokenize, lay out with Flexbox/Grid, use the platform, compose over override) + a minimal non-negotiable floor (reflow/zoom, visible focus, motion/contrast, no untrusted input) + a "judgment, not dogma" stance — with depth pushed to eight refs:
+  - `architecture.md`: `@layer` ordering, methodology selection (BEM/ITCSS/utility-first/CSS Modules), `@scope`, specificity strategy, file organization.
+  - `layout.md`: Flexbox vs Grid, subgrid, container queries, logical properties, intrinsic sizing, `aspect-ratio`, fluid `clamp()` type, breakpoints.
+  - `theming.md`: custom-property token layering, `color-scheme`/`light-dark()` dark mode, `oklch()`/`color-mix()`/relative colour, `@property`.
+  - `performance.md`: compositor-only animation, `contain`/`content-visibility`, `will-change`, critical CSS, web-font loading.
+  - `accessibility.md`: `:focus-visible`, `prefers-reduced-motion`, `forced-colors`/`prefers-contrast`, contrast, target sizes, screen-reader utilities.
+  - `tailwind.md`: **the requested Tailwind sub-standard** — v4 CSS-first `@theme` (and v3 config), utility-first discipline, `cn()`/`tailwind-merge`, `cva` variants, arbitrary values, dark mode, plugins.
+  - `tooling.md`: Stylelint, Prettier, PostCSS/Lightning CSS, `browserslist`, Sass `@use`/`@forward`, native nesting.
+  - `security.md`: CSS injection, attribute-selector data exfiltration, third-party/`@import` risk, clickjacking overlays, user-generated-style sanitization (cross-links the security shelf).
+- `scripts/cook_cache.py`: domain detection extended — `.css`/`.scss`/`.sass`/`.less`/`.pcss`/`.postcss` files hint the `css` shelf; Tailwind-in-JSX is caught by keyword routing so framework shelves still own their files and `css` co-loads only on Tailwind signals.
+- `vocab/tag-vocabulary.json`: added the `css` tag → `domain:css` with cascade/layout/theming/a11y/Tailwind/tooling aliases.
+- `ARCHITECTURE.md`, `README.md` (domain count 11→12), `FLAG-LIST.md`: updated to document the shelf and its `--css` (+ sub-ref) flags. The Tailwind CSS-authoring rules live here; framework styling integration (`next/font`, RSC, bundle) stays in `standards/nextjs/refs/styling-and-optimization.md`.
+
+---
+
 ## [5f1d9be] — 2026-07-02 · Add swift and macos domain shelves
 
 **feat(standards): add Swift 6 language standards and macOS app platform standards.**
