@@ -21,6 +21,16 @@ FILES=(
   scripts/cook_cache.py
   scripts/cook_compile.py
   scripts/check_index_routes.py
+  standards/css/SKILL.md
+  standards/css/_INDEX.md
+  standards/css/refs/accessibility.md
+  standards/css/refs/architecture.md
+  standards/css/refs/layout.md
+  standards/css/refs/performance.md
+  standards/css/refs/security.md
+  standards/css/refs/tailwind.md
+  standards/css/refs/theming.md
+  standards/css/refs/tooling.md
   standards/dart/SKILL.md
   standards/dart/_INDEX.md
   standards/dart/refs/testing.md
@@ -66,6 +76,14 @@ FILES=(
   standards/graphql/refs/security.md
   standards/graphql/refs/testing.md
   standards/graphql/refs/tooling.md
+  standards/macos/SKILL.md
+  standards/macos/_INDEX.md
+  standards/macos/refs/architecture-and-state.md
+  standards/macos/refs/distribution.md
+  standards/macos/refs/localization.md
+  standards/macos/refs/performance-accessibility.md
+  standards/macos/refs/sandbox-and-tcc.md
+  standards/macos/refs/windows-and-scenes.md
   standards/nextjs/SKILL.md
   standards/nextjs/_INDEX.md
   standards/nextjs/refs/app-router.md
@@ -104,6 +122,14 @@ FILES=(
   standards/supabase/refs/keys-and-clients.md
   standards/supabase/refs/migrations.md
   standards/supabase/refs/rls.md
+  standards/swift/SKILL.md
+  standards/swift/_INDEX.md
+  standards/swift/refs/concurrency.md
+  standards/swift/refs/interop.md
+  standards/swift/refs/memory-management.md
+  standards/swift/refs/performance.md
+  standards/swift/refs/testing.md
+  standards/swift/refs/tooling.md
   standards/typescript/SKILL.md
   standards/typescript/_INDEX.md
   standards/typescript/refs/security.md

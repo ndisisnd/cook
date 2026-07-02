@@ -4,6 +4,14 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-07-02 · Add css, swift, and macos shelves to the installer manifest
+
+**build(install): fix stale `install.sh` manifest so fresh installs fetch the newer shelves.**
+
+- `install.sh`: added the 10 `standards/css/*`, 8 `standards/swift/*`, and 8 `standards/macos/*` files to the hardcoded `FILES=()` download list, each placed in alphabetical position. Before this, `curl … | bash` installs silently omitted all three shelves (css from this session; swift/macos from the two prior commits). Verified the manifest now matches the on-disk tree with no stale or missing entries (excluding the `standards/security/` library, intentionally not bundled — `global/refs/security.md` covers the standalone case).
+
+---
+
 ## [44210b9] — 2026-07-02 · Reposition css shelf docs as lightweight and principle-driven
 
 **docs: align README and ARCHITECTURE with the css SKILL's lightweight framing.**
