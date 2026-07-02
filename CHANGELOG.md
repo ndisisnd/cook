@@ -4,6 +4,19 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [5f1d9be] — 2026-07-02 · Add swift and macos domain shelves
+
+**feat(standards): add Swift 6 language standards and macOS app platform standards.**
+
+- `standards/swift/`: SKILL.md + refs for concurrency (actors, Sendable, structured concurrency), memory-management (ARC), testing (Swift Testing), tooling (SwiftLint/swift-format/SPM), performance, and C/Obj-C interop.
+- `standards/macos/`: SKILL.md + refs for architecture-and-state (Observation, SwiftData vs Core Data), windows-and-scenes, sandbox-and-tcc (entitlements, TCC, XPC), distribution (signing, notarization, Sparkle, MAS), performance-accessibility, and localization. Scoped to macOS only.
+- `ARCHITECTURE.md` and `FLAG-LIST.md` updated to document the new shelves and their `--swift` / `--macos` (+ sub-ref) flags.
+- `README.md`: domain count updated 9→11.
+- `scripts/cook_cache.py`: domain detection extended — `.swift` files hint `swift`; `.entitlements` or `Info.plist` markers hint the `macos` platform shelf.
+- `vocab/tag-vocabulary.json`: keyword routing aliases added for both new domains.
+
+---
+
 ## [3aa98de] — 2026-05-28 · Compress OWASP security standards
 
 **refactor(standards/security): compress OWASP standards to new template format.**
