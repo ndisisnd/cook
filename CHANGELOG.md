@@ -4,7 +4,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-07-02 · Add css domain shelf with Tailwind sub-standard
+## [0de0ce7] — 2026-07-02 · Add css domain shelf with Tailwind sub-standard
 
 **feat(standards): add CSS presentation-layer standards with a TailwindCSS sub-standard.**
 
