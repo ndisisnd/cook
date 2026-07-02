@@ -4,7 +4,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-07-02 · Reposition css shelf docs as lightweight and principle-driven
+## [44210b9] — 2026-07-02 · Reposition css shelf docs as lightweight and principle-driven
 
 **docs: align README and ARCHITECTURE with the css SKILL's lightweight framing.**
 
