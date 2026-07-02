@@ -4,6 +4,15 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [pending] — 2026-07-02 · Reposition css shelf docs as lightweight and principle-driven
+
+**docs: align README and ARCHITECTURE with the css SKILL's lightweight framing.**
+
+- `README.md`: the CSS row in Available Standards now leads with the principle-driven stance (CSS is styles, not correctness-critical) — the six battle-tested principles + minimal accessibility/security floor up front, with the ref topics reframed as on-demand depth rather than a flat coverage list.
+- `ARCHITECTURE.md`: the css row in the Skills table repositioned to match.
+
+---
+
 ## [0de0ce7] — 2026-07-02 · Add css domain shelf with Tailwind sub-standard
 
 **feat(standards): add CSS presentation-layer standards with a TailwindCSS sub-standard.**
