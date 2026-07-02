@@ -86,6 +86,18 @@ Combine both to get SKILL.md + one ref: `--react --react:hooks`.
 | `--graphql:testing` | `standards/graphql/refs/testing.md` |
 | `--graphql:tooling` | `standards/graphql/refs/tooling.md` |
 
+### `--macos`
+
+| Flag | Loads |
+|---|---|
+| `--macos` | `standards/macos/SKILL.md` + all refs |
+| `--macos:architecture-and-state` | `standards/macos/refs/architecture-and-state.md` |
+| `--macos:distribution` | `standards/macos/refs/distribution.md` |
+| `--macos:localization` | `standards/macos/refs/localization.md` |
+| `--macos:performance-accessibility` | `standards/macos/refs/performance-accessibility.md` |
+| `--macos:sandbox-and-tcc` | `standards/macos/refs/sandbox-and-tcc.md` |
+| `--macos:windows-and-scenes` | `standards/macos/refs/windows-and-scenes.md` |
+
 ### `--nextjs`
 
 | Flag | Loads |
@@ -139,6 +151,18 @@ Combine both to get SKILL.md + one ref: `--react --react:hooks`.
 | `--supabase:keys-and-clients` | `standards/supabase/refs/keys-and-clients.md` |
 | `--supabase:migrations` | `standards/supabase/refs/migrations.md` |
 | `--supabase:rls` | `standards/supabase/refs/rls.md` |
+
+### `--swift`
+
+| Flag | Loads |
+|---|---|
+| `--swift` | `standards/swift/SKILL.md` + all refs |
+| `--swift:concurrency` | `standards/swift/refs/concurrency.md` |
+| `--swift:interop` | `standards/swift/refs/interop.md` |
+| `--swift:memory-management` | `standards/swift/refs/memory-management.md` |
+| `--swift:performance` | `standards/swift/refs/performance.md` |
+| `--swift:testing` | `standards/swift/refs/testing.md` |
+| `--swift:tooling` | `standards/swift/refs/tooling.md` |
 
 ### `--typescript`
 

@@ -111,6 +111,33 @@
         "dart_code_metrics", "mocktail", "mockito", "fake_async"
       ]
     },
+    "swift": {
+      "routes_to": ["domain:swift"],
+      "aliases": [
+        "Sendable", "MainActor", "actor isolation", "Swift concurrency", "async let",
+        "TaskGroup", "structured concurrency", "Task.detached", "continuation",
+        "AsyncStream", "AsyncSequence", "guard let", "force unwrap", "opaque type",
+        "existential", "typed throws", "Codable", "CodingKeys", "weak self", "unowned",
+        "retain cycle", "ARC", "SwiftLint", "SwiftFormat", "swift-format", "Swift Testing",
+        "#expect", "#require", "XCTest", "xcodebuild", "SPM", "Package.swift",
+        "Package.resolved", "os.Logger", "OSLog", "Instruments", "Unmanaged",
+        "takeRetainedValue", "CoreFoundation"
+      ]
+    },
+    "macos": {
+      "routes_to": ["domain:macos"],
+      "aliases": [
+        "AppKit", "NSWindow", "NSView", "NSPanel", "NSStatusItem", "MenuBarExtra",
+        "menu bar app", "WindowGroup", "DocumentGroup", "Settings scene", "SwiftUI",
+        "NSHostingView", "NSViewRepresentable", "App Sandbox", "entitlement",
+        "entitlements", "security-scoped bookmark", "TCC", "notarization", "notarytool",
+        "codesign", "hardened runtime", "Gatekeeper", "Developer ID", "Mac App Store",
+        "Sparkle", "appcast", "XPC", "SMAppService", "launch agent", "login item",
+        "App Nap", "FSEvents", "Liquid Glass", "SwiftData", "Core Data",
+        "NSManagedObjectContext", "GRDB", "String Catalog", "VoiceOver", "App Intents",
+        "NSUndoManager", "@Observable", "@Bindable", "NavigationStack", "TCA", "FormatStyle"
+      ]
+    },
     "data-model": {
       "routes_to": ["concern:architecture"],
       "aliases": [

@@ -18,6 +18,8 @@ SKILL.md (cook)
     ├── security/        Security standards library (core/ + owasp/); superset of global refs/security.md
     ├── flutter/         Flutter/Dart UI
     ├── dart/            Dart 3 language
+    ├── swift/           Swift 6 language
+    ├── macos/           macOS app platform (SwiftUI/AppKit) — pairs with swift
     ├── nextjs/          Next.js App Router
     ├── react/           React (non-Next)
     ├── typescript/      TypeScript 5 language
@@ -126,6 +128,8 @@ defeats the cache's core guarantee that a hit never wakes the model).
 | security | Comprehensive security standards library. Three always-apply P0 rules (no hardcoded credentials, approved crypto, certificate hygiene) plus 30+ concern-specific refs and 100+ OWASP cheat sheets. Use for security-focused work; `global/refs/security.md` is the lighter standalone alternative. |
 | flutter | Flutter/Dart UI standards covering widgets, state management, navigation, architecture, performance, and testing. |
 | dart | Dart 3.x language standards: null safety, patterns, sealed classes, records, class modifiers, naming, immutability, collections, async, and import organisation. |
+| swift | Swift 6.x language standards: optionals, error handling, strict concurrency (actors, Sendable, @MainActor), value types, protocols/generics, ARC, naming, and access control. Language-only; pairs with macos for platform concerns. |
+| macos | macOS app development standards: SwiftUI/AppKit app structure, scenes/windows, menu bar apps, App Sandbox/TCC, signing/notarization, distribution, persistence choice, localization, and HIG conventions. Scoped to macOS only (not iOS/iPadOS/watchOS/visionOS). |
 | nextjs | Next.js App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
 | react | React + TypeScript standards: hook rules, component structure, prop typing, and boundary safety for non-Next.js projects. |
 | typescript | TypeScript 5.x language standards: type safety, narrowing, generics, modules, and async code. |
@@ -198,6 +202,24 @@ defeats the cache's core guarantee that a hit never wakes the model).
 
 - `refs/testing.md`: Dart test conventions and coverage rules.
 - `refs/tooling.md`: Dart toolchain, linter, and formatter configuration.
+
+### swift
+
+- `refs/concurrency.md`: Swift 6 migration, actors and reentrancy, Sendable/sending, structured vs unstructured tasks, AsyncSequence/AsyncStream, continuation bridging, deinit isolation.
+- `refs/memory-management.md`: ARC model, weak/unowned decisions, delegate and parent/child patterns, retain-cycle sources, Memory Graph Debugger.
+- `refs/testing.md`: Swift Testing (@Test/#expect/#require, parameterized, traits), what stays XCTest, protocol-based fakes, migration mapping.
+- `refs/tooling.md`: SwiftLint + swift-format, SPM/Package.resolved hygiene, Xcode build settings, CI ordering.
+- `refs/performance.md`: Existential boxing vs generics, ARC traffic, string/collection costs, devirtualization, build-time hygiene, Instruments/OSSignposter/MetricKit.
+- `refs/interop.md`: CoreFoundation ownership (Unmanaged), pointer lifetime, Obj-C nullability, @objc/dynamic discipline, block-based KVO.
+
+### macos
+
+- `refs/architecture-and-state.md`: Observation framework internals, @State/@Bindable ownership, @Environment/@Entry DI, MVVM tradeoffs, SwiftData vs Core Data decision.
+- `refs/windows-and-scenes.md`: Scene selection, window/menu-bar management, the Settings-from-accessory recipe, commands and focus/responder bridging, document apps.
+- `refs/sandbox-and-tcc.md`: App Sandbox, entitlement reference, hardened runtime exceptions, Keychain, TCC grant flows, code-signing basics, XPC security boundaries.
+- `refs/distribution.md`: Signing certificates, notarytool/stapling, MAS constraints, Sparkle 2, universal binaries, dmg/pkg packaging.
+- `refs/performance-accessibility.md`: Instruments templates, main-thread/beachball hygiene, background work, launch-time optimization, VoiceOver, Dynamic Type/@ScaledMetric.
+- `refs/localization.md`: String Catalogs, plural rules, FormatStyle, pseudo-localization, RTL, testing with -AppleLanguages.
 
 ### nextjs
 

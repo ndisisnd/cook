@@ -189,6 +189,8 @@ def derive_domains(files, frameworks, project: Path):
                 hints.add("nodejs")
         elif suf == ".dart":
             hints.add("flutter" if has_flutter else "dart")
+        elif suf == ".swift":
+            hints.add("swift")
 
     # Supabase platform domain — a SEPARATE second pass, NOT folded into the
     # elif chain above. The chain's `.sql` arm already fires for
@@ -207,6 +209,18 @@ def derive_domains(files, frameworks, project: Path):
         hints.add("supabase")
         if "/migrations/" in low and low.endswith(".sql"):
             hints.add("database")          # belt-and-braces; the .sql arm also adds it
+
+    # macOS app platform — a SEPARATE pass, like supabase above. `.swift` alone is
+    # language-only (adds `swift` in the chain); the macOS *platform* shelf applies
+    # only when a macOS app signal is present. Gate on the exact markers the macos
+    # SKILL frontmatter triggers on — `**/*.entitlements` and `**/Info.plist` — so a
+    # pure-language Swift package never pulls the platform shelf. (The macos SKILL is
+    # self-scoped "macOS only"; this repo has no ios domain.)
+    for f in files:
+        low = f.lower()
+        if low.endswith(".entitlements") or Path(low).name == "info.plist":
+            hints.add("macos")
+            break
 
     return sorted(hints)
 
