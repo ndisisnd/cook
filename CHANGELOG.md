@@ -4,7 +4,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [pending] — 2026-07-02 · Add css, swift, and macos shelves to the installer manifest
+## [a428cd9] — 2026-07-02 · Add css, swift, and macos shelves to the installer manifest
 
 **build(install): fix stale `install.sh` manifest so fresh installs fetch the newer shelves.**
 
