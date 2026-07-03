@@ -5,7 +5,9 @@
 Cook is a keyword-driven standards orchestrator with a cache-first control flow. Cook resolves observable signals, checks a fingerprint cache before any classification, and compiles a single standards payload from the matching rule libraries under `standards/`. The compiled output is deterministic and model-free on cache hits.
 
 ```
-SKILL.md (cook)
+SKILL.md (cook)               thin entry point: identity + pointer
+├── refs/
+│   └── protocol-cook.md      full operational protocol (mode table, Steps 0–6)
 ├── vocab/
 │   ├── intent-vocabulary.json   intent label constraints
 │   └── tag-vocabulary.json      canonical tag set + routes_to mappings

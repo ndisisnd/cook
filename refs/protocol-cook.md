@@ -1,0 +1,291 @@
+# Cook Protocol
+
+The full operational protocol for the `cook` orchestrator. `SKILL.md` is the thin
+entry point; this file holds the mode branch table, Steps 0–6, and the notes.
+Follow it exactly.
+
+## Protocol
+
+> **Phase 3 status (cook-feat-robust):** Steps 1–5 are the cache-first control
+> flow from Phase 1. Step 6 is the mechanical compilation script (Phase 2) — no
+> LLM assembly, deterministic, model-free on cache hits — now followed by a
+> mechanical self-heal of the `degraded` flag (Phase 3, feature 7). A corrupt
+> cache degrades to greedy routing (Component 8) without dropping standards.
+
+**Mode branch table.** Step 0 selects which path to take before anything else:
+
+| Mode | Condition | P0 loaded? | Cache participates? | Steps |
+|---|---|---|---|---|
+| `auto` | No args | **yes** (unconditional) | yes (signals fingerprint) | 1 → 2 → 3 → 4 → 5 → 6 |
+| `explicit-flags` | Flags only, no prose | **no** | yes (signals + flags fingerprint) | 0a → 0b → 0c → 5 → 6 |
+| `explicit-prose` | Any prose (± flags) | **no** | **no** (LLM must run anyway) | 0a → 0b → 0c → 6 |
+
+### Step 0 — Parse user args
+
+Scan the invocation string **before** doing anything else:
+
+- Tokens beginning with `--` are **flags** of two forms:
+  - **Simple flags** (`--security`, `--react`, `--global`): validated against
+    the runtime flag set derived from `vocab/tag-vocabulary.json` `routes_to`.
+    Unknown flag → non-zero exit with the full valid flag list.
+  - **Sub-ref flags** (`--react:hooks`): format is `--<domain>:<ref>`. `domain`
+    must be a valid domain flag; `ref` must be a file stem under
+    `standards/<domain>/refs/`. Sub-ref flags load only the named ref — the
+    domain SKILL.md does NOT auto-load. Combine with the domain flag to load
+    both: `/cook --react --react:hooks` loads `react/SKILL.md` +
+    `react/refs/hooks.md`.
+- A bare `--` token (Unix convention) **terminates flag parsing**: every token
+  after it is treated as prose, even if it begins with `--`. Use this when
+  prose legitimately contains a dash-prefixed substring (e.g. `/cook -- fix the
+  --separator handling`).
+- All remaining text (after flags and the optional `--` terminator) is the
+  **prose** argument (whitespace-trimmed). Flag order is free: `/cook fix bug
+  --react` parses identically to `/cook --react fix bug`.
+- **`flags == [] && prose == ""`** → auto mode: fall through to Step 1. No
+  behavioural change from the pre-feature protocol.
+- **Any non-empty flags or prose** → explicit mode: proceed to Steps 0a–0c.
+
+#### Step 0a — Resolver call with args
+
+Call the resolver with the parsed args attached:
+
+```
+python3 scripts/cook_cache.py lookup --project <dir> \
+  [--flag <name> ...] [--prose <text>]
+```
+
+The resolver gathers raw signals (kept on the entry for diagnostics), validates
+flags, determines the mode, and — on the `explicit-prose` path — returns
+`status: "skip"` without consulting the cache. On `explicit-flags` it folds the
+flags into the fingerprint basis and performs a normal hit/miss lookup.
+
+#### Step 0b — Resolve refs from args (no P0, no auto-match)
+
+**Never load `standards/global/SKILL.md`** automatically in explicit mode — P0
+is opt-in to the default protocol only. The exception is `--global` (see below).
+
+- `--global` → `standards/global/SKILL.md` + every `standards/global/refs/*.md`
+  (P0 universal rules + all 8 concern refs — the complete global shelf). This is
+  the only way to explicitly opt back into P0 while still bypassing auto-detection.
+- Each **concern flag** (`--security`, `--auth`, `--performance`,
+  `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd`)
+  → load `standards/global/refs/<concern>.md` only (no P0 SKILL.md).
+- Each **domain flag** (`--react`, `--nextjs`, `--flutter`, `--dart`,
+  `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql`) →
+  `standards/<domain>/SKILL.md` always loads, plus:
+  - If prose is **empty**: every `standards/<domain>/refs/*.md` (full shelf).
+  - If prose is **non-empty**: use the domain's `_INDEX.md` keyword table to
+    pick which refs match the prose. If the LLM picks zero refs, the domain
+    `SKILL.md` still loads — refs are additive; the flag guarantees the shelf
+    entry point.
+- Each **sub-ref flag** (`--react:hooks`, `--react:state-management`) →
+  `standards/<domain>/refs/<ref>.md` only. The domain SKILL.md does NOT load.
+  Combine with the domain flag to load both: `--react --react:hooks` gives
+  `react/SKILL.md` + `react/refs/hooks.md`.
+- **Prose without any flag** → LLM scans every `_INDEX.md` (per-domain +
+  `standards/global/_INDEX.md`) and picks matching refs across the whole
+  library. The LLM may load any `SKILL.md` + `refs/*.md` it surfaces, but
+  never invents paths.
+- **Explicit args beat fallback.** If `gather()` would normally set
+  `fallback: true` (greenfield, no git, no manifests), explicit mode suppresses
+  it — the user's flags/prose are the load surface regardless. Signals are
+  still recorded on the entry for diagnostics.
+
+#### Step 0c — Skip to Step 5 (explicit-flags) or Step 6 (explicit-prose)
+
+On `explicit-flags`: proceed to Step 5 (cache write) then Step 6 (compile).
+On `explicit-prose`: skip Step 5 entirely (no cache write; prose is uncacheable)
+and go directly to Step 6.
+
+The existing Steps 1c (classify) / 3 / 4 are skipped wholesale on both explicit
+paths.
+
+### Step 1 — Build the normalised blob (cook-owned, cache-first)
+
+Cook does **not** wait for a caller-written summary. It grounds itself in real
+signals, then checks the cache **before** any classification — so a cache hit
+never wakes the model.
+
+**1a. Resolve.** Run the resolver first:
+
+```
+python3 scripts/cook_cache.py lookup [--path <file> ...] [--project <dir>]
+```
+
+It runs the file-derivation cascade (T1 explicit paths → T2 `git` → T4 manifest →
+T5 prose-only) and the extension-disambiguation table for you, builds a
+fingerprint from **raw observable signals only** (no intent label), and checks
+the cache. It prints a JSON blob: `status` (`hit` | `miss` | `stale` |
+`fallback`), `fingerprint`, `signals` (`files`, `extensions`, `frameworks`,
+`domain_hints`, `source`), `confidence`, `fallback`.
+
+If the script exits non-zero or its stdout cannot be parsed as JSON, treat this
+as a `miss` with `confidence: low` and empty signals, and continue to Step 1c.
+Do not attempt to read a fingerprint or signals from a failed run.
+
+**1b. Branch on status:**
+
+- **`hit`** — the routing is cached and fresh (vocab + index checksums still
+  match). Use `routing.skills` directly. **Do not classify, do not re-match.**
+  Skip to Step 2 (P0 always loads), then Step 6 (compile). This is the no-LLM
+  fast path.
+- **`miss` | `stale`** — no usable cache. Continue to 1c.
+- **`fallback`** — the cache file is present but **corrupt** (`cache_corrupt:
+  true`); the resolver could not trust it (Component 8). The mechanically
+  gathered `signals` are still valid, so degrade to **greedy routing**: skip
+  classification and the cache write entirely, load Step 2 (P0) plus — broadly —
+  every domain in `signals.domain_hints` and all 8 concern refs (the full
+  concern set enumerated in Step 3), then compile (Step 6). Standards still
+  apply; only the efficiency gain is lost. Do **not** call `write` or `heal`
+  while the cache is corrupt.
+
+**1c. Classify (miss path only).** Read `vocab/intent-vocabulary.json` and
+`vocab/tag-vocabulary.json`. Pick exactly ONE intent label from
+`vocab/intent-vocabulary.json`. Then canonicalize: map each raw signal
+(`signals` + any prose terms) onto a tag in `vocab/tag-vocabulary.json`. Output
+is **constrained to the vocabulary** — never invent a tag. Drop and note any
+unmappable signal. The resulting `canonical_tags` are the only thing Steps 3–4
+read.
+
+**1d. Sufficiency gate (never empty-handed).**
+
+- ≥1 `domain:*` tag resolved → emit the blob with the resolver's `confidence`.
+- Weak but files were reachable → trust `signals.domain_hints` from the cascade.
+- Still weak, or resolver returned `fallback: true` → set `confidence: low`,
+  `fallback: true`. Steps 3–4 then load broad. Step 2 (P0) loads regardless.
+
+### Step 2 — Load global P0 (always, unconditional)
+
+Load `standards/global/SKILL.md`. Its P0 universal rules apply to every code task
+regardless of stack, confidence, or cache state. This floor is never skipped —
+not on `fallback: true`, not on a weak classification.
+
+Step 2 is part of the default protocol only. In explicit mode (Step 0), P0 is
+intentionally skipped — the user has taken manual control of the surface.
+
+### Step 3 — Match global concerns (via canonical_tags)
+
+For each `canonical_tag` whose `routes_to` is a `concern:*` target, load the
+matching concern ref under `standards/global/refs/`. The full concern set is
+exactly these 8 refs: `architecture.md`, `api-design.md`, `error-handling.md`,
+`security.md`, `auth.md`, `performance.md`, `debug.md`, `cicd.md`. The
+tag-vocabulary `routes_to` is the matching surface; the
+`standards/global/_INDEX.md` Concern Match table remains the within-file route
+target. On `fallback: true`, load all 8 refs (the full concern set enumerated
+above) — not a partial subset.
+
+Supabase key-boundary work stacks with security: when `domain:supabase` is
+matched from secret-key / `service_role` / client-public-env / key-leak language,
+also load `standards/global/refs/security.md`. API-key service-to-service
+language may also load `standards/global/refs/auth.md`; the Supabase refs own the
+platform-specific key boundary, while auth/security own the generic trust-boundary
+rules.
+
+### Step 4 — Match domains (via canonical_tags)
+
+For each `canonical_tag` whose `routes_to` is a `domain:*` target, load that
+domain's `SKILL.md` plus any matched `refs/*.md`. **Multiple domains may
+match** — a Next.js UI + Postgres schema resolves both `domain:nextjs` and
+`domain:database`. Use the domain's `_INDEX.md` only to pick *which* refs within
+that domain to load. For `typescript`, load `standards/typescript/SKILL.md`
+directly. On `fallback: true`, load the broad domain set indicated by
+`signals.domain_hints`.
+
+### Step 5 — Write the cache entry (auto and explicit-flags miss path only)
+
+After matching, persist the decision so the next identical surface is a hit.
+This step runs on `auto` and `explicit-flags` modes only. It is **never** called
+on the `explicit-prose` path — prose is intentionally uncacheable because the
+LLM's ref selection cannot be reproduced from a deterministic key.
+
+```
+python3 scripts/cook_cache.py write --fingerprint <fp> --intent <label> \
+  --skills <comma-separated skill paths> --tags <comma-separated canonical_tags> \
+  --confidence <high|medium|low> [--fallback] \
+  --index <comma-separated _INDEX.md paths used>
+```
+
+The write stamps the entry with a `tag-vocabulary.json` checksum and per-index
+checksums (Feature 4) and writes atomically (tmp + rename). Skip this step on a
+cache hit (the entry already exists) and on the `fallback` path (corrupt cache).
+
+Write the **full** `--skills` list from Steps 2–4 — every matched path, even one
+whose file might fail to read. A read failure is not a routing failure: the
+routing was correct, so the entry must record it in full. The `degraded` flag is
+*not* set here (the read outcome is unknown until the compiler runs) — Step 6
+reconciles it after compilation.
+
+### Step 6 — Compile and return
+
+Invoke the compilation script with the path list assembled by Steps 2–4 (or
+from `routing.skills` on a cache hit). The script is a single Bash call — no
+LLM involvement:
+
+```
+python3 scripts/cook_compile.py \
+  --skills <comma-separated paths relative to cook root>
+```
+
+The script deduplicates paths, buckets them (Universal → Domain → Concern),
+reads each file, strips YAML frontmatter, and concatenates with terse section
+headers (`## Universal`, `## React`, `## Security`, etc.). Output is JSON:
+
+```json
+{
+  "content": "<assembled markdown>",
+  "degraded": [],
+  "metadata": {"resolutions_applied": [], "dropped_for_budget": []}
+}
+```
+
+**Reconcile the `degraded` flag (feature 7 self-heal).** Right after compiling,
+stamp the compiler's `degraded` list onto the cache entry — unless this is the
+`fallback` (corrupt-cache) path, where there is no entry to heal:
+
+```
+python3 scripts/cook_cache.py heal --fingerprint <fp> --degraded <compiler.degraded>
+```
+
+This single mechanical call covers both directions and adds **no** LLM step:
+
+- **Miss path:** if a matched file failed to read, `heal` stamps it onto the
+  freshly written entry (the entry keeps the full routing; the flag names what
+  failed *this* run).
+- **Cache hit:** the compiler re-reads every `routing.skills` path, so its
+  `degraded` list is current. A previously flagged file that now reads clears
+  the flag; a newly missing file sets it. `heal` rewrites the entry only when
+  the set changed (else `status: unchanged`), so the hit path stays cheap.
+
+Then return the JSON envelope to the invoking agent. A non-empty `degraded` is a
+**partial load**: the surviving sections are still returned, P0 always loaded, and
+the next invocation re-attempts the flagged files automatically. The CI / pre-commit
+validator (`scripts/check_index_routes.py`) is the upstream prevention pass — it
+fails the build if any `_INDEX.md` route target points at a missing file.
+
+**Path list construction:**
+- **Cache hit:** use `routing.skills` from the resolver output directly.
+- **Miss path:** collect the paths loaded in Steps 2–4:
+  - Step 2: `standards/global/SKILL.md`
+  - Step 3: each matched `standards/global/refs/<name>.md`
+  - Step 4: each matched domain `SKILL.md` + matched `refs/*.md`
+- **Explicit path (Step 0b):** no auto P0; paths come from args alone:
+  - `--global` → `standards/global/SKILL.md` + every `standards/global/refs/*.md`
+  - Each concern flag → `standards/global/refs/<concern>.md` (no SKILL.md)
+  - Each domain flag (no prose) → `standards/<domain>/SKILL.md` + every
+    `standards/<domain>/refs/*.md`
+  - Each domain flag (with prose) → `standards/<domain>/SKILL.md` + the refs
+    the LLM picks from `<domain>/_INDEX.md` (domain SKILL.md always loads)
+  - Each sub-ref flag (`--react:hooks`) → `standards/<domain>/refs/<ref>.md`
+    only (no domain SKILL.md unless the bare domain flag is also present)
+  - Prose only → any `SKILL.md` + `refs/*.md` the LLM surfaces from scanning
+    all `_INDEX.md` files; the LLM never invents paths
+- **Fallback path (corrupt cache):** Step 2 P0 + every `signals.domain_hints`
+  domain `SKILL.md` + all 8 concern refs (the full concern set enumerated in
+  Step 3) — loaded broad, compiled, returned; no `write`/`heal`.
+
+## Notes
+
+- Cook owns detection and composition only. The rules live in `global/` (universal + concern refs) and the domain folders.
+- Global is one rule library among peers, not a privileged baseline that decides layers.
+- The cache fingerprint is built from raw observable signals only; the intent label is stored *in* the entry, never in the key — this is what lets the cache be checked before classification.
+- When in doubt about the change surface, trust `git`-derived `signals.files` before widening the match.
