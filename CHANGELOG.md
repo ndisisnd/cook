@@ -4,6 +4,18 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [f782de0] — 2026-07-03 · Extract cook protocol into refs/protocol-cook.md
+
+**refactor(cook): move the operational protocol out of SKILL.md into a ref, leaving a thin entry point.**
+
+- `SKILL.md`: slimmed from 342 to 57 lines. Keeps the YAML frontmatter (`name`, `description`, `metadata.triggers`) that drives skill discovery, plus the `# Cook Orchestrator` identity paragraph, and adds a mandatory pointer instructing the agent to read `refs/protocol-cook.md` and follow it exactly before acting. The protocol is not optional, so the pointer is imperative rather than a "see also".
+- `refs/protocol-cook.md`: new file holding the full protocol moved verbatim — the mode branch table, Steps 0–6, and the Notes section. Prefixed with a `# Cook Protocol` heading so it reads standalone.
+- `ARCHITECTURE.md`: the file tree under Overview now shows `SKILL.md` as the thin entry point with `refs/protocol-cook.md` as the protocol home.
+- Net token cost is neutral on the execution path (the protocol is read on every invocation regardless); the win is a clean SKILL.md and consistency with the `standards/<domain>/` SKILL.md-plus-refs split. Nothing parses the SKILL.md body (`check_index_routes.py` only walks `standards/*/_INDEX.md`; the cache/compile scripts never read it), so the move is behaviour-preserving.
+- `install.sh`: the manifest line adding `refs/protocol-cook.md` is left uncommitted alongside the in-flight `standards/security/` shelf edit, to be committed with that work.
+
+---
+
 ## [a428cd9] — 2026-07-02 · Add css, swift, and macos shelves to the installer manifest
 
 **build(install): fix stale `install.sh` manifest so fresh installs fetch the newer shelves.**
