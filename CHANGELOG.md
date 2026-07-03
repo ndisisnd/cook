@@ -4,6 +4,15 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-03 · Add dedication footer to README
+
+**docs(readme): append "Dedicated to JC 💕" footer.**
+
+- `README.md`: added a dedication footer at the end of the file.
+- `.claude/kermit/pref.json`: synced `last_logged_commit` tracking sha.
+
+---
+
 ## [Unreleased] — 2026-07-03 · Install refs/protocol-cook.md, drop stray README FAQ heading
 
 **build(install): install refs/protocol-cook.md, drop stray README FAQ heading.**
