@@ -16,6 +16,7 @@ RESET='\033[0m'
 
 FILES=(
   SKILL.md
+  refs/protocol-cook.md
   vocab/intent-vocabulary.json
   vocab/tag-vocabulary.json
   scripts/cook_cache.py
@@ -199,6 +200,8 @@ main() {
   echo ""
   echo -e "${BOLD}Skill path${RESET}"
   echo "  $DEST/SKILL.md"
+  echo ""
+  echo -e "${CYAN}Dedicated to JC ♥${RESET}"
   echo ""
 }
 

@@ -4,6 +4,16 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-03 · Install refs/protocol-cook.md, drop stray README FAQ heading
+
+**build(install): install refs/protocol-cook.md, drop stray README FAQ heading.**
+
+- `install.sh`: added `refs/protocol-cook.md` to `FILES` — closes the gap left by the `f782de0` protocol-extraction commit, which moved the file into the repo but never updated the installer manifest. Also prints `Dedicated to JC ♥` as the final line of installer output.
+- `.gitignore`: added `standards/security/` so the shelf can't be swept into a future manifest-generation pass — the security library stays deliberately excluded from `install.sh` (see `a428cd9`); this only guards against future accidental re-inclusion.
+- `README.md`: removed a dangling empty `## FAQ` heading with no body content underneath it.
+
+---
+
 ## [f782de0] — 2026-07-03 · Extract cook protocol into refs/protocol-cook.md
 
 **refactor(cook): move the operational protocol out of SKILL.md into a ref, leaving a thin entry point.**
