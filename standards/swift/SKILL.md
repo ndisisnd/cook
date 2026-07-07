@@ -29,7 +29,7 @@ metadata:
 
 # Swift Standards
 
-Default load: this file only. Pull `refs/concurrency.md`, `refs/memory-management.md`, `refs/testing.md`, `refs/tooling.md`, `refs/performance.md`, or `refs/interop.md` only when the task needs that depth.
+Default load: this file only; pull refs (see References) on demand.
 
 Swift owns language-level correctness only: optionals, errors, concurrency semantics, value/reference types, protocols and generics, ARC, naming, access control. Platform and app-shape concerns — scenes/windows, SwiftUI architecture, sandboxing, distribution, persistence, localization — live in `standards/macos/`. Universal rules stay in `standards/global/`.
 
@@ -37,10 +37,9 @@ Swift owns language-level correctness only: optionals, errors, concurrency seman
 
 ## Priority: P0 — Language Correctness
 
-### Language Mode & Isolation Defaults
-- New app/executable targets: Swift 6 language mode + Approachable Concurrency + default `MainActor` isolation. The latter two are current Xcode template defaults; the template leaves the language mode at Swift 5 — set `SWIFT_VERSION` to 6 explicitly. Single-threaded by default; move work off-main explicitly.
-- Library/package targets: Swift 6 mode with `nonisolated` default isolation — never MainActor-bind a networking or domain package.
-- Migrate existing modules one at a time (strict checking minimal → targeted → complete), never one big flip. `@preconcurrency import` is a documented temporary bridge — it silences, it doesn't fix. Detail → `refs/concurrency.md`.
+### Language Mode, Isolation & Concurrency
+
+P0 rules → `refs/concurrency.md` — load for any concurrency, isolation, or language-mode task.
 
 ### Availability
 - Gate every API newer than the deployment target with `if #available` / `@available` and a real fallback path. Annotate declarations rather than sprinkling runtime checks. Never raise the deployment target to dodge a check.
@@ -62,26 +61,11 @@ Swift owns language-level correctness only: optionals, errors, concurrency seman
 ### Value Types First
 - Default to `struct`/`enum`. Use `class` only for identity (`===`), shared mutable state, deinit-based resource lifetime, or framework/Obj-C interop.
 - Mark classes `final` unless subclassing is a designed contract. Prefer `let` over `var` everywhere.
-- A struct holding a class reference does not have value semantics — enforce COW or don't pretend.
-- Stdlib collections (`Array`, `Dictionary`, `Set`, `String`) are copy-on-write — assignment is a cheap pointer copy, duplicated only on the next mutation of a shared buffer. Don't hand-roll defensive copies of them "to be safe"; implement custom COW (private reference backing + `isKnownUniquelyReferenced`) only for a large custom buffer where copy cost is measured to matter.
-
-### Concurrency
-- Prefer structured concurrency: `async let` for a fixed few parallel ops, `TaskGroup` for dynamic fan-out. Unstructured `Task {}` needs an owner and a cancellation story; `Task.detached` almost never (only to escape actor context, priority, and task-locals at once).
-- Mark CPU-heavy functions `@concurrent` to hop off the caller's actor explicitly; under Approachable Concurrency, `nonisolated async` inherits the caller's actor.
-- Cancellation is cooperative: long loops call `try Task.checkCancellation()`; in SwiftUI prefer `.task {}` (auto-cancelled) over stored handles.
-- Don't reach for `actor` by default — most state belongs on `@MainActor` or in value types. But when state is genuinely shared and mutated across concurrent, suspending contexts, an `actor` is the standard tool, not a failure. `Mutex` (Synchronization, macOS 15+) or `OSAllocatedUnfairLock` (macOS 13+) for small synchronous critical sections — pick per deployment target.
-- Actor reentrancy: state can change across every `await` — re-validate invariants after suspension; never split check-and-mutate across a suspension point.
-- Make types `Sendable` by design — internal value types of Sendable properties get it implicitly, but `public` library types must declare it (implicit conformance stops at module boundaries except `@frozen`). `@unchecked Sendable` and `nonisolated(unsafe)` require an internal synchronization mechanism plus a justification comment.
-- Continuations resume exactly once on every path; use `withCheckedContinuation` variants; never store a continuation beyond its scope. Detail → `refs/concurrency.md`.
-- No GCD as concurrency architecture: no `DispatchQueue.main.async` in async contexts (use actor isolation / `MainActor.run`), no semaphores bridging sync→async, no queues guarding state. Exception: next-runloop-tick deferral in synchronous AppKit paths remains legitimate.
-- New code uses AsyncSequence/AsyncStream + Observation, not Combine (maintenance-mode, predates Sendable). Bridge existing pipelines with `.values`; don't mix paradigms in one flow.
-- `deinit` is nonisolated — never touch actor-isolated state there; use `isolated deinit` where available, or move cleanup to an explicit `invalidate()`/task cancellation called before release.
+- A struct holding a class reference does not have value semantics — enforce COW or don't pretend. COW mechanics and custom-COW rules → `refs/performance.md`.
 
 ### Memory Management
-- Delegates are `weak`, and delegate protocols are `AnyObject`-constrained.
-- `unowned` only when the referenced object provably outlives the reference; when in doubt, `weak`. Accessing a deallocated `unowned` reference traps deterministically — `unowned(unsafe)` is genuine UB, never reach for it.
-- `[weak self]` where a real cycle or unwanted lifetime extension exists — not reflexively. Needed: closures stored on `self` (handlers, observers, subscriptions), indefinite `Task` bodies (`for await` loops), task handles stored on `self`. Not needed: non-escaping closures; finite `Task {}` bodies where extending `self` until completion is correct. Prefer cancelling tasks as the primary lifetime tool.
-- Invalidate `Timer`s (they retain targets); remove block-based NotificationCenter observers explicitly. Detail → `refs/memory-management.md`.
+
+P0 rules → `refs/memory-management.md` — load when writing delegates, stored closures, timers, or long-lived tasks.
 
 ### Protocols & Generics
 - Prefer, in order: concrete types → `some` (opaque/generics) → `any` (existentials). Never `any` where `some` compiles.
@@ -104,20 +88,7 @@ Swift owns language-level correctness only: optionals, errors, concurrency seman
 
 ## Priority: P1 — Style & Conventions
 
-### Naming (Swift API Design Guidelines)
-- Clarity at the point of use; omit needless words; name by role, not type.
-- Side-effect-free reads as noun (`sorted()`, `distance(to:)`); side-effecting reads as verb (`sort()`, `append(_:)`). Booleans read as assertions (`isEmpty`, `canSend`).
-- Protocols: nouns for is-a (`Collection`); `-able`/`-ible`/`-ing` for capability (`Equatable`).
-- First argument label: omit when the call reads as a grammatical phrase (`addSubview(x)`) or for value-preserving conversions (`Int64(int32)`); include prepositions (`move(from:to:)`).
-- `UpperCamelCase` types/protocols; `lowerCamelCase` everything else; acronyms uniformly cased (`urlString`, `userID`).
-
-### Structure
-- One protocol conformance per `extension`, marked with `// MARK: -`. Keep core stored properties and initializers in the primary declaration.
-- Trailing-closure syntax for the final closure; implicit `return` in single-expression bodies.
-- `map`/`compactMap`/`filter` when they read clearly; loops when they don't (or when the body needs `break`/`continue`/`return`). `first(where:)` over `filter {}.first`; `contains(where:)` over `filter {}.count > 0`.
-- Prefer interpolation over concatenation; raw strings (`#"..."#`) to avoid escaping; multiline literals (`"""`) for embedded text.
-- Property wrappers only for reusable cross-cutting storage behavior — not as a substitute for a plain computed property. Author a custom `@resultBuilder` only for a genuine declarative DSL, not to avoid an array literal.
-- Omit `self.` except where required (or where the team formatter enforces otherwise).
+P1 rules → `refs/language-conventions.md` — load when authoring APIs or reviewing naming/structure/style.
 
 ---
 
@@ -144,11 +115,12 @@ Swift owns language-level correctness only: optionals, errors, concurrency seman
 
 ## References
 
-Load only what the current task requires:
+Load only what the task requires:
 
-- [concurrency](refs/concurrency.md) — Swift 6 migration mechanics, actors and reentrancy, `Sendable`/`sending`, structured vs unstructured tasks, `AsyncSequence`/`AsyncStream`, continuation/callback bridging; keywords: Sendable, data race, strict concurrency, continuation, AsyncStream, actor, isolation
-- [memory-management](refs/memory-management.md) — ARC model, `weak`/`unowned` decision-making, delegate and parent/child patterns, retain-cycle sources (timers, `NotificationCenter`, stored closures), diagnosing with the Memory Graph Debugger; keywords: ARC, retain cycle, weak, unowned, deinit, Timer, leak
-- [testing](refs/testing.md) — Swift Testing (`@Test`/`#expect`/`#require`, parameterized tests, traits), what stays XCTest, protocol-based fakes, async test patterns, migration mapping; files under `**/Tests/**`, `**/*Tests.swift`; keywords: Swift Testing, #expect, #require, XCTest, parameterized, coverage
-- [tooling](refs/tooling.md) — SwiftLint + swift-format setup and CI enforcement, SPM/`Package.resolved` hygiene, Xcode build settings, CI ordering; files matching `Package.swift`, `Package.resolved`, `.swiftlint.yml`, `.swift-format`, `.github/workflows/**`; keywords: SwiftLint, swift-format, SPM, Package.resolved, xcodebuild, build settings
-- [performance](refs/performance.md) — existential boxing vs generics, ARC traffic, string/collection processing costs, devirtualization, WMO, type-checker build-time hygiene, Instruments/OSSignposter/MetricKit workflow; keywords: performance, Instruments, existential, slow build, type-checker, OSSignposter, MetricKit
-- [interop](refs/interop.md) — C/Obj-C/CoreFoundation: CF ownership (`takeRetainedValue` vs `takeUnretainedValue`), pointer lifetime rules, nullability audits, `@objc`/`dynamic` discipline, block-based KVO; keywords: CoreFoundation, Unmanaged, takeRetainedValue, UnsafePointer, bridging header, @objc, KVO
+- [concurrency](refs/concurrency.md) — P0 concurrency + isolation rules, Swift 6 migration, actors/reentrancy, Sendable, tasks, AsyncStream, continuations
+- [memory-management](refs/memory-management.md) — P0 ARC rules, weak/unowned, retain-cycle sources, leak diagnosis
+- [language-conventions](refs/language-conventions.md) — P1 naming (API Design Guidelines) and structure/style conventions
+- [testing](refs/testing.md) — Swift Testing, XCTest boundaries, fakes, async test patterns
+- [tooling](refs/tooling.md) — SwiftLint, swift-format, SPM hygiene, build settings, CI ordering
+- [performance](refs/performance.md) — existential boxing, ARC traffic, COW, collection costs, Instruments
+- [interop](refs/interop.md) — C/Obj-C/CF ownership, pointer lifetimes, `@objc` discipline, KVO

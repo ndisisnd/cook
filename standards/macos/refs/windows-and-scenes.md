@@ -1,5 +1,26 @@
 # macOS Windows, Scenes, Commands & Documents
 
+## Core Rules
+
+### Windows & Scenes
+- Pick the right scene: `WindowGroup` (multi-instance), `Window` (single-instance), `Settings` (auto-wires ⌘, and the "Settings…" item — don't hand-build one), `MenuBarExtra` (status bar), `DocumentGroup` (document apps — read the Document-Based Apps section below before using).
+- Open/close via `openWindow`/`dismissWindow` environment actions; data-driven windows via `WindowGroup(for:)`. Use macOS 15+ scene modifiers (`defaultLaunchBehavior`, `restorationBehavior`, `windowResizability`) where the floor allows — gate with `#available` on a 14 floor. Rely on automatic window restoration; disable per-scene for About-style windows.
+- Menu bar apps: `MenuBarExtra` (`.window` style for popover content); `NSStatusItem` + `NSPanel` only for non-activating panels or custom positioning; retain the status item strongly. Opening Settings from an `.accessory` app needs the activation-policy recipe → Menu Bar Apps section below.
+- Own programmatic windows with an `NSWindowController`; don't toggle `isReleasedWhenClosed` to paper over close crashes.
+
+### Menus & Keyboard
+- Full menu bar (App/File/Edit/View/Window/Help); every feature reachable from it. Build with the `Commands` API (`CommandGroup`/`CommandMenu`); never mutate `NSMenu` directly unless bridging legacy AppKit. Feed focused-window context via `@FocusedValue`/`.focusedSceneValue`.
+- Primary actions get keyboard shortcuts; respect standard ones (⌘, ⌘W ⌘Q ⌘N). Attach `.keyboardShortcut` to the same action used in-window; don't duplicate. Label the item "Settings…", not "Preferences…". Every custom control needs a full keyboard path.
+
+### Documents
+- `DocumentGroup` + `FileDocument` for value-type documents (auto-wires Open/Save/Recents). `ReferenceFileDocument` only for reference-semantic models — load-test large-document save latency (saves have been observed on the main thread). Drop to `NSDocument` for custom undo/autosave/versioning or complex file packages. Detail → Document-Based Apps section below.
+
+## App Lifecycle & Delegate Adaptor
+
+- `@NSApplicationDelegateAdaptor` only for what SwiftUI can't do: `applicationDidFinishLaunching` pre-UI setup, `applicationShouldTerminateAfterLastWindowClosed`, Dock-icon reopen, Apple events beyond simple URL opens, `NSStatusItem` setup. Keep the delegate a thin bridge, not a parallel architecture.
+- Use `.onOpenURL { }` for custom URL schemes; drop to raw `NSAppleEventManager` only for Apple Event classes beyond a simple GET-URL.
+- **Known gap**: `applicationShouldHandleReopen(_:hasVisibleWindows:)` never fires in a pure SwiftUI-lifecycle app, even with the adaptor. If Dock-click-to-reopen must show a window, use `applicationWillBecomeActive(_:)` — but guard on a visible-window check, since it fires on *every* activation (Cmd-Tab, alert dismissal), not just Dock reopen.
+
 ## Scene Selection
 
 | Scene | Use for |

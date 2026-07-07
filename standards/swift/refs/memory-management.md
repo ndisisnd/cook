@@ -1,5 +1,11 @@
 # Swift Memory Management (ARC)
 
+## Core Rules (P0)
+- Delegates are `weak`, and delegate protocols are `AnyObject`-constrained.
+- `unowned` only when the referenced object provably outlives the reference; when in doubt, `weak`. Accessing a deallocated `unowned` reference traps deterministically — `unowned(unsafe)` is genuine UB, never reach for it.
+- `[weak self]` where a real cycle or unwanted lifetime extension exists — not reflexively. Needed: closures stored on `self` (handlers, observers, subscriptions), indefinite `Task` bodies (`for await` loops), task handles stored on `self`. Not needed: non-escaping closures; finite `Task {}` bodies where extending `self` until completion is correct. Prefer cancelling tasks as the primary lifetime tool.
+- Invalidate `Timer`s (they retain targets); remove block-based NotificationCenter observers explicitly.
+
 ## How ARC Works
 - Every class instance carries a reference count; each strong reference increments it, and each strong reference going out of scope decrements it. At zero, `deinit` runs and the instance is deallocated.
 - Structs, enums, and other value types are not reference-counted — they're copied (or, for stdlib containers, copy-on-write). ARC only applies to `class` instances (and boxed existentials/closures that capture class references).

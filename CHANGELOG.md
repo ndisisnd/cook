@@ -4,6 +4,24 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-07 · macOS, Swift, and GraphQL entry files fit the always-loaded budget
+
+**refactor(standards): slim macos, swift, graphql SKILL.md into refs.**
+
+A domain's `SKILL.md` loads unconditionally on any domain match, so a fat entry file defeats selective ref loading. All three now sit at ≤8.2KB with every rule preserved verbatim (rule counts audited before/after: macos 245=245, swift 286=286, graphql tables 19=19).
+
+- `standards/macos/SKILL.md`: 17.6KB → 8.2KB. P1 HIG sections and P0 deep detail moved into topical refs; one-line rules + pointers remain.
+- `standards/macos/refs/`: `hig-conventions.md` new (Liquid Glass, undo/pasteboard/App Intents); `windows-and-scenes.md`, `performance-accessibility.md`, `architecture-and-state.md`, `sandbox-and-tcc.md`, `distribution.md` received the moved detail.
+- `standards/macos/_INDEX.md`: new hig-conventions row; keywords extended on three existing rows.
+- `standards/swift/SKILL.md`: 14.9KB → 8.2KB. Concurrency/memory/performance detail merged into their existing refs.
+- `standards/swift/refs/`: `language-conventions.md` new (P1 naming + structure); `concurrency.md`, `memory-management.md`, `performance.md` received the moved P0 detail.
+- `standards/swift/_INDEX.md`: new language-conventions row; concurrency and memory keywords extended.
+- `standards/graphql/SKILL.md`: 13.6KB → 8.2KB. P1 operations/conventions and long P0 examples moved out.
+- `standards/graphql/refs/`: `conventions.md` new (naming table, queries, subscriptions, interfaces, descriptions, resolver thinness); `schema-design.md` received the nullability/custom-scalar/mutation-payload/Node examples.
+- `standards/graphql/_INDEX.md`: new conventions row; schema-design keywords extended.
+
+---
+
 ## [Unreleased] — 2026-07-07 · Routing indexes carry routing only — migration history moved to archive
 
 **refactor(standards): move index provenance tables to archive.**

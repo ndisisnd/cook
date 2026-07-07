@@ -9,6 +9,11 @@
 5. **Staple the ticket** to whatever the user actually downloads (`.dmg`/`.pkg`), and optionally the inner `.app`.
 6. **Package**: `.dmg` for a simple drag-to-Applications app, `.pkg` when you need install scripts or system-level install locations.
 
+## Release & CI Hygiene
+
+- Sign inside-out with `--options runtime --timestamp`; strip `get-task-allow` from release builds; staple the ticket (apps in zips: staple the `.app`, re-zip with `ditto`).
+- Signing assets never live in the repo; CI signs with an App Store Connect API key — never Apple ID credentials.
+
 ## Code Signing Certificates
 
 | Certificate | Use |
@@ -72,7 +77,7 @@ Sparkle 2.x is the current, actively maintained major version.
 
 - Build with **Architectures = `$(ARCHS_STANDARD)`** (arm64 + x86_64) and **Build Active Architecture Only = No** for Release/Archive (Debug typically stays "Yes"). Xcode compiles per-architecture and merges with `lipo`.
 - Verify actual shipped architectures with `lipo -info MyApp` / `file MyApp` — don't trust the build setting; some Xcode 16.x point releases had regressions ignoring `ARCHS`/`ONLY_ACTIVE_ARCH`.
-- **Apple Silicon transition** (per Apple's stated roadmap through 2025–2026): macOS 26 "Tahoe" is the last macOS that installs on Intel Macs; the following major release is Apple-Silicon-only but still ships Rosetta 2; the release after that sharply curtails Rosetta. Treat "Apple Silicon only" as reasonable once your minimum deployment target and user base are confirmed Apple Silicon; ship universal otherwise. Don't assume a security-update tail for Intel beyond what Apple has stated.
+- **Apple Silicon transition** (per Apple's stated roadmap through 2025–2026): macOS 26 "Tahoe" is the last macOS that installs on Intel Macs; the following major release is Apple-Silicon-only but still ships Rosetta 2; the release after that sharply curtails Rosetta. Going arm64-only is a deliberate deployment-target decision, not a build-setting default — treat "Apple Silicon only" as reasonable once your minimum deployment target and user base are confirmed Apple Silicon; ship universal otherwise. Don't assume a security-update tail for Intel beyond what Apple has stated.
 
 ## .dmg vs .pkg Packaging
 

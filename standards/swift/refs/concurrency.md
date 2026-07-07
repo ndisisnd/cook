@@ -1,5 +1,24 @@
 # Swift Concurrency
 
+## Core Rules (P0)
+
+### Language Mode & Isolation Defaults
+- New app/executable targets: Swift 6 language mode + Approachable Concurrency + default `MainActor` isolation. The latter two are current Xcode template defaults; the template leaves the language mode at Swift 5 — set `SWIFT_VERSION` to 6 explicitly. Single-threaded by default; move work off-main explicitly.
+- Library/package targets: Swift 6 mode with `nonisolated` default isolation — never MainActor-bind a networking or domain package.
+- Migrate existing modules one at a time (strict checking minimal → targeted → complete), never one big flip. `@preconcurrency import` is a documented temporary bridge — it silences, it doesn't fix.
+
+### Concurrency
+- Prefer structured concurrency: `async let` for a fixed few parallel ops, `TaskGroup` for dynamic fan-out. Unstructured `Task {}` needs an owner and a cancellation story; `Task.detached` almost never (only to escape actor context, priority, and task-locals at once).
+- Mark CPU-heavy functions `@concurrent` to hop off the caller's actor explicitly; under Approachable Concurrency, `nonisolated async` inherits the caller's actor.
+- Cancellation is cooperative: long loops call `try Task.checkCancellation()`; in SwiftUI prefer `.task {}` (auto-cancelled) over stored handles.
+- Don't reach for `actor` by default — most state belongs on `@MainActor` or in value types. But when state is genuinely shared and mutated across concurrent, suspending contexts, an `actor` is the standard tool, not a failure. `Mutex` (Synchronization, macOS 15+) or `OSAllocatedUnfairLock` (macOS 13+) for small synchronous critical sections — pick per deployment target.
+- Actor reentrancy: state can change across every `await` — re-validate invariants after suspension; never split check-and-mutate across a suspension point.
+- Make types `Sendable` by design — internal value types of Sendable properties get it implicitly, but `public` library types must declare it (implicit conformance stops at module boundaries except `@frozen`). `@unchecked Sendable` and `nonisolated(unsafe)` require an internal synchronization mechanism plus a justification comment.
+- Continuations resume exactly once on every path; use `withCheckedContinuation` variants; never store a continuation beyond its scope.
+- No GCD as concurrency architecture: no `DispatchQueue.main.async` in async contexts (use actor isolation / `MainActor.run`), no semaphores bridging sync→async, no queues guarding state. Exception: next-runloop-tick deferral in synchronous AppKit paths remains legitimate.
+- New code uses AsyncSequence/AsyncStream + Observation, not Combine (maintenance-mode, predates Sendable). Bridge existing pipelines with `.values`; don't mix paradigms in one flow.
+- `deinit` is nonisolated — never touch actor-isolated state there; use `isolated deinit` where available, or move cleanup to an explicit `invalidate()`/task cancellation called before release.
+
 ## Language Mode Migration (Swift 5 → Swift 6)
 
 Three concurrency-checking levels exist, opt-in under Swift 5 mode and unconditionally enforced under Swift 6 mode:

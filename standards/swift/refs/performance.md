@@ -16,6 +16,7 @@ Reach for this only after a profiler says a path is hot. Measure first — most 
 
 ## Strings & Collections
 
+- Stdlib collections (`Array`, `Dictionary`, `Set`, `String`) are copy-on-write — assignment is a cheap pointer copy, duplicated only on the next mutation of a shared buffer. Don't hand-roll defensive copies of them "to be safe"; implement custom COW (private reference backing + `isKnownUniquelyReferenced`) only for a large custom buffer where copy cost is measured to matter.
 - `String.count` is **O(n)** (it counts grapheme clusters) — never call it repeatedly in a loop or use it for a fast emptiness check; use `isEmpty`. Avoid repeated index arithmetic; iterate with the view you need (`.utf8` for byte-level parsing).
 - Reserve capacity (`reserveCapacity(_:)`) before a known-size append loop to avoid repeated reallocation.
 - Use `NSCache` (bounded, memory-pressure-aware) for caches instead of an unbounded `Dictionary` that grows until the app is killed.

@@ -1,5 +1,16 @@
 # macOS Performance & Accessibility
 
+## Core Rules
+
+### SwiftUI Views
+- `body` is pure: no side effects, no per-evaluation allocations (formatters are the classic offender).
+- `@State` is `private`. `List`/`ForEach` identity must be stable — unstable `Identifiable` ids are the top list correctness and performance bug.
+- Avoid `AnyView` in hot hierarchies. Scale path: `List` → `Table` → lazy stacks → `NSTableView`/`NSCollectionView` when thousands of rows need cell reuse. Detail → sections below.
+
+### Accessibility
+- Verify UI under Reduce Transparency and Increase Contrast (glass materials especially); honor Reduce Motion for custom animation.
+- Custom controls implement the accessibility protocol — role, value, actions — not just a label. Full keyboard navigation. Run Accessibility Inspector audits per screen and wire `performAccessibilityAudit` into CI. Don't assume iOS-style Dynamic Type; back custom sizing with `@ScaledMetric`. Detail → sections below.
+
 ## Instruments Usage Patterns
 
 Reach for the right template — don't default to Time Profiler for every problem:
@@ -36,6 +47,7 @@ Reach for the right template — don't default to Time Profiler for every proble
 
 ## App Nap & Energy
 
+- Login items, agents, and daemons register via `SMAppService`; users can revoke in System Settings — design for it. Prefer a user-level launch agent over a daemon unless root/pre-login is required; constrain launchd plists with launch constraints.
 - Respect App Nap: `NSBackgroundActivityScheduler` for deferrable work, `ProcessInfo.beginActivity(options:reason:)` for user-visible long work that must not be napped, and tolerance on every timer.
 - Don't poll where change notifications exist (KVO, `NotificationCenter`, FSEvents); a notification-less external resource may poll with backoff.
 

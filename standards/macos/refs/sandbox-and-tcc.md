@@ -14,6 +14,7 @@
 App Sandbox is OS-enforced access control: a sandboxed process is denied access to all filesystem locations except a small system allowlist and its own container, plus sandbox extensions granted dynamically (e.g. after the user picks a file in an Open panel).
 
 - **Container**: `~/Library/Containers/<bundle-id>/Data/`. Standard "home directory" APIs are transparently redirected here — the app never sees the real `~`.
+- Access user files only via user intent (`NSOpenPanel`/`fileImporter`, drag & drop); use the URL the panel returns — a self-derived path to the "same" file carries no sandbox extension.
 - **Persisted access outside the container**: security-scoped bookmarks, backed by `com.apple.security.files.bookmarks.app-scope` (app-lifetime) or `.document-scope` entitlements. Bookmarks survive relaunch; a plain path string does not. Balance every `startAccessingSecurityScopedResource()` with a `stop`; re-create a bookmark when `bookmarkDataIsStale` is true.
 
 ### Entitlement reference (`.entitlements` XML plist)
@@ -83,6 +84,8 @@ let status = SecItemAdd(query as CFDictionary, nil)
 ## TCC / Privacy Permissions
 
 Two distinct grant mechanisms exist — know which one a resource uses.
+
+- Know the grant paths: Accessibility / Screen Recording — you trigger the prompt but the user completes the grant in System Settings; Automation — the first-Apple-event consent dialog *is* the grant; Full Disk Access / Input Monitoring — no prompt API exists, detect and deep-link only.
 
 **"Both" category** — Info.plist usage-description string *and* (when sandboxed) an entitlement *and* a standard per-app TCC consent dialog your code can trigger on first access:
 

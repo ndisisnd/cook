@@ -1,5 +1,32 @@
 # macOS Architecture & State
 
+## AppKit Bridging
+
+Default to SwiftUI; drop to AppKit only for a specific missing capability, wrapping just that control — never rewrite a whole screen. Confirmed gaps still needing an escape hatch (re-verify each WWDC, SwiftUI closes them): rich/attributed text editing (`NSTextView`), custom/multi-target status-bar items (`NSStatusItem` + `NSHostingView`), outline/tree views (`NSOutlineView`), PDF display (`PDFView`), full titlebar/traffic-light chrome, and trackpad gesture recognizers. Wrap AppKit with `NSViewRepresentable`/`NSViewControllerRepresentable`; host SwiftUI with `NSHostingController`/`NSHostingView`; keep the boundary thin.
+
+- AppKit is main-thread-only and `@MainActor`-isolated in current SDKs — keep strict concurrency on so the compiler enforces it inside `NSViewRepresentable`/`Coordinator` bridge code.
+
+```swift
+struct RichTextView: NSViewRepresentable {
+    @Binding var text: NSAttributedString
+    func makeNSView(context: Context) -> NSTextView {
+        let view = NSTextView(); view.delegate = context.coordinator; return view
+    }
+    func updateNSView(_ view: NSTextView, context: Context) {
+        if view.attributedString() != text { view.textStorage?.setAttributedString(text) }
+    }
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        let parent: RichTextView
+        init(_ parent: RichTextView) { self.parent = parent }
+        func textDidChange(_ n: Notification) {
+            guard let v = n.object as? NSTextView else { return }
+            parent.text = v.attributedString()
+        }
+    }
+}
+```
+
 ## Observation Framework (`@Observable`)
 
 - Framework: `Observation` (`import Observation`), introduced WWDC23 via SE-0395. Minimum OS: macOS 14+. Class-only — `@Observable` applies to `class` types, not `struct`/`enum`.

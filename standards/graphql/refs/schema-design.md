@@ -53,9 +53,96 @@ type Query {
 
 ---
 
+## Nullability
+
+List elements and the list itself have separate nullability:
+
+```graphql
+# Correct — list is non-null, elements are non-null
+users: [User!]!
+
+# Wrong — two levels of null to handle; null element in a list is almost never valid
+users: [User]
+```
+
+---
+
+## Custom Scalars
+
+Declare custom scalars for domain types instead of overloading `String`:
+
+```graphql
+scalar DateTime
+scalar EmailAddress
+scalar URL
+
+type User {
+  id: ID!
+  email: EmailAddress!
+  profileUrl: URL
+  createdAt: DateTime!
+}
+```
+
+---
+
+## Global Object Identification
+
+The `Node` interface pattern ([graphql.org](https://graphql.org/learn/global-object-identification/)) — the `id` field must be globally unique across all types:
+
+```graphql
+interface Node {
+  id: ID!
+}
+
+type User implements Node {
+  id: ID!
+  name: String!
+}
+
+type Query {
+  node(id: ID!): Node
+}
+```
+
+---
+
 ## Input Types & Mutation Design
 
 Every mutation takes a **single `input` argument**. Design one input type per mutation, not a shared input reused across create/update.
+
+Inline scalar arguments are a permanent trap: adding a second argument is a breaking change for every existing client. Adding a field to an Input type is not. Returning a Payload type lets you add `userErrors`, `clientMutationId`, or new fields without breaking the contract.
+
+```graphql
+# Correct
+type Mutation {
+  createUser(input: CreateUserInput!): CreateUserPayload!
+  updateUser(input: UpdateUserInput!): UpdateUserPayload!
+}
+
+input CreateUserInput {
+  firstName: String!
+  lastName: String!
+  email: EmailAddress!
+  role: UserRole!
+}
+
+type CreateUserPayload {
+  user: User                  # nullable — mutation may fail
+  userErrors: [UserError!]!
+}
+
+type UserError {
+  field: [String!]
+  message: String!
+  code: UserErrorCode!
+}
+
+# Wrong — inline args, no error surface, no evolution path
+type Mutation {
+  createUser(firstName: String!, lastName: String!, email: String!): User
+}
+```
 
 ```graphql
 # Good — each mutation has its own tailored input
