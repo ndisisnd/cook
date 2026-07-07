@@ -74,11 +74,11 @@ Run `cook_cache.py write` with the full skills path list, canonical tags, intent
 
 ### Step 6 — Compile and self-heal
 
-Run `cook_compile.py` with the path list from Steps 2–4 (or `routing.skills` on a hit). The compiler deduplicates, buckets by layer (Universal → Domain → Concern), strips YAML frontmatter, and concatenates with terse section headers. Output is JSON: `content`, `degraded`, `metadata`.
+Run `cook_compile.py --out <file>` with the path list from Steps 2–4 (or `routing.skills` on a hit). The compiler deduplicates, buckets by layer (Universal → Domain → Concern), strips YAML frontmatter, concatenates with terse section headers, and writes the assembled markdown to the `--out` file. Stdout is a compact JSON summary envelope: `path`, `bytes`, `sections`, `degraded`, `metadata` — the payload content never transits the model's context inline.
 
 After compiling, run `cook_cache.py heal` to stamp the compiler's `degraded` list onto the cache entry, except on the corrupt-cache fallback path where no trusted entry exists. On a cache hit this clears previously-flagged files that now read and sets newly missing ones — keeping the entry current without re-classification.
 
-Return the JSON envelope to the invoking agent. A non-empty `degraded` is a partial load; surviving sections are still delivered and P0 always loads.
+Return the summary envelope (path + sections + degraded) to the invoking agent — never the payload content itself; the invoker reads the payload file. A non-empty `degraded` is a partial load; surviving sections are still delivered and P0 always loads.
 
 ---
 

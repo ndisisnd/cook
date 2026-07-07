@@ -4,6 +4,17 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-07 · Protocol split: every run boots on 5.9KB instead of 15.2KB
+
+**refactor(protocol): split core and explicit-mode protocol refs.**
+
+- `refs/protocol-cook.md`: slimmed 15.2KB → 5.9KB. The Phase 1/2/3 dev-history note is gone, the corrupt-cache fallback is stated once instead of three times, and the Step 6 "Path list construction" block (a verbatim duplicate of the explicit-mode rules) is removed. Steps renumbered 1–6; Step 2 now runs the mechanical `classify` first with the LLM as fallback only; Step 6 compiles with `--out` and returns the summary envelope — the protocol now explicitly forbids inlining the payload content.
+- `refs/protocol-explicit.md`: new 2.9KB ref holding arg parsing, the resolver call, and the explicit path-list rules — read only when `/cook` carries flags or prose, so the common auto path never pays for it. The prose path now runs `classify` before any index scan.
+- `SKILL.md`: pointer updated for the two-file protocol.
+- `ARCHITECTURE.md`: Step 6 description updated for the envelope return.
+
+---
+
 ## [Unreleased] — 2026-07-07 · Classification is now mechanical — the model no longer reads the vocab on a cache miss
 
 **perf(cache): add mechanical classify; make write --intent optional.**
