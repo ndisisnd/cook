@@ -4,6 +4,19 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-07 · Routing indexes carry routing only — migration history moved to archive
+
+**refactor(standards): move index provenance tables to archive.**
+
+- `standards/flutter/_INDEX.md`: 10.6KB → 3.8KB — the 22-sub-skill "Archived" provenance table (64% of the file, read by the LLM on every index scan) moved out.
+- `standards/nextjs/_INDEX.md`: 9.4KB → 3.3KB — same treatment (65% of the file).
+- `standards/react/_INDEX.md`: Archived section moved out (~0.8KB).
+- `standards/dart/_INDEX.md`: Archived section moved out (~0.3KB).
+- `archive/PROVENANCE.md`: new home for the four migration-history tables, preserved verbatim per domain so reviewers can still trace where pre-consolidation content was merged.
+- `.gitignore`: added `archive/security-unrouted/` — files relocated out of the untracked security shelf stay untracked.
+
+---
+
 ## [Unreleased] — 2026-07-07 · Protocol split: every run boots on 5.9KB instead of 15.2KB
 
 **refactor(protocol): split core and explicit-mode protocol refs.**

@@ -12,11 +12,3 @@
 > Load `<SKILLS>/dart/SKILL.md` for any `.dart` file — it covers language correctness (P0) and style conventions (P1).
 > Load `<SKILLS>/dart/refs/tooling.md` when touching tooling/config files.
 > Load `<SKILLS>/dart/refs/testing.md` when touching test files. For Flutter widget/golden/integration tests, also load `flutter-testing`.
-
-## Archived
-
-The following sub-skill folders have been merged into `SKILL.md` and `refs/`:
-
-- `dart-language/` → merged into `SKILL.md` (P0 section)
-- `dart-best-practices/` → merged into `SKILL.md` (P1 section)
-- `dart-tooling/` → superseded by `refs/tooling.md`

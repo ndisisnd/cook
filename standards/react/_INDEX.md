@@ -29,16 +29,3 @@
 > Load `<SKILLS>/react/refs/component-patterns.md` when designing reusable, composable component APIs or custom accessible compound widgets.
 >
 > Load `<SKILLS>/react/refs/hooks.md` when implementing or reviewing reusable custom hooks, external subscriptions, effect-local callbacks, layout measurement, or generated accessibility IDs.
-
-## Archived
-
-The following sub-skill folders have been merged into `SKILL.md` and `refs/`, then archived under `archive/react/` as non-loadable source trace:
-
-- `archive/react/react-component-patterns/` → merged into `refs/component-patterns.md`
-- `archive/react/react-hooks/` → merged into `SKILL.md` and `refs/hooks.md`
-- `archive/react/react-performance/` → merged into `refs/performance.md`
-- `archive/react/react-security/` → merged into `refs/security.md`
-- `archive/react/react-state-management/` → merged into `refs/state-management.md`
-- `archive/react/react-testing/` → merged into `refs/testing.md`
-- `archive/react/react-tooling/` → merged into `refs/tooling.md`
-- `archive/react/react-typescript/` → merged into `SKILL.md` and `refs/component-patterns.md`

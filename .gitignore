@@ -1,5 +1,6 @@
 # Project-specific
 standards/security/
+archive/security-unrouted/
 adr.md
 plan.md
 plan-fixes.json
