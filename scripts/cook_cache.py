@@ -29,6 +29,14 @@ Subcommands
       Atomically upsert a cache entry (tmp + os.replace) with a tag-vocabulary
       checksum and per-index checksums. Records flags and mode on the entry.
 
+  classify [--prose TEXT] [--path P ...] [--project DIR]
+      Mechanical canonicalization (miss path). Matches prose + gathered signals
+      against tag-vocabulary.json tag names and aliases (case-insensitive,
+      word-bounded; single-character aliases are ignored as noise) and folds in
+      the resolver's domain/concern hints. Prints canonical_tags, routes, the
+      per-tag match evidence, and needs_llm — true only when no domain:* route
+      resolved, i.e. the only case where the model must read the vocab itself.
+
   heal --fingerprint F --degraded [P,...]
       Reconcile an existing entry's `degraded` flag with reality (Phase 3,
       feature 7 self-heal). Pass the `degraded` list the compiler just produced;
@@ -483,6 +491,55 @@ def cmd_lookup(args):
     print(json.dumps(result, indent=2))
 
 
+def cmd_classify(args):
+    """Mechanical alias matching: prose + signals -> canonical tags -> routes.
+
+    Replaces the LLM's vocab read on the common miss path. The model is only
+    needed when this returns needs_llm: true (no domain resolved), which keeps
+    classification deterministic and vocab-file reads out of the context.
+    """
+    import re
+
+    project = Path(args.project).resolve() if args.project else Path.cwd()
+    signals = gather(args.path or [], project)
+    prose = (args.prose or "").strip()
+
+    hay = " ".join(
+        [prose]
+        + signals["files"]
+        + signals["extensions"]
+        + signals["frameworks"]
+    ).lower()
+
+    tags = json.loads(VOCAB_FILE.read_text())["tags"]
+    matched: dict[str, dict] = {}
+    for tag, data in tags.items():
+        for needle in [tag] + data.get("aliases", []):
+            n = needle.lower()
+            if len(n) < 2:
+                continue  # single-char aliases ('!') match everything — noise
+            if re.search(r"(?<![a-z0-9])" + re.escape(n) + r"(?![a-z0-9])", hay):
+                matched[tag] = {"routes_to": data["routes_to"], "matched_on": needle}
+                break
+
+    # Fold in mechanically derived hints even without a textual alias hit.
+    for hint_key, kind in (("domain_hints", "domain_hint"),
+                           ("concern_hints", "concern_hint")):
+        for h in signals[hint_key]:
+            if h in tags and h not in matched:
+                matched[h] = {"routes_to": tags[h]["routes_to"],
+                              "matched_on": f"signal:{kind}:{h}"}
+
+    routes = sorted({r for m in matched.values() for r in m["routes_to"]})
+    print(json.dumps({
+        "canonical_tags": sorted(matched),
+        "routes": routes,
+        "matched": matched,
+        "signals": signals,
+        "needs_llm": not any(r.startswith("domain:") for r in routes),
+    }, separators=(",", ":")))
+
+
 def cmd_write(args):
     routing, _ = load_routing()           # a corrupt cache is overwritten fresh
     skills = [s for s in args.skills.split(",") if s]
@@ -558,9 +615,16 @@ def main():
                     help="prose argument; any non-empty value skips the cache (status: skip)")
     lk.set_defaults(func=cmd_lookup)
 
+    cl = sub.add_parser("classify")
+    cl.add_argument("--prose", metavar="TEXT", help="prose to match against the vocab")
+    cl.add_argument("--path", action="append", help="explicit file path (repeatable)")
+    cl.add_argument("--project", help="project dir to scan (default CWD)")
+    cl.set_defaults(func=cmd_classify)
+
     wr = sub.add_parser("write")
     wr.add_argument("--fingerprint", required=True)
-    wr.add_argument("--intent", required=True)
+    wr.add_argument("--intent", default="unspecified",
+                    help="diagnostic label recorded on the entry; never routes")
     wr.add_argument("--skills", required=True, help="comma-separated skill paths")
     wr.add_argument("--tags", help="comma-separated canonical tags")
     wr.add_argument("--confidence", default="high", choices=["high", "medium", "low"])

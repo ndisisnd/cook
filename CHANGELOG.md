@@ -4,6 +4,14 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-07 · Classification is now mechanical — the model no longer reads the vocab on a cache miss
+
+**perf(cache): add mechanical classify; make write --intent optional.**
+
+- `scripts/cook_cache.py`: new `classify` subcommand matches prose + gathered signals against `tag-vocabulary.json` tag names and aliases (case-insensitive, word-bounded; single-character aliases ignored as noise) and folds in the resolver's domain/concern hints, printing `canonical_tags`, `routes`, per-tag match evidence, and `needs_llm` — the model reads the vocab only when no `domain:*` route resolves, saving ~3.6K input tokens on the common miss path. `write --intent` now defaults to `"unspecified"`: the label is diagnostic, stored on the entry, and never routes, so the per-miss LLM intent pick is retired.
+
+---
+
 ## [Unreleased] — 2026-07-07 · Compiler returns a file envelope and enforces a payload budget
 
 **perf(compile): add --out file envelope and --budget enforcement.**
