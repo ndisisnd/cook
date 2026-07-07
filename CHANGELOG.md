@@ -4,6 +4,14 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-07 · Compiler returns a file envelope and enforces a payload budget
+
+**perf(compile): add --out file envelope and --budget enforcement.**
+
+- `scripts/cook_compile.py`: new `--out FILE` writes the assembled payload to disk and prints a compact summary envelope (`path`, `bytes`, `sections`, `degraded`, `metadata`) — the payload content no longer transits model context inline, cutting ~8–15K tokens per run and eliminating the output-side re-emit in sub-agent returns. New `--budget BYTES` actually enforces the previously dead `dropped_for_budget` field: over-budget sections drop lowest-priority first (domain refs → domain SKILLs → concerns; Universal never drops). Stdout JSON is now compact (no indent), and a `sections` header list was added to the output.
+
+---
+
 ## [Unreleased] — 2026-07-03 · Add dedication footer to README
 
 **docs(readme): append "Dedicated to JC 💕" footer.**

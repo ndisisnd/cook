@@ -6,20 +6,21 @@ No LLM. Pure file-read + concatenation. Deterministic: same input → same outpu
 
 Usage
 -----
-  python3 scripts/cook_compile.py --skills P[,P...] [--cook-root DIR]
+  python3 scripts/cook_compile.py --skills P[,P...] [--cook-root DIR] [--out FILE]
 
   --skills     Comma-separated skill paths (relative to cook root), e.g.
                standards/global/SKILL.md,standards/react/SKILL.md,standards/global/refs/security.md
   --cook-root  Cook repository root (default: parent of this file's parent)
+  --out        Write the assembled markdown to FILE instead of inlining it in
+               stdout. The consumer reads the file; the payload never transits
+               the model's context as an envelope field.
 
 Output
 ------
-JSON on stdout:
-  {
-    "content":  "<assembled markdown>",
-    "degraded": ["path/that/failed.md", ...],
-    "metadata": {"resolutions_applied": [], "dropped_for_budget": []}
-  }
+Compact JSON on stdout. Without --out:
+  {"content": "<assembled markdown>", "sections": [...], "degraded": [...], "metadata": {...}}
+With --out (content lands in FILE, not stdout):
+  {"path": "FILE", "bytes": N, "sections": [...], "degraded": [...], "metadata": {...}}
 
 Exit codes: 0 always (a partial load is not a failure).
 """
@@ -90,8 +91,15 @@ def categorise(rel: str) -> str:
     return "domain"
 
 
-def compile_skills(skills: list[str], cook_root: Path) -> dict:
-    """Assemble the standards payload from a list of skill paths."""
+def compile_skills(skills: list[str], cook_root: Path, budget: int | None = None) -> dict:
+    """Assemble the standards payload from a list of skill paths.
+
+    When budget (bytes) is set and the assembled content exceeds it, sections
+    are dropped lowest-priority first — domain refs, then domain SKILL.md
+    entries, then concern refs, each last-listed first — until the payload
+    fits. Universal (global P0) is never dropped. Dropped paths are recorded
+    in metadata.dropped_for_budget.
+    """
     # Dedup while preserving first-seen order
     seen: set[str] = set()
     unique: list[str] = []
@@ -115,7 +123,7 @@ def compile_skills(skills: list[str], cook_root: Path) -> dict:
             domain.append(s)
 
     ordered = universal + domain + concern
-    sections: list[str] = []
+    entries: list[dict] = []   # {rel, cat, is_ref, header, text}
     degraded: list[str] = []
 
     root = cook_root.resolve()
@@ -134,15 +142,43 @@ def compile_skills(skills: list[str], cook_root: Path) -> dict:
             continue
         body = strip_frontmatter(raw).strip()
         header = section_header(rel)
-        sections.append(f"{header}\n\n{body}")
+        entries.append({
+            "rel": rel,
+            "cat": categorise(rel),
+            "is_ref": Path(rel).stem.lower() != "skill",
+            "header": header,
+            "text": f"{header}\n\n{body}",
+        })
 
-    content = "\n\n---\n\n".join(sections)
+    def assembled_size(items):
+        return len("\n\n---\n\n".join(e["text"] for e in items).encode("utf-8"))
+
+    dropped: list[str] = []
+    if budget is not None and assembled_size(entries) > budget:
+        # Drop priority (last-listed first within each tier); Universal never drops.
+        def drop_candidates():
+            tiers = (
+                [e for e in entries if e["cat"] == "domain" and e["is_ref"]],
+                [e for e in entries if e["cat"] == "domain" and not e["is_ref"]],
+                [e for e in entries if e["cat"] == "concern"],
+            )
+            for tier in tiers:
+                yield from reversed(tier)
+
+        for victim in list(drop_candidates()):
+            if assembled_size(entries) <= budget:
+                break
+            entries.remove(victim)
+            dropped.append(victim["rel"])
+
+    content = "\n\n---\n\n".join(e["text"] for e in entries)
     return {
         "content": content,
+        "sections": [e["header"] for e in entries],
         "degraded": degraded,
         "metadata": {
             "resolutions_applied": [],
-            "dropped_for_budget": [],
+            "dropped_for_budget": dropped,
         },
     }
 
@@ -153,13 +189,36 @@ def main():
                    help="Comma-separated skill paths relative to cook root")
     p.add_argument("--cook-root", default=None,
                    help="Cook repository root (default: parent of this script's parent)")
+    p.add_argument("--out", default=None,
+                   help="write assembled markdown to FILE; stdout carries a "
+                        "summary envelope (path, bytes, sections, degraded) "
+                        "without the content")
+    p.add_argument("--budget", type=int, default=None,
+                   help="max payload bytes; over-budget sections drop lowest-"
+                        "priority first (domain refs, domain SKILLs, concerns; "
+                        "Universal never drops), recorded in "
+                        "metadata.dropped_for_budget")
     args = p.parse_args()
 
     cook_root = Path(args.cook_root).resolve() if args.cook_root else COOK_ROOT_DEFAULT
     skills = [s for s in args.skills.split(",") if s.strip()]
 
-    result = compile_skills(skills, cook_root)
-    print(json.dumps(result, indent=2))
+    result = compile_skills(skills, cook_root, budget=args.budget)
+
+    if args.out:
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(result["content"], encoding="utf-8")
+        envelope = {
+            "path": str(out_path),
+            "bytes": len(result["content"].encode("utf-8")),
+            "sections": result["sections"],
+            "degraded": result["degraded"],
+            "metadata": result["metadata"],
+        }
+        print(json.dumps(envelope, separators=(",", ":")))
+    else:
+        print(json.dumps(result, separators=(",", ":")))
 
 
 if __name__ == "__main__":
