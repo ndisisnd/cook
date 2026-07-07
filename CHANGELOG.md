@@ -4,6 +4,15 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-07 · Installer manifest generates itself — fresh installs stop silently missing files
+
+**build(install): generate FILES manifest from the working tree.**
+
+- `scripts/gen_install_files.py`: new generator — derives the `FILES=()` array from `git ls-files --cached --others --exclude-standard` filtered to the runtime surface (`SKILL.md`, `refs/`, `vocab/`, `scripts/`, `standards/`), so gitignored content (the security shelf, dev dirs) is excluded automatically. Run it after adding or removing any runtime file.
+- `install.sh`: manifest regenerated, 114 → 126 entries. Picks up `refs/protocol-explicit.md`, the three new domain refs from the SKILL.md diets, and files the hand-maintained list had already silently drifted past: `nextjs/refs/app-router.md`, `i18n.md`, `pages-router.md` and friends, `swift/refs/interop.md`, `macos/refs/localization.md`, `macos/refs/windows-and-scenes.md`.
+
+---
+
 ## [Unreleased] — 2026-07-07 · Vocabulary is the single routing source, and generic keywords no longer over-match
 
 **refactor(vocab): trim generic aliases, single-source concern routing.**

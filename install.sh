@@ -17,11 +17,11 @@ RESET='\033[0m'
 FILES=(
   SKILL.md
   refs/protocol-cook.md
-  vocab/intent-vocabulary.json
-  vocab/tag-vocabulary.json
+  refs/protocol-explicit.md
+  scripts/check_index_routes.py
   scripts/cook_cache.py
   scripts/cook_compile.py
-  scripts/check_index_routes.py
+  scripts/gen_install_files.py
   standards/css/SKILL.md
   standards/css/_INDEX.md
   standards/css/refs/accessibility.md
@@ -72,6 +72,7 @@ FILES=(
   standards/global/refs/security.md
   standards/graphql/SKILL.md
   standards/graphql/_INDEX.md
+  standards/graphql/refs/conventions.md
   standards/graphql/refs/performance.md
   standards/graphql/refs/schema-design.md
   standards/graphql/refs/security.md
@@ -81,6 +82,7 @@ FILES=(
   standards/macos/_INDEX.md
   standards/macos/refs/architecture-and-state.md
   standards/macos/refs/distribution.md
+  standards/macos/refs/hig-conventions.md
   standards/macos/refs/localization.md
   standards/macos/refs/performance-accessibility.md
   standards/macos/refs/sandbox-and-tcc.md
@@ -127,6 +129,7 @@ FILES=(
   standards/swift/_INDEX.md
   standards/swift/refs/concurrency.md
   standards/swift/refs/interop.md
+  standards/swift/refs/language-conventions.md
   standards/swift/refs/memory-management.md
   standards/swift/refs/performance.md
   standards/swift/refs/testing.md
@@ -136,6 +139,8 @@ FILES=(
   standards/typescript/refs/security.md
   standards/typescript/refs/testing.md
   standards/typescript/refs/tooling.md
+  vocab/intent-vocabulary.json
+  vocab/tag-vocabulary.json
 )
 
 check_deps() {
