@@ -4,6 +4,16 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-07 · Vocabulary is the single routing source, and generic keywords no longer over-match
+
+**refactor(vocab): trim generic aliases, single-source concern routing.**
+
+- `vocab/tag-vocabulary.json`: ~45 over-generic aliases removed — dart no longer fires on `!`/`naming`/`convention`, typescript on `type`/`interface`/`async`/`import`/`export`/`union`, nextjs on `session`/`cookie`/`fetch`/`action`/`metadata` and five others, graphql on `query`/`input`/`payload`/`batch`/`loader`/`authorization`, react on `store`/`act`/`screen`/`lazy` and three others, plus flutter/nodejs/database generics. Every false match loaded a whole shelf into the payload. The `deprecat` stem became `deprecated`/`deprecation` (the word-bounded matcher can't hit stems). Arrays re-inlined: 13.3KB → 11.7KB. Note: the vocab checksum change staleness-invalidates existing cache entries by design — each surface re-classifies once, mechanically, then re-caches.
+- `standards/global/_INDEX.md`: the Concern Match keyword table — a near-verbatim copy of the vocab aliases policed by a dedicated parity-checker — replaced with a pointer to the vocab. One source of truth; the parity-drift class is gone.
+- `standards/security/_INDEX.md` (untracked shelf, change local-only): scope header documents that the shelf is deliberately unrouted in auto mode; 11 checklists for stacks cook has no domain for (Django, Java, PHP, Ruby, .NET) moved to `archive/security-unrouted/` and their framework rows collapsed.
+
+---
+
 ## [Unreleased] — 2026-07-07 · macOS, Swift, and GraphQL entry files fit the always-loaded budget
 
 **refactor(standards): slim macos, swift, graphql SKILL.md into refs.**
