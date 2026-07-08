@@ -4,6 +4,16 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-08 · Installer rides out CDN lag and can install offline from a local clone
+
+**build(install): local-source mode + per-file retry hardening.**
+
+- `install.sh`: new `COOK_SRC=/path/to/cook` mode copies the runtime files from a local clone instead of fetching from `raw.githubusercontent.com` — instant, no network, and immune to the CDN-propagation lag that follows a fresh push (a full local install runs in ~0.5s vs. minutes of retries). Fixes the post-push reinstall loop.
+- `install.sh`: CDN downloads now use `curl --retry 5 --retry-delay 2 --connect-timeout 10` plus `--retry-all-errors` (feature-detected so older curl still works), and the installer retries **only the still-failed files** with backoff instead of re-rolling all 128. Transient 404/5xx during propagation now self-heal silently.
+- `install.sh`: curl feature-detection reads the full `--help all` output (`grep >/dev/null`) rather than `grep -q`, which early-exits and closes the pipe, racing curl's write and flaking to a false negative. Failure output now lists the offending files and points at the `COOK_SRC` fallback.
+
+---
+
 ## [Unreleased] — 2026-07-08 · Telemetry goes per-repo — `cook --init` gives a repository its own local log
 
 **feat(telemetry): local-first telemetry scope with `--init`.**

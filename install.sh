@@ -2,11 +2,15 @@
 # cook install script
 # Usage: curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bash
 # Override destination: COOK_DIR=~/.claude/skills/cook bash install.sh
+# Install from a local clone (no network): COOK_SRC=/path/to/cook bash install.sh
 
 set -euo pipefail
 
 REPO="https://raw.githubusercontent.com/ndisisnd/cook/main"
 DEST="${COOK_DIR:-$HOME/.claude/skills/cook}"
+# Install from a local clone instead of the CDN (no network; instant, reliable).
+# Usage: COOK_SRC=/path/to/cook bash install.sh
+SRC="${COOK_SRC:-}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -146,7 +150,8 @@ FILES=(
 )
 
 check_deps() {
-  if ! command -v curl &>/dev/null; then
+  # curl is only needed for the CDN path; a local-source install skips it.
+  if [[ -z "$SRC" ]] && ! command -v curl &>/dev/null; then
     echo -e "${RED}Error: curl is required but not found.${RESET}" >&2
     exit 1
   fi
@@ -156,32 +161,75 @@ check_deps() {
   fi
 }
 
-download_file() {
+# Per-file curl retry flags. --retry-all-errors (curl 7.71+) rides out the
+# transient 404/5xx window right after a push while raw.githubusercontent
+# propagates; guarded so older curl still works with plain --retry.
+CURL_RETRY=(--retry 5 --retry-delay 2 --connect-timeout 10)
+# Detect with a full read (grep >/dev/null), not `grep -q`: -q early-exits and
+# closes the pipe, racing curl's write and flaking to a false negative.
+if curl --help all 2>/dev/null | grep -F -- '--retry-all-errors' >/dev/null 2>&1; then
+  CURL_RETRY+=(--retry-all-errors)
+fi
+
+fetch_file() {
   local rel="$1"
-  local url="$REPO/$rel"
   local dest="$DEST/$rel"
   mkdir -p "$(dirname "$dest")"
-  if ! curl -fsSL "$url" -o "$dest"; then
-    echo -e "${RED}  ✗ Failed: $rel${RESET}" >&2
+  if [[ -n "$SRC" ]]; then
+    if cp "$SRC/$rel" "$dest" 2>/dev/null; then
+      echo -e "  ${GREEN}✓${RESET} $rel"
+      return 0
+    fi
+    echo -e "${RED}  ✗ Missing in source: $rel${RESET}" >&2
     return 1
   fi
-  echo -e "  ${GREEN}✓${RESET} $rel"
+  if curl -fsSL "${CURL_RETRY[@]}" "$REPO/$rel" -o "$dest"; then
+    echo -e "  ${GREEN}✓${RESET} $rel"
+    return 0
+  fi
+  echo -e "${RED}  ✗ Failed: $rel${RESET}" >&2
+  return 1
 }
 
 main() {
   check_deps
 
   echo -e "\n${BOLD}cook installer${RESET}"
-  echo -e "Destination: ${CYAN}$DEST${RESET}\n"
+  echo -e "Destination: ${CYAN}$DEST${RESET}"
+  if [[ -n "$SRC" ]]; then
+    echo -e "Source: ${CYAN}$SRC${RESET} (local, no network)"
+  fi
+  echo ""
 
   if [[ -d "$DEST" && -f "$DEST/SKILL.md" ]]; then
     echo -e "Updating existing install at ${CYAN}$DEST${RESET}\n"
   fi
 
-  local failed=0
+  # Track failures as a space-separated list (repo paths never contain spaces)
+  # so we can retry ONLY the failed files, not re-roll all of them. bash 3.2
+  # safe — no empty-array-under-set-u traps.
+  local failed=""
   for f in "${FILES[@]}"; do
-    download_file "$f" || ((failed++))
+    fetch_file "$f" || failed="$failed $f"
   done
+
+  # Retry only the still-failed subset with backoff (CDN path only; a local
+  # source that's missing a file won't heal by waiting).
+  if [[ -z "$SRC" && -n "${failed// }" ]]; then
+    local attempt todo f2
+    for attempt in 1 2 3; do
+      [[ -z "${failed// }" ]] && break
+      todo="$failed"; failed=""
+      echo -e "\n${CYAN}Retrying$(echo "$todo" | wc -w | tr -d ' ') file(s) after CDN lag (attempt $attempt)...${RESET}"
+      sleep $((attempt * 3))
+      for f2 in $todo; do
+        fetch_file "$f2" || failed="$failed $f2"
+      done
+    done
+  fi
+
+  local fail_count=0
+  for f in $failed; do fail_count=$((fail_count + 1)); done
 
   # cache directory (writable by cook_cache.py at runtime)
   mkdir -p "$DEST/.agent-skills"
@@ -193,8 +241,11 @@ main() {
             "$DEST/scripts/check_index_routes.py"
 
   echo ""
-  if [[ $failed -gt 0 ]]; then
-    echo -e "${RED}Install finished with $failed failed file(s). Check your network and try again.${RESET}"
+  if [[ $fail_count -gt 0 ]]; then
+    echo -e "${RED}Install finished with $fail_count failed file(s):${RESET}$failed" >&2
+    if [[ -z "$SRC" ]]; then
+      echo -e "${RED}The CDN may still be propagating a recent push — re-run in a minute, or install from a local clone: COOK_SRC=/path/to/cook bash install.sh${RESET}" >&2
+    fi
     exit 1
   fi
 
