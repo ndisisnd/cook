@@ -4,6 +4,17 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-08 · Telemetry goes per-repo — `cook --init` gives a repository its own local log
+
+**feat(telemetry): local-first telemetry scope with `--init`.**
+
+- `scripts/cook_telemetry.py`: new `init` subcommand creates + enables a **local** store at `<project>/telemetry/telemetry.json` (idempotent — preserves existing records, re-enables). New `resolve_store()` resolves **local-first**: a project store, once initialised, wins over the global `<cook-root>/telemetry/telemetry.json`; every subcommand now takes `--project <dir>` for resolution and `--global` to force the install store. `status` reports the active scope (`local`/`global`).
+- `refs/protocol-cook.md`: Step 0 recognises `--init` and threads `--project <dir>` into every telemetry call and the post-compile record step, so a repo's fires record to its own log.
+- `refs/telemetry.md`: documents the local-first scope model, the `--init` flag, and the `--project` / `--global` args on the record step and management flags.
+- `README.md`, `FLAG-LIST.md`, `ARCHITECTURE.md`: document `--init`, local-vs-global resolution, and the scope arguments.
+
+---
+
 ## [Unreleased] — 2026-07-08 · Cook can log what it fires — an opt-in, off-by-default telemetry trail
 
 **feat(telemetry): opt-in usage log for cook fires.**

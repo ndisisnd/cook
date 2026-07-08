@@ -83,15 +83,18 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 
 #### Telemetry (optional)
 
-Cook can keep a local, opt-in log of what it fires. It's **off by default** and never changes what loads.
+Cook can keep an opt-in log of what it fires. It's **off by default** and never changes what loads.
 
 ```bash
-cook --enable-telemetry    # start logging
+cook --init                # initialise a LOCAL store for this repo (creates + enables)
+cook --enable-telemetry    # start logging (local store if inited, else global)
 cook --disable-telemetry   # stop logging (records are kept)
 cook --status              # print stats to the console
 ```
 
-When enabled, each successful fire appends one record — the intent, the raw prompt, and the standards extracted (folder → the standards loaded within it) — to `telemetry/telemetry.json` under the cook root. The file is gitignored and never shipped by the installer; it's purely local. `cook --status` reports the total fire count and ranked breakdowns by intent, folder, and individual standard.
+When enabled, each successful fire appends one record — the intent, the raw prompt, and the standards extracted (folder → the standards loaded within it) — to `telemetry/telemetry.json`. `cook --status` reports the total fire count and ranked breakdowns by intent, folder, and individual standard.
+
+**Scope is local-first.** Run `cook --init` inside a repo to give it its own log at `<repo>/telemetry/telemetry.json` — that repo's cook calls then record there. Any repo you haven't initialised falls back to the global store under the cook install dir (alongside the cache). Both are gitignored and never shipped by the installer; they're purely local. Add `--global` to any telemetry command to force the global store.
 
 ## Available Standards
 

@@ -12,9 +12,10 @@ See [`refs/telemetry.md`](refs/telemetry.md).
 
 | Flag | Action |
 |---|---|
-| `--enable-telemetry` | Turn on the usage log (`telemetry/telemetry.json`) |
+| `--init` | Initialise a **local** telemetry store for this repo (creates + enables); its cook calls then record locally instead of in the global store |
+| `--enable-telemetry` | Turn on the usage log (local store if the repo is `--init`-ed, else global) |
 | `--disable-telemetry` | Turn off the usage log; existing records are kept |
-| `--status` | Print telemetry stats to the console |
+| `--status` | Print telemetry stats to the console (local or global, whichever is active) |
 
 ---
 

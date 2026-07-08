@@ -8,13 +8,18 @@ prose), read [`protocol-explicit.md`](protocol-explicit.md) instead of Steps
 
 ### Step 0 — Telemetry management flags (intercept first)
 
-If the invocation carries a telemetry management flag — `--enable-telemetry`,
-`--disable-telemetry`, or `--status` — read [`telemetry.md`](telemetry.md) and
-follow it. When such a flag is the whole invocation, run the matching command,
-print its output, and terminate (do not proceed to Step 1). Otherwise strip the
-flag, run its command, then continue below with the remaining args. Telemetry is
-opt-in and off by default; the optional record step at the end of Step 6 is also
-defined in `telemetry.md`.
+If the invocation carries a telemetry management flag — `--init`,
+`--enable-telemetry`, `--disable-telemetry`, or `--status` — read
+[`telemetry.md`](telemetry.md) and follow it. When such a flag is the whole
+invocation, run the matching command, print its output, and terminate (do not
+proceed to Step 1). Otherwise strip the flag, run its command, then continue
+below with the remaining args. Telemetry is opt-in and off by default; the
+optional record step at the end of Step 6 is also defined in `telemetry.md`.
+
+`--init` initialises a **local** telemetry store for the current repository so
+its cook calls record there instead of the global install store. Always pass the
+project directory (`--project <dir>`, the same one used for the resolver) to
+every telemetry call so local/global scope resolves correctly.
 
 | Mode | Condition | P0 loaded? | Cache? | Path |
 |---|---|---|---|---|
@@ -129,7 +134,8 @@ telemetry is disabled — always safe to call):
 
 ```
 python3 scripts/cook_telemetry.py record --intent <label> \
-  --prompt <raw task summary> --mode <mode> --skills <same paths as compile>
+  --prompt <raw task summary> --mode <mode> --skills <same paths as compile> \
+  --project <project dir>
 ```
 
 See [`telemetry.md`](telemetry.md) for the arg contract. This never alters the

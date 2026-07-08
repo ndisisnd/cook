@@ -173,13 +173,19 @@ An **opt-in, off-by-default** log of what cook fires. It observes only — it ne
 changes routing, loading, or the return envelope. `refs/telemetry.md` is the
 protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
 
-- **State + storage** — a single JSON file, `telemetry/telemetry.json`, under the
-  cook root (peer to `.agent-skills/`). It holds the `enabled` flag and the
-  `records` array together, so state persists across fires. Gitignored and not
-  shipped by the installer; created lazily on first `enable`.
-- **Management flags** (Step 0) — `--enable-telemetry`, `--disable-telemetry`,
-  `--status` are intercepted before routing. Alone they run and terminate;
-  combined with load args they run first, then the remaining args load normally.
+- **State + storage** — a single JSON file, `telemetry/telemetry.json`, holding
+  the `enabled` flag and the `records` array together, so state persists across
+  fires. Gitignored and not shipped by the installer; created lazily.
+- **Scope — local-first** — resolution prefers `<project>/telemetry/telemetry.json`
+  (created by `--init`) over the global `<cook-root>/telemetry/telemetry.json`
+  (peer to `.agent-skills/`). A repo that has been `--init`-ed keeps its own log
+  and its cook calls record there; every other repo falls back to the global
+  store. Every telemetry call takes `--project <dir>` for resolution; `--global`
+  forces the install store. This mirrors the local-vs-global pref pattern.
+- **Management flags** (Step 0) — `--init`, `--enable-telemetry`,
+  `--disable-telemetry`, `--status` are intercepted before routing. Alone they
+  run and terminate; combined with load args they run first, then the remaining
+  args load normally. `--init` creates + enables the local store (idempotent).
 - **Record step** (end of Step 6) — best-effort `record` appends one entry per
   successful fire: `ts`, `intent` (a `vocab/intent-vocabulary.json` label),
   `prompt` (the raw task summary), `mode`, and `standards` (folder → the
