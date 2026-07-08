@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "_note": "Canonical routing surface for cook. raw_signal -> canonical tag -> routes_to. Seeded from every standards/*/_INDEX.md keyword column + the global Concern Match table for coverage parity, then extended with gap-closing synonyms. Within-domain ref selection still uses the domain _INDEX.md tables; this file drives top-level routing only. Verify parity with verify/check-vocab-parity.py. The routes_to targets double as the public --flag namespace for /cook invocations: concern:<name> -> --<name> (loads one global ref), domain:<name> -> --<name> (loads full domain shelf) or --<name>:<ref> (loads single domain ref), shelf:global -> --global (loads full global shelf). Renaming or deleting a routes_to target is a breaking CLI change.",
+  "_note": "Canonical routing surface for cook. raw_signal -> canonical tag -> routes_to. Seeded from every standards/*/_INDEX.md keyword column (the global shelf routes here, not via a keyword table), then extended with gap-closing synonyms. Within-domain ref selection still uses the domain _INDEX.md tables; this file drives top-level routing only. Verify parity with verify/done/check-vocab-parity.py, which skips the unrouted security shelf and an allowlist of intentionally-generic tokens. The routes_to targets double as the public --flag namespace for /cook invocations: concern:<name> -> --<name> (loads one global ref), domain:<name> -> --<name> (loads full domain shelf) or --<name>:<ref> (loads single domain ref), shelf:global -> --global (loads full global shelf). Renaming or deleting a routes_to target is a breaking CLI change.",
   "tags": {
     "react": {
       "routes_to": ["domain:react"],
-      "aliases": ["component", "props", "children", "jsx", "hooks", "useEffect", "useEffectEvent", "useState", "useCallback", "useMemo", "useRef", "useContext", "useReducer", "useSyncExternalStore", "useId", "useLayoutEffect", "ReactNode", "render", "userEvent", "MSW", "mock service worker", "waitFor", "queryBy", "fake timers", "vite", "webpack", "bundle", "StrictMode", "why-did-you-render", "exhaustive-deps", "React Compiler", "zustand", "redux", "RTK", "RTK Query", "react-query", "TanStack Query", "SWR", "Jotai", "Suspense", "dynamic", "react-window", "TanStack Virtual", "bundle size", "DOMPurify", "Trusted Types", "SameSite", "compound component", "HOC", "render prop", "composition", "controlled", "uncontrolled", "accessibility", "ARIA", "useLocalStorage", "useDebounce", "useWindowSize", "useOnClickOutside", "useIntersectionObserver", "usePrevious", "useToggle", "custom hook"]
+      "aliases": ["component", "props", "children", "jsx", "hooks", "useEffect", "useEffectEvent", "useState", "useCallback", "useMemo", "useRef", "useContext", "useReducer", "useSyncExternalStore", "useId", "useLayoutEffect", "ReactNode", "render", "userEvent", "MSW", "mock service worker", "waitFor", "queryBy", "fake timers", "vite", "webpack", "bundle", "StrictMode", "why-did-you-render", "exhaustive-deps", "React Compiler", "zustand", "redux", "RTK", "RTK Query", "react-query", "TanStack Query", "SWR", "Jotai", "Suspense", "dynamic", "react-window", "TanStack Virtual", "bundle size", "DOMPurify", "Trusted Types", "compound component", "HOC", "render prop", "composition", "controlled", "uncontrolled", "accessibility", "ARIA", "useLocalStorage", "useDebounce", "useWindowSize", "useOnClickOutside", "useIntersectionObserver", "usePrevious", "useToggle", "custom hook", "dialog", "menu", "tabs"]
     },
     "nextjs": {
       "routes_to": ["domain:nextjs"],
-      "aliases": ["Server Component", "Client Component", "use client", "hydration", "App Router", "Layout", "Route Group", "parallel routes", "intercepting routes", "async params", "Pages Router", "getServerSideProps", "getStaticProps", "_app", "_document", "useRouter", "RSC", "serialization", "revalidate", "no-store", "force-cache", "DAL", "Data Access Layer", "server-only", "generateStaticParams", "dynamicParams", "PPR", "streaming", "revalidateTag", "Data Cache", "Router Cache", "use server", "Server Action", "revalidatePath", "useFormStatus", "useActionState", "jose", "URL state", "tailwind", "css modules", "styled-components", "clsx", "cn", "next/image", "next/font", "Core Web Vitals", "testing-library", "FSD", "Feature Sliced Design", "slices", "segments", "RSC boundaries", "bundling", "i18n", "locale", "translation", "next-intl", "react-intl", "next-translate", "hreflang", "Dockerfile", "turbopack", "standalone", "codemod", "next upgrade", "playwright"]
+      "aliases": ["Server Component", "Client Component", "use client", "hydration", "App Router", "Layout", "Route Group", "parallel routes", "intercepting routes", "async params", "Pages Router", "getServerSideProps", "getStaticProps", "_app", "_document", "useRouter", "RSC", "serialization", "revalidate", "no-store", "force-cache", "DAL", "Data Access Layer", "server-only", "generateStaticParams", "dynamicParams", "PPR", "streaming", "revalidateTag", "Data Cache", "Router Cache", "use server", "Server Action", "revalidatePath", "useFormStatus", "useActionState", "jose", "URL state", "styled-components", "next/image", "next/font", "Core Web Vitals", "testing-library", "FSD", "Feature Sliced Design", "slices", "segments", "RSC boundaries", "bundling", "i18n", "locale", "translation", "next-intl", "react-intl", "next-translate", "hreflang", "Dockerfile", "turbopack", "standalone", "codemod", "next upgrade", "playwright"]
     },
     "flutter": {
       "routes_to": ["domain:flutter"],
@@ -24,7 +24,7 @@
     },
     "graphql": {
       "routes_to": ["domain:graphql"],
-      "aliases": ["graphql", "gql", "resolver", "mutation", "subscription", "SDL", "typeDefs", "Apollo", "DataLoader", "connection", "cursor", "union", "deprecated", "deprecation", "depth limit", "complexity", "rate limit", "introspection", "executeOperation", "schema snapshot", "mock context", "resolver test", "integration test", "codegen", "graphql-eslint", "graphql-inspector", "schema registry", "rover", "persisted"]
+      "aliases": ["graphql", "gql", "resolver", "mutation", "subscription", "SDL", "typeDefs", "Apollo", "DataLoader", "connection", "cursor", "union", "deprecated", "deprecation", "depth limit", "complexity", "rate limit", "introspection", "executeOperation", "schema snapshot", "mock context", "resolver test", "integration test", "codegen", "graphql-eslint", "graphql-inspector", "schema registry", "rover", "persisted", "scalar", "input type", "payload", "global id", "resolver thinness", "batch"]
     },
     "nodejs": {
       "routes_to": ["domain:nodejs"],
@@ -32,7 +32,7 @@
     },
     "typescript": {
       "routes_to": ["domain:typescript"],
-      "aliases": ["generic", "enum", "readonly", "eslint", "jest", "vitest", "tsconfig", "tsx", "ts"]
+      "aliases": ["generic", "enum", "readonly", "eslint", "jest", "vitest", "tsconfig", "tsx", "ts", "satisfies", "as const", "discriminated union", "type guard", "utility type", "Partial", "Pick", "Omit", "infer", "conditional type", "template literal type", "declaration merging", ".d.ts", "noUncheckedIndexedAccess", "never", "unknown"]
     },
     "dart": {
       "routes_to": ["domain:dart"],
@@ -40,11 +40,11 @@
     },
     "swift": {
       "routes_to": ["domain:swift"],
-      "aliases": ["Sendable", "MainActor", "actor isolation", "Swift concurrency", "async let", "TaskGroup", "structured concurrency", "Task.detached", "continuation", "AsyncStream", "AsyncSequence", "guard let", "force unwrap", "opaque type", "existential", "typed throws", "Codable", "CodingKeys", "weak self", "unowned", "retain cycle", "ARC", "SwiftLint", "SwiftFormat", "swift-format", "Swift Testing", "#expect", "#require", "XCTest", "xcodebuild", "SPM", "Package.swift", "Package.resolved", "os.Logger", "OSLog", "Instruments", "Unmanaged", "takeRetainedValue", "CoreFoundation"]
+      "aliases": ["Sendable", "MainActor", "actor isolation", "Swift concurrency", "async let", "TaskGroup", "structured concurrency", "Task.detached", "continuation", "AsyncStream", "AsyncSequence", "guard let", "force unwrap", "opaque type", "existential", "typed throws", "Codable", "CodingKeys", "weak self", "unowned", "retain cycle", "ARC", "SwiftLint", "SwiftFormat", "swift-format", "Swift Testing", "#expect", "#require", "XCTest", "xcodebuild", "SPM", "Package.swift", "Package.resolved", "os.Logger", "OSLog", "Instruments", "Unmanaged", "takeRetainedValue", "CoreFoundation", "actor", "data race", "strict concurrency", "Swift 6 migration", "property wrapper", "result builder", "MetricKit", "KVO", "deinit", "OSSignposter", "UnsafePointer", "weak"]
     },
     "macos": {
       "routes_to": ["domain:macos"],
-      "aliases": ["AppKit", "NSWindow", "NSView", "NSPanel", "NSStatusItem", "MenuBarExtra", "menu bar app", "WindowGroup", "DocumentGroup", "Settings scene", "SwiftUI", "NSHostingView", "NSViewRepresentable", "App Sandbox", "entitlement", "entitlements", "security-scoped bookmark", "TCC", "notarization", "notarytool", "codesign", "hardened runtime", "Gatekeeper", "Developer ID", "Mac App Store", "Sparkle", "appcast", "XPC", "SMAppService", "launch agent", "login item", "App Nap", "FSEvents", "Liquid Glass", "SwiftData", "Core Data", "NSManagedObjectContext", "GRDB", "String Catalog", "VoiceOver", "App Intents", "NSUndoManager", "@Observable", "@Bindable", "NavigationStack", "TCA", "FormatStyle"]
+      "aliases": ["AppKit", "NSWindow", "NSView", "NSPanel", "NSStatusItem", "MenuBarExtra", "menu bar app", "WindowGroup", "DocumentGroup", "Settings scene", "SwiftUI", "NSHostingView", "NSViewRepresentable", "App Sandbox", "entitlement", "entitlements", "security-scoped bookmark", "TCC", "notarization", "notarytool", "codesign", "hardened runtime", "Gatekeeper", "Developer ID", "Mac App Store", "Sparkle", "appcast", "XPC", "SMAppService", "launch agent", "login item", "App Nap", "FSEvents", "Liquid Glass", "SwiftData", "Core Data", "NSManagedObjectContext", "GRDB", "String Catalog", "VoiceOver", "App Intents", "NSUndoManager", "@Observable", "@Bindable", "NavigationStack", "TCA", "FormatStyle", "Keychain", "SF Symbols", "Dynamic Type", "Transferable", "ObservableObject", "openWindow", "pasteboard", "universal binary", "dmg", "pkg", "staple"]
     },
     "css": {
       "routes_to": ["domain:css"],
@@ -52,7 +52,7 @@
     },
     "data-model": {
       "routes_to": ["concern:architecture"],
-      "aliases": ["array", "list", "collection", "map", "keys", "entity", "struct", "shape", "model", "dto", "DTO"]
+      "aliases": ["array", "list", "collection", "map", "keys", "entity", "struct", "shape", "model", "dto"]
     },
     "architecture": {
       "routes_to": ["concern:architecture"],
@@ -64,19 +64,19 @@
     },
     "error-handling": {
       "routes_to": ["concern:error-handling"],
-      "aliases": ["error", "exception", "throw", "catch", "failure", "Failure", "error code", "envelope", "error boundary", "domain error"]
+      "aliases": ["error", "exception", "throw", "catch", "failure", "error code", "envelope", "error boundary", "domain error"]
     },
     "auth": {
       "routes_to": ["concern:auth"],
-      "aliases": ["auth", "authentication", "authorization", "login", "oauth", "oauth2", "pkce", "token", "access token", "refresh token", "jwt", "JWT", "session", "cookie", "rbac", "role", "scope", "csrf", "CSRF", "SameSite", "session fixation", "guard", "route guard", "middleware", "admin", "argon2", "bcrypt", "password hash", "mfa", "MFA", "2fa", "2FA", "multi-factor", "step-up auth", "brute force", "account lockout", "lockout", "password reset", "forgot password", "account recovery", "password policy", "breached password", "redirect_uri", "user enumeration", "timing-safe", "mtls", "mTLS", "mutual tls", "client credentials", "service-to-service", "service to service", "machine-to-machine", "m2m", "api key", "service account", "workload identity", "zero-trust"]
+      "aliases": ["auth", "authentication", "authorization", "login", "oauth", "oauth2", "pkce", "token", "access token", "refresh token", "jwt", "session", "cookie", "rbac", "role", "scope", "csrf", "SameSite", "session fixation", "guard", "route guard", "middleware", "admin", "argon2", "bcrypt", "password hash", "mfa", "2fa", "multi-factor", "step-up auth", "brute force", "account lockout", "lockout", "password reset", "forgot password", "account recovery", "password policy", "breached password", "redirect_uri", "user enumeration", "timing-safe", "mtls", "mutual tls", "client credentials", "service-to-service", "service to service", "machine-to-machine", "m2m", "api key", "service account", "workload identity", "zero-trust"]
     },
     "security": {
       "routes_to": ["concern:security"],
-      "aliases": ["security", "secret", "owasp", "OWASP", "sanitize", "validate", "validation", "xss", "XSS", "sql injection", "dangerouslySetInnerHTML", "localStorage", "localstorage", "tenant", "owner", "guard", "cors", "ssrf", "pii", "PII", "CSP", "key leak", "leaked key", "public env", "client-public env", "client bundle secret", "public-prefixed env", "bearer token misuse"]
+      "aliases": ["security", "secret", "owasp", "sanitize", "validate", "validation", "xss", "sql injection", "dangerouslySetInnerHTML", "localStorage", "tenant", "owner", "guard", "cors", "ssrf", "pii", "CSP", "key leak", "leaked key", "public env", "client-public env", "client bundle secret", "public-prefixed env", "bearer token misuse"]
     },
     "performance": {
       "routes_to": ["concern:performance"],
-      "aliases": ["performance", "slow", "n+1", "N+1", "index", "re-render", "memo", "virtualize", "waterfall", "parallel fetch", "cache", "latency", "throughput", "bottleneck", "profile", "lazy", "Suspense"]
+      "aliases": ["performance", "slow", "n+1", "index", "re-render", "memo", "virtualize", "waterfall", "parallel fetch", "cache", "latency", "throughput", "bottleneck", "profile", "lazy", "Suspense"]
     },
     "debug": {
       "routes_to": ["concern:debug"],

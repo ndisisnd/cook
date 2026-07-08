@@ -4,6 +4,15 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-08 · Cook recognizes more code-task signals — new intents and richer tag aliases route more work to the right standards
+
+**refactor(vocab): expand intents, dedupe and extend tag aliases.**
+
+- `vocab/intent-vocabulary.json`: add `write-styles`, `upgrade-dependency`, `configure-ci`, and `write-docs` intents so styling, dependency, CI, and docs tasks classify distinctly.
+- `vocab/tag-vocabulary.json`: extend react (`dialog`, `menu`, `tabs`), graphql (`scalar`, `input type`, `payload`, `global id`, `batch`), typescript (`satisfies`, `as const`, `discriminated union`, utility types), swift (`actor`, `data race`, `strict concurrency`, `Swift 6 migration`), and macos (`Keychain`, `SF Symbols`, `Dynamic Type`, packaging) aliases; drop redundant case-variant duplicates (`JWT`, `CSRF`, `XSS`, `OWASP`, `PII`, …); refresh the routing `_note` to describe the global-shelf routing and the parity-check allowlist.
+
+---
+
 ## [Unreleased] — 2026-07-07 · Installer manifest generates itself — fresh installs stop silently missing files
 
 **build(install): generate FILES manifest from the working tree.**
