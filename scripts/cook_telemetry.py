@@ -236,9 +236,9 @@ def cmd_status(store: Path, scope: str, _args) -> int:
         for key, n in top:
             print(f"  {key.ljust(width)}  {str(n).rjust(4)}  {_bar(n, peak)}")
 
-    _section("By intent", intents, 20)
-    _section("By folder (fires touching it)", folders, 20)
     _section("Top standards", standards, 15)
+    _section("By folder (fires touching it)", folders, 20)
+    _section("By intent", intents, 20)
     return 0
 
 

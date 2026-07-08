@@ -81,6 +81,6 @@ user-facing output for this step; the fire's return envelope is unchanged.
 
 `status` prints, to the console: the enabled/disabled state **and scope**
 (local/global), the store path, the total fire count and time window, then
-ranked breakdowns — by intent, by folder (how many fires touched each), and the
-top individual standards. With no records it prints a short "nothing logged yet"
-hint.
+ranked breakdowns — the top individual standards, by folder (how many fires
+touched each), and by intent. With no records it prints a short "nothing logged
+yet" hint.

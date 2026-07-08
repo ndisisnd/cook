@@ -191,7 +191,7 @@ protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
   `prompt` (the raw task summary), `mode`, and `standards` (folder → the
   standards loaded within it, `SKILL` or `refs/<name>`). A no-op when disabled.
 - **`--status`** — prints enabled state, total fires, time window, and ranked
-  breakdowns by intent, folder, and individual standard.
+  breakdowns by individual standard, folder, and intent.
 
 ---
 

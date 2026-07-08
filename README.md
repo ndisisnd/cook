@@ -92,7 +92,7 @@ cook --disable-telemetry   # stop logging (records are kept)
 cook --status              # print stats to the console
 ```
 
-When enabled, each successful fire appends one record — the intent, the raw prompt, and the standards extracted (folder → the standards loaded within it) — to `telemetry/telemetry.json`. `cook --status` reports the total fire count and ranked breakdowns by intent, folder, and individual standard.
+When enabled, each successful fire appends one record — the intent, the raw prompt, and the standards extracted (folder → the standards loaded within it) — to `telemetry/telemetry.json`. `cook --status` reports the total fire count and ranked breakdowns by individual standard, folder, and intent.
 
 **Scope is local-first.** Run `cook --init` inside a repo to give it its own log at `<repo>/telemetry/telemetry.json` — that repo's cook calls then record there. Any repo you haven't initialised falls back to the global store under the cook install dir (alongside the cache). Both are gitignored and never shipped by the installer; they're purely local. Add `--global` to any telemetry command to force the global store.
 

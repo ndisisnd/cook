@@ -4,6 +4,15 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-08 · Cook status leads with the standards you fire most
+
+**refactor(telemetry): lead the `--status` breakdown with top standards.**
+
+- `scripts/cook_telemetry.py`: reorder the `status` output so the **top standards** section prints first, followed by folder (fires touching it) and then intent — the most actionable ranking now leads.
+- `README.md`, `ARCHITECTURE.md`, `refs/telemetry.md`: update the documented breakdown ordering to match (standards → folder → intent).
+
+---
+
 ## [Unreleased] — 2026-07-08 · Installer rides out CDN lag and can install offline from a local clone
 
 **build(install): local-source mode + per-file retry hardening.**
