@@ -18,9 +18,11 @@ FILES=(
   SKILL.md
   refs/protocol-cook.md
   refs/protocol-explicit.md
+  refs/telemetry.md
   scripts/check_index_routes.py
   scripts/cook_cache.py
   scripts/cook_compile.py
+  scripts/cook_telemetry.py
   scripts/gen_install_files.py
   standards/css/SKILL.md
   standards/css/_INDEX.md
@@ -187,6 +189,7 @@ main() {
   # make scripts executable
   chmod +x "$DEST/scripts/cook_cache.py" \
             "$DEST/scripts/cook_compile.py" \
+            "$DEST/scripts/cook_telemetry.py" \
             "$DEST/scripts/check_index_routes.py"
 
   echo ""

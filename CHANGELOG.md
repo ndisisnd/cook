@@ -4,6 +4,19 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-08 · Cook can log what it fires — an opt-in, off-by-default telemetry trail
+
+**feat(telemetry): opt-in usage log for cook fires.**
+
+- `scripts/cook_telemetry.py`: new helper with `enable` / `disable` / `status` / `record` subcommands. Stores a single `telemetry/telemetry.json` under the cook root (peer to `.agent-skills/`) holding the `enabled` flag and a `records` array. `record` captures the intent, the raw prompt, and the standards extracted (folder → the `SKILL`/`refs/<name>` standards loaded within it); it is a silent no-op when disabled and is wrapped so it can never fail a fire. `status` prints total fires and ranked breakdowns by intent, folder, and individual standard. Corrupt or absent stores degrade to a fresh default.
+- `refs/telemetry.md`: protocol contract — the Step 0 management-flag interception and the best-effort record step, with the `record` arg semantics (intent from `vocab/intent-vocabulary.json`, prompt, mode, and the same `--skills` list passed to the compiler).
+- `refs/protocol-cook.md`: add **Step 0** — intercept `--enable-telemetry` / `--disable-telemetry` / `--status` before routing (alone they run and terminate; combined with load args they run first, then normal loading proceeds) — and a best-effort record step at the end of Step 6, after `heal`.
+- `README.md`, `FLAG-LIST.md`, `ARCHITECTURE.md`: document the flags, storage, and record semantics; new Management flag section and Telemetry architecture section.
+- `install.sh`: ship `cook_telemetry.py` (chmod + FILES manifest regenerated, 126 → 128 entries picking up `refs/telemetry.md`).
+- `.gitignore`: ignore `telemetry/` — local runtime data, never committed or shipped.
+
+---
+
 ## [Unreleased] — 2026-07-08 · Cook recognizes more code-task signals — new intents and richer tag aliases route more work to the right standards
 
 **refactor(vocab): expand intents, dedupe and extend tag aliases.**

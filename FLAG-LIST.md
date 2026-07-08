@@ -4,6 +4,20 @@ Complete list of every valid `/cook` flag. Generated from `vocab/tag-vocabulary.
 
 ---
 
+## Management
+
+These flags do not load standards — they manage the optional telemetry log and
+terminate (unless combined with load args, in which case telemetry runs first).
+See [`refs/telemetry.md`](refs/telemetry.md).
+
+| Flag | Action |
+|---|---|
+| `--enable-telemetry` | Turn on the usage log (`telemetry/telemetry.json`) |
+| `--disable-telemetry` | Turn off the usage log; existing records are kept |
+| `--status` | Print telemetry stats to the console |
+
+---
+
 ## Shelf
 
 | Flag | Loads |

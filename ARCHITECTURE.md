@@ -38,7 +38,10 @@ Each `standards/` folder contains a `SKILL.md`, an `_INDEX.md` (concern/ref rout
 
 ## Protocol
 
-Cook operates in three control-flow paths, selected at Step 1:
+Step 0 intercepts the telemetry management flags (`--enable-telemetry`,
+`--disable-telemetry`, `--status`) before any routing — see
+[Telemetry](#telemetry). Otherwise cook operates in three control-flow paths,
+selected at Step 1:
 
 | Path | Condition | LLM? | Cache write? |
 |---|---|---|---|
@@ -160,6 +163,29 @@ defeats the cache's core guarantee that a hit never wakes the model).
 | `scripts/cook_cache.py` | Implements the resolver (file-derivation cascade, fingerprint, lookup), cache writer (atomic tmp+rename, checksum stamps), and `heal` sub-command (degraded-flag reconciliation). |
 | `scripts/cook_compile.py` | Deterministic compiler: dedup, layer bucketing, frontmatter stripping, concatenation, degraded tracking. No LLM involvement. |
 | `scripts/check_index_routes.py` | CI / pre-commit validator. Fails the build if any `_INDEX.md` route target points at a missing file — upstream prevention for broken routing. |
+| `scripts/cook_telemetry.py` | Optional usage log (`enable` / `disable` / `status` / `record`). Off by default; stores `telemetry/telemetry.json` under the cook root. `record` is a silent no-op when disabled and never fails a fire. |
+
+---
+
+## Telemetry
+
+An **opt-in, off-by-default** log of what cook fires. It observes only — it never
+changes routing, loading, or the return envelope. `refs/telemetry.md` is the
+protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
+
+- **State + storage** — a single JSON file, `telemetry/telemetry.json`, under the
+  cook root (peer to `.agent-skills/`). It holds the `enabled` flag and the
+  `records` array together, so state persists across fires. Gitignored and not
+  shipped by the installer; created lazily on first `enable`.
+- **Management flags** (Step 0) — `--enable-telemetry`, `--disable-telemetry`,
+  `--status` are intercepted before routing. Alone they run and terminate;
+  combined with load args they run first, then the remaining args load normally.
+- **Record step** (end of Step 6) — best-effort `record` appends one entry per
+  successful fire: `ts`, `intent` (a `vocab/intent-vocabulary.json` label),
+  `prompt` (the raw task summary), `mode`, and `standards` (folder → the
+  standards loaded within it, `SKILL` or `refs/<name>`). A no-op when disabled.
+- **`--status`** — prints enabled state, total fires, time window, and ranked
+  breakdowns by intent, folder, and individual standard.
 
 ---
 

@@ -1,9 +1,20 @@
 # Cook Protocol
 
 Operational protocol for the `cook` orchestrator. `SKILL.md` is the thin entry
-point; follow this file exactly. If the invocation carries **any** args (flags
-and/or prose), read [`protocol-explicit.md`](protocol-explicit.md) instead of
-Steps 1–5 — the compile step (Step 6) is shared.
+point; follow this file exactly. Handle Step 0 (telemetry management flags)
+first. Then, if the invocation carries **any** remaining args (flags and/or
+prose), read [`protocol-explicit.md`](protocol-explicit.md) instead of Steps
+1–5 — the compile step (Step 6) is shared.
+
+### Step 0 — Telemetry management flags (intercept first)
+
+If the invocation carries a telemetry management flag — `--enable-telemetry`,
+`--disable-telemetry`, or `--status` — read [`telemetry.md`](telemetry.md) and
+follow it. When such a flag is the whole invocation, run the matching command,
+print its output, and terminate (do not proceed to Step 1). Otherwise strip the
+flag, run its command, then continue below with the remaining args. Telemetry is
+opt-in and off by default; the optional record step at the end of Step 6 is also
+defined in `telemetry.md`.
 
 | Mode | Condition | P0 loaded? | Cache? | Path |
 |---|---|---|---|---|
@@ -112,6 +123,18 @@ python3 scripts/cook_cache.py heal --fingerprint <fp> --degraded <compiler.degra
 
 `heal` stamps read failures onto the entry and clears them once files read
 again; it rewrites only when the set changed, so the hit path stays cheap.
+
+Then, **best-effort**, record the fire for telemetry (a silent no-op when
+telemetry is disabled — always safe to call):
+
+```
+python3 scripts/cook_telemetry.py record --intent <label> \
+  --prompt <raw task summary> --mode <mode> --skills <same paths as compile>
+```
+
+See [`telemetry.md`](telemetry.md) for the arg contract. This never alters the
+return envelope and never fails a fire; skip it only if the compile itself did
+not run.
 
 **Return the summary envelope — `path`, `sections`, `degraded` — to the
 invoking agent. Never inline or restate the payload content**; the invoker

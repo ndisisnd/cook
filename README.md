@@ -81,6 +81,18 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 
 **P0 trade-off:** any explicit flag or prose argument skips the global P0 floor — the contract is "load exactly what I named." Use `--global` to opt back in explicitly. Default `/cook` keeps the floor.
 
+#### Telemetry (optional)
+
+Cook can keep a local, opt-in log of what it fires. It's **off by default** and never changes what loads.
+
+```bash
+cook --enable-telemetry    # start logging
+cook --disable-telemetry   # stop logging (records are kept)
+cook --status              # print stats to the console
+```
+
+When enabled, each successful fire appends one record — the intent, the raw prompt, and the standards extracted (folder → the standards loaded within it) — to `telemetry/telemetry.json` under the cook root. The file is gitignored and never shipped by the installer; it's purely local. `cook --status` reports the total fire count and ranked breakdowns by intent, folder, and individual standard.
+
 ## Available Standards
 
 | Standards | What's covered | 
