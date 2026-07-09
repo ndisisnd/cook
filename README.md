@@ -34,7 +34,7 @@ This installs cook to `~/.claude/skills/cook/`. To install somewhere else:
 COOK_DIR=/path/to/destination bash install.sh
 ```
 
-**Requirements:** `curl`, `python3`
+**Requirements:** `curl`, `tar`, `python3`
 
 ## How it Works
 

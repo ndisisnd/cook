@@ -4,6 +4,18 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-09 · Installing cook no longer trips GitHub's rate limit
+
+**fix(install): fetch the repo as a single tarball instead of 128 per-file requests.**
+
+- `install.sh`: fetch the whole repo as one `codeload.github.com` tarball, expand it into a temp dir, and copy the runtime files from there — the same code path `COOK_SRC` already used.
+  - Fixes the `429` that hit every cold install: fetching the 128 runtime files one-by-one from `raw.githubusercontent.com` tripped its per-IP rate limit at ~100 requests, so the tail of the install failed. Reproduced at request #101.
+  - Removed the `--retry 5 --retry-all-errors` flags and the three-attempt backoff loop. They were added for CDN-propagation lag, but amplified the rate limiting — each `429` fired up to five more requests into the same saturated window. A tarball is generated from git at the ref, so it has no propagation lag to ride out.
+  - Added an `EXIT` trap that removes the temp dir on every path, and explicit failure messages for a dead download vs. a corrupt archive.
+- `README.md`: add `tar` to the documented requirements — extraction is now a hard dependency on the download path.
+
+---
+
 ## [Unreleased] — 2026-07-08 · Cook status leads with the standards you fire most
 
 **refactor(telemetry): lead the `--status` breakdown with top standards.**

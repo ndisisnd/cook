@@ -6,9 +6,9 @@
 
 set -euo pipefail
 
-REPO="https://raw.githubusercontent.com/ndisisnd/cook/main"
+TARBALL="https://codeload.github.com/ndisisnd/cook/tar.gz/refs/heads/main"
 DEST="${COOK_DIR:-$HOME/.claude/skills/cook}"
-# Install from a local clone instead of the CDN (no network; instant, reliable).
+# Install from a local clone instead of downloading (no network; instant).
 # Usage: COOK_SRC=/path/to/cook bash install.sh
 SRC="${COOK_SRC:-}"
 
@@ -149,45 +149,57 @@ FILES=(
   vocab/tag-vocabulary.json
 )
 
-check_deps() {
-  # curl is only needed for the CDN path; a local-source install skips it.
-  if [[ -z "$SRC" ]] && ! command -v curl &>/dev/null; then
-    echo -e "${RED}Error: curl is required but not found.${RESET}" >&2
-    exit 1
-  fi
-  if ! command -v python3 &>/dev/null; then
-    echo -e "${RED}Error: python3 is required but not found.${RESET}" >&2
-    exit 1
-  fi
+TMP=""
+cleanup() {
+  [[ -n "$TMP" ]] && rm -rf "$TMP"
+  return 0
+}
+trap cleanup EXIT
+
+die() {
+  echo -e "${RED}$1${RESET}" >&2
+  exit 1
 }
 
-# Per-file curl retry flags. --retry-all-errors (curl 7.71+) rides out the
-# transient 404/5xx window right after a push while raw.githubusercontent
-# propagates; guarded so older curl still works with plain --retry.
-CURL_RETRY=(--retry 5 --retry-delay 2 --connect-timeout 10)
-# Detect with a full read (grep >/dev/null), not `grep -q`: -q early-exits and
-# closes the pipe, racing curl's write and flaking to a false negative.
-if curl --help all 2>/dev/null | grep -F -- '--retry-all-errors' >/dev/null 2>&1; then
-  CURL_RETRY+=(--retry-all-errors)
-fi
+check_deps() {
+  # curl and tar are only needed to download; a local-source install skips both.
+  if [[ -z "$SRC" ]]; then
+    command -v curl &>/dev/null || die "Error: curl is required but not found."
+    command -v tar &>/dev/null || die "Error: tar is required but not found."
+  fi
+  command -v python3 &>/dev/null || die "Error: python3 is required but not found."
+}
 
-fetch_file() {
+# Download the repo as a single tarball and expand it into a temp dir, which then
+# becomes $SRC. One request, not one-per-file: fetching the 128 runtime files
+# individually from raw.githubusercontent tripped its per-IP rate limit around
+# request ~100 and returned 429 for the tail of the install.
+fetch_source() {
+  TMP="$(mktemp -d "${TMPDIR:-/tmp}/cook-install.XXXXXX")"
+  local tgz="$TMP/cook.tar.gz"
+
+  echo -e "Downloading ${CYAN}$TARBALL${RESET}"
+  curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 10 "$TARBALL" -o "$tgz" \
+    || die "Download failed. Check your connection, or install from a local clone: COOK_SRC=/path/to/cook bash install.sh"
+
+  mkdir -p "$TMP/src"
+  # GitHub wraps the tree in a <repo>-<ref>/ directory; strip it.
+  tar -xzf "$tgz" -C "$TMP/src" --strip-components=1 \
+    || die "Could not expand the archive — the download may be corrupt. Re-run to retry."
+
+  [[ -f "$TMP/src/SKILL.md" ]] || die "Archive is missing SKILL.md — unexpected repository layout."
+  SRC="$TMP/src"
+}
+
+install_file() {
   local rel="$1"
   local dest="$DEST/$rel"
   mkdir -p "$(dirname "$dest")"
-  if [[ -n "$SRC" ]]; then
-    if cp "$SRC/$rel" "$dest" 2>/dev/null; then
-      echo -e "  ${GREEN}✓${RESET} $rel"
-      return 0
-    fi
-    echo -e "${RED}  ✗ Missing in source: $rel${RESET}" >&2
-    return 1
-  fi
-  if curl -fsSL "${CURL_RETRY[@]}" "$REPO/$rel" -o "$dest"; then
+  if cp "$SRC/$rel" "$dest" 2>/dev/null; then
     echo -e "  ${GREEN}✓${RESET} $rel"
     return 0
   fi
-  echo -e "${RED}  ✗ Failed: $rel${RESET}" >&2
+  echo -e "${RED}  ✗ Missing in source: $rel${RESET}" >&2
   return 1
 }
 
@@ -205,31 +217,25 @@ main() {
     echo -e "Updating existing install at ${CYAN}$DEST${RESET}\n"
   fi
 
-  # Track failures as a space-separated list (repo paths never contain spaces)
-  # so we can retry ONLY the failed files, not re-roll all of them. bash 3.2
-  # safe — no empty-array-under-set-u traps.
+  if [[ -z "$SRC" ]]; then
+    fetch_source
+  fi
+
+  # Track failures as a space-separated list (repo paths never contain spaces).
+  # bash 3.2 safe — no empty-array-under-set-u traps.
   local failed=""
   for f in "${FILES[@]}"; do
-    fetch_file "$f" || failed="$failed $f"
+    install_file "$f" || failed="$failed $f"
   done
-
-  # Retry only the still-failed subset with backoff (CDN path only; a local
-  # source that's missing a file won't heal by waiting).
-  if [[ -z "$SRC" && -n "${failed// }" ]]; then
-    local attempt todo f2
-    for attempt in 1 2 3; do
-      [[ -z "${failed// }" ]] && break
-      todo="$failed"; failed=""
-      echo -e "\n${CYAN}Retrying$(echo "$todo" | wc -w | tr -d ' ') file(s) after CDN lag (attempt $attempt)...${RESET}"
-      sleep $((attempt * 3))
-      for f2 in $todo; do
-        fetch_file "$f2" || failed="$failed $f2"
-      done
-    done
-  fi
 
   local fail_count=0
   for f in $failed; do fail_count=$((fail_count + 1)); done
+
+  echo ""
+  if [[ $fail_count -gt 0 ]]; then
+    echo -e "${RED}Install finished with $fail_count missing file(s):${RESET}$failed" >&2
+    exit 1
+  fi
 
   # cache directory (writable by cook_cache.py at runtime)
   mkdir -p "$DEST/.agent-skills"
@@ -239,15 +245,6 @@ main() {
             "$DEST/scripts/cook_compile.py" \
             "$DEST/scripts/cook_telemetry.py" \
             "$DEST/scripts/check_index_routes.py"
-
-  echo ""
-  if [[ $fail_count -gt 0 ]]; then
-    echo -e "${RED}Install finished with $fail_count failed file(s):${RESET}$failed" >&2
-    if [[ -z "$SRC" ]]; then
-      echo -e "${RED}The CDN may still be propagating a recent push — re-run in a minute, or install from a local clone: COOK_SRC=/path/to/cook bash install.sh${RESET}" >&2
-    fi
-    exit 1
-  fi
 
   local total="${#FILES[@]}"
   echo -e "${GREEN}${BOLD}Installed $total files to $DEST${RESET}"
