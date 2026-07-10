@@ -4,6 +4,16 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-11 · Domain flag + its own sub-refs loads a ref subset, not the full shelf
+
+**feat(cook): resolve `--<domain> --<domain>:<ref>` to the SKILL.md floor + named refs only.**
+
+- `refs/protocol-explicit.md`: a bare domain flag paired with ≥1 of its own `--<domain>:<ref>` flags now resolves to `standards/<domain>/SKILL.md` + only the named refs; the full shelf is suppressed. Previously the bare flag expanded to the full shelf regardless, so pairing it with a sub-ref loaded everything — making scoped selection impossible. Three invariants stay explicit: bare domain **alone** still loads the full shelf; a sub-ref **alone** still loads that ref with no SKILL.md; `--global`/concern/prose rules are untouched.
+- `FLAG-LIST.md`, `README.md`: consistency edits. `README.md` already documented the floor+named-subset result (`--react --react:hooks` → SKILL.md + `hooks.md` only), so `protocol-explicit.md` was internally contradicting it — this reconciles the two.
+- Motivation: lets callers (e.g. the msg `eng`/`plan-em` skills) emit diff-scoped sub-ref flags that load a genuine subset instead of the full shelf. Source-verified: `--macos` = 8 sections, `--macos --macos:architecture-and-state --macos:distribution` = 3, `degraded: []`.
+
+---
+
 ## [Unreleased] — 2026-07-10 · Auto-mode routing stops seeing truncated file paths
 
 **fix(cook): slice the porcelain status prefix before stripping it.**

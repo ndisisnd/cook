@@ -42,14 +42,31 @@ python3 scripts/cook_cache.py lookup --project <dir> \
 - **Concern flag** (`--security`, `--auth`, `--performance`, `--architecture`,
   `--api-design`, `--error-handling`, `--debug`, `--cicd`) →
   `standards/global/refs/<concern>.md` only (no P0 SKILL.md).
-- **Domain flag, no prose** → `standards/<domain>/SKILL.md` + every
-  `standards/<domain>/refs/*.md` (the full shelf).
-- **Domain flag + prose** → `standards/<domain>/SKILL.md` always, plus the
-  refs the domain's `_INDEX.md` keyword table matches against the prose. Zero
-  matched refs still loads the SKILL.md — the flag guarantees the shelf entry.
-- **Sub-ref flag** (`--react:hooks`) → `standards/<domain>/refs/<ref>.md`
-  only; the domain SKILL.md does NOT auto-load. Combine with the bare domain
-  flag to load both: `--react --react:hooks`.
+- **Bare domain flag** (`--<domain>`) → `standards/<domain>/SKILL.md` **always**
+  loads; which refs load beside it depends on what else names that same domain:
+  - **Alone** — no prose and no `--<domain>:<ref>` for it → every
+    `standards/<domain>/refs/*.md` (the **full shelf**).
+  - **+ one or more `--<domain>:<ref>` for the SAME domain** → the SKILL.md floor
+    **plus only the named refs**; the full shelf is **suppressed** (the other
+    `refs/*.md` do NOT load). The sub-ref flags select a subset on top of the
+    floor. Worked example:
+    `--macos --macos:architecture-and-state --macos:distribution` →
+    `standards/macos/SKILL.md`
+    + `standards/macos/refs/architecture-and-state.md`
+    + `standards/macos/refs/distribution.md`, and **nothing else** — none of the
+    other `standards/macos/refs/*.md` load.
+  - **+ prose** (and no sub-ref for it) → the SKILL.md floor plus the refs the
+    domain's `_INDEX.md` keyword table matches against the prose. Zero matched
+    refs still loads the SKILL.md — the flag guarantees the shelf entry. (If
+    both prose and `--<domain>:<ref>` name the same domain, load the SKILL.md
+    plus the **union** of the named refs and the prose-matched refs — both are
+    explicit selections, and the full shelf stays suppressed.)
+- **Sub-ref flag alone** (`--react:hooks` with NO bare `--react` present) →
+  `standards/<domain>/refs/<ref>.md` only; the domain SKILL.md does **NOT** load.
+  Pair it with the bare domain flag to add the SKILL.md floor:
+  `--react --react:hooks` → `standards/react/SKILL.md`
+  + `standards/react/refs/hooks.md` only — floor + that one ref, **not** the
+  full shelf.
 - **Prose without flags** → run
   `python3 scripts/cook_cache.py classify --prose <text>` first. Each
   `concern:<name>` route loads `standards/global/refs/<name>.md`; each

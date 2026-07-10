@@ -46,9 +46,9 @@ Each concern flag loads a single ref from `standards/global/refs/`. No P0 SKILL.
 
 ## Domains
 
-A bare domain flag loads the full shelf: `standards/<domain>/SKILL.md` + all refs.  
-A sub-ref flag (`--<domain>:<ref>`) loads only that one ref — no SKILL.md.  
-Combine both to get SKILL.md + one ref: `--react --react:hooks`.
+A bare domain flag **alone** loads the full shelf: `standards/<domain>/SKILL.md` + all refs.  
+A sub-ref flag (`--<domain>:<ref>`) **alone** loads only that one ref — no SKILL.md.  
+Pairing a bare domain flag with one or more of its **own** sub-ref flags loads the SKILL.md floor + **only** the named refs (the full shelf is suppressed): `--react --react:hooks` → `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only.
 
 ### `--css`
 
