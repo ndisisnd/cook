@@ -4,6 +4,19 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-10 · Auto-mode routing stops seeing truncated file paths
+
+**fix(cook): slice the porcelain status prefix before stripping it.**
+
+- `scripts/cook_cache.py`: fix `git_files()` dropping the first character of every worktree-modified path, and accept `--project` on `write`/`heal`.
+  - `line.strip()` ran before `line[3:]`, so the leading space in git's status column (`" M .gitignore"`) was removed first and the slice then ate the path's first character — yielding `gitignore`. Only the shapes with a leading space (` M` worktree-modified, ` D` worktree-deleted) were corrupted; `M `, `??` and `UU` sliced correctly by accident, which is why this survived unnoticed. Because `git diff --name-only HEAD` contributed the correct path to the same set, `signals.files` carried both the correct and the truncated spelling.
+  - Rename entries (`R  old.py -> new.py`) were added verbatim as a single bogus path; the destination is now taken.
+  - `signals.files` feeds the fingerprint basis, so corrected paths shift the cache key: entries written under a truncated fingerprint are now unreachable and every affected project pays a one-time recompile. This narrows the `B2` backwards-compat guarantee in `fingerprint()`'s docstring. Harmless in practice — freshness is checksum-based, so the orphans are never hit again and are invalidated wholesale on the next vocab or index change.
+  - `--project` was accepted by `lookup`/`classify` but rejected by `write`/`heal`, costing two bash round-trips per compile. It is now accepted and ignored (suppressed from `--help`): the routing cache is anchored to `COOK_ROOT` and keyed by fingerprint alone, so a per-project cache does not exist to wire it up to.
+- `.gitignore`: ignore `token-cut/` — the token-analysis working notes stay untracked.
+
+---
+
 ## [Unreleased] — 2026-07-09 · Installing cook no longer trips GitHub's rate limit
 
 **fix(install): fetch the repo as a single tarball instead of 128 per-file requests.**

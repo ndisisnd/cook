@@ -100,13 +100,20 @@ def git_files(project: Path) -> list[str]:
         if res.returncode != 0:
             continue
         for line in res.stdout.splitlines():
-            line = line.strip()
-            if not line:
+            if not line.strip():
                 continue
-            # porcelain lines look like "XY path"; diff lines are bare paths
+            # porcelain lines look like "XY path"; diff lines are bare paths.
+            # X is a space for worktree-only changes (" M path"), so the prefix
+            # must be sliced before any strip() — stripping first eats the
+            # path's leading character.
             if cmd[1] == "status":
-                line = line[3:].strip() if len(line) > 3 else line
-            out.add(line)
+                if len(line) <= 3:
+                    continue
+                line = line[3:]
+                # rename/copy entries read "orig -> dest"; keep the destination.
+                if " -> " in line:
+                    line = line.split(" -> ", 1)[1]
+            out.add(line.strip())
     return sorted(out)
 
 
@@ -635,12 +642,16 @@ def main():
                     help="flags used for this lookup (repeatable; recorded on entry)")
     wr.add_argument("--mode", choices=["auto", "explicit-flags"],
                     help="mode recorded on entry (default: explicit-flags if --flag, else auto)")
+    # accepted for CLI symmetry with lookup/classify, then ignored: the routing
+    # cache is per-install and keyed by fingerprint alone, never per-project.
+    wr.add_argument("--project", help=argparse.SUPPRESS)
     wr.set_defaults(func=cmd_write)
 
     hl = sub.add_parser("heal")
     hl.add_argument("--fingerprint", required=True)
     hl.add_argument("--degraded", default="",
                     help="comma-separated paths that failed THIS run (empty = all read OK)")
+    hl.add_argument("--project", help=argparse.SUPPRESS)
     hl.set_defaults(func=cmd_heal)
 
     args = p.parse_args()
