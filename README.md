@@ -1,10 +1,35 @@
 <div align="center">
 
+<pre>
+ ██████╗ ██████╗  ██████╗ ██╗  ██╗
+██╔════╝██╔═══██╗██╔═══██╗██║ ██╔╝
+██║     ██║   ██║██║   ██║█████╔╝ 
+██║     ██║   ██║██║   ██║██╔═██╗ 
+╚██████╗╚██████╔╝╚██████╔╝██║  ██╗
+ ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝
+</pre>
+
 <img src="./asset/readme.jpeg">
 
 # 🧠 Cook
 
 __Optimising the vibe in vibecoding.__
+
+<p>
+<a href="LICENSE.md"><img src="https://badgen.net/badge/license/MIT/blue" alt="License"></a>
+<img src="https://badgen.net/badge/domains/12/8B5CF6" alt="domains">
+<img src="https://badgen.net/badge/concerns/8/orange" alt="concerns">
+<a href="https://github.com/ndisisnd/cook/commits/main"><img src="https://badgen.net/github/last-commit/ndisisnd/cook" alt="last commit"></a>
+</p>
+
+<p>
+<a href="#installation">Install</a> ·
+<a href="#how-it-works">How it Works</a> ·
+<a href="#faq">FAQ</a> ·
+<a href="llms.txt">llms.txt</a>
+</p>
+
+<sub><b>AI agents / LLMs:</b> read <a href="llms.txt"><code>llms.txt</code></a>.</sub>
 
 You've got brilliant ideas (that definitely are original and unique). You set up Claude Code, crack your joints, and fire up your favourite IDE (VSCode). You ask Claude, politely, to write the code for this feature that you believe is game-changing. 
 
@@ -37,6 +62,20 @@ COOK_DIR=/path/to/destination bash install.sh
 **Requirements:** `curl`, `tar`, `python3`
 
 ## How it Works
+
+```mermaid
+flowchart TD
+    invoke["<b>/cook</b><br/>file paths · prose · git context"]
+    fp["<b>Fingerprint</b><br/>hash the raw signals"]
+    cache{"cache hit?"}
+    classify["<b>Classify intent</b><br/>feature · bug · refactor …"]
+    route["<b>Route</b><br/>match concerns + domains"]
+    load["<b>Load rules</b><br/>global P0 → concerns → domains"]
+    compile["<b>Compile</b><br/>stitch into one payload"]
+    invoke --> fp --> cache
+    cache -->|hit| compile
+    cache -->|miss| classify --> route --> load --> compile
+```
 
 1. **Ask your coding agent to invoke `/cook`:** `cook` will check file paths, prose descriptions, git context.
 2. **Build a fingerprint:** the raw signals are hashed and checked against the cache. A match skips classification entirely — straight to compile.
@@ -114,6 +153,45 @@ When enabled, each successful fire appends one record — the intent, the raw pr
 | Supabase | RLS policies (auth.uid/auth.jwt), anon vs service_role key boundary, Edge Functions (Deno, verify_jwt), Postgres functions (SECURITY DEFINER/INVOKER), and migration workflow |
 | Swift | Swift 6.x language correctness: optionals, error handling, strict concurrency (actors, Sendable, @MainActor), value types, protocols/generics (some/any), ARC, naming, access control, plus testing (Swift Testing), tooling (SwiftLint/swift-format/SPM), performance, and C/Obj-C interop |
 | TypeScript | Type safety, generics, unions, interfaces, ESLint configuration, jest/vitest setup, and input validation patterns |
+
+## How to update
+
+**The tool itself.** Re-run the installer — it fetches the latest tarball and unpacks it over your existing install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bash
+```
+
+**What cook produced.** cook reuses a cached routing decision whenever the task surface (the files, extensions, and prose it saw) matches a prior run. Change the surface — different files, a different prompt — and it re-routes and re-caches. There's nothing to refresh by hand; a new surface always gets a fresh run.
+
+## FAQ
+
+**Does cook write any of my code?** No. cook only reads your repo and outputs a standards payload. Your coding agent does the writing — cook just tells it what "good" looks like for the task at hand.
+
+**I ran `/cook --react` and the security rules I expected didn't load. Why?** Any explicit flag or prose argument skips the global P0 floor — the contract is "load exactly what I named." Run plain `/cook` to keep the floor, or add `--global` to opt back in.
+
+**My task is full-stack — is there a `--full-stack` flag?** No. There are no layer modes. cook matches concerns and domains by keyword, so a task that touches both UI and server just matches shelves from both sides at once.
+
+**Where do the standards come from, and are they current?** They're a bundled library under `standards/`. The security shelf maps to 100+ OWASP cheat sheets; each domain shelf is curated per language. The flag namespace in this README is a snapshot — `vocab/tag-vocabulary.json` is the source of truth and may grow.
+
+## License
+
+[MIT](LICENSE.md)
+
+## Acknowledgments
+
+cook's standards are a compression of prior art, not original research. The libraries lean on:
+
+- **[OWASP](https://owasp.org)** — the security shelf is built on the OWASP Cheat Sheet Series, the [ASVS](https://owasp.org/www-project-application-security-verification-standard/), the [Top 10](https://owasp.org/www-project-top-ten/), and CWE mappings, spanning credentials, crypto, auth, input validation, XSS, API and transport security, supply chain, and more.
+- **[Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript)** — a reference point for the JavaScript, TypeScript, and React conventions.
+- **Clean Code and Clean Architecture** (Robert C. Martin), and the **SOLID** and **DRY** principles they popularized — the backbone of the global engineering floor.
+- **[WCAG](https://www.w3.org/WAI/standards-guidelines/wcag/)** — the accessibility rules across the CSS and framework shelves.
+- **IETF specifications** — HTTP and REST semantics, and [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) (Problem Details) for the API error-shape guidance.
+- **Established patterns** the shelves codify — Dependency Injection / Inversion of Control, expand-contract database migrations, the DataLoader / N+1 pattern for GraphQL, and [Semantic Versioning](https://semver.org) for release discipline.
+- The **community linters and formatters** whose defaults the shelves encode — ESLint, Prettier, Biome, Stylelint, SwiftLint, swift-format, `dart format`, Black, and Ruff.
+- The **official language, framework, and platform docs** each domain shelf draws from — among them React, Next.js, Node.js, Flutter/Dart, Swift, Apple's Human Interface Guidelines, PostgreSQL, Supabase, and GraphQL, plus the state and testing libraries they cover (Redux, Zustand, TanStack Query, Bloc, Riverpod; Jest, Vitest, Testing Library, MSW, Playwright, XCTest, and Swift Testing).
+
+Trademarks and guidelines belong to their respective owners; cook restates and condenses their guidance for coding agents and claims no endorsement.
 
 ---
 

@@ -1,1 +1,1 @@
-{"initialized": true, "init_commit": null, "backfill": null, "auto_approve": true, "auto_commit": true, "auto_merge": true, "changelog_path": "CHANGELOG.md", "last_logged_commit": "36de566e8a88a344c78d8d412f1f1ed9bb93cd3b"}
+{"initialized": true, "init_commit": null, "auto_approve": true, "auto_commit": true, "auto_merge": true, "changelog_path": "CHANGELOG.md"}

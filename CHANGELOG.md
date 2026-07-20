@@ -4,6 +4,18 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-07-20 · Public-facing docs land — a stranger gets a header, license, security policy, and an agent index
+
+**docs(cook): add README header + badges, LICENSE, SECURITY, and llms.txt.**
+
+- `README.md`: merge in the public-facing scaffolding without touching the existing prose or the dedication — a figlet `ansi_shadow` title above the banner, a badge row (license · domains · concerns · last-commit), a nav strip, an `llms.txt` pointer, a mermaid "How it Works" diagram (parse-verified), and new **How to update**, **FAQ**, **License**, and **Acknowledgments** sections. Acknowledgments credits the prior art the standards compress — OWASP (Cheat Sheets/ASVS/Top 10/CWE), Airbnb's JavaScript style guide, Clean Code/Architecture + SOLID/DRY, WCAG, IETF RFCs (7807), and the linters, patterns, and libraries each shelf encodes; every credit is grounded in a grep of `standards/`.
+- `LICENSE.md`: MIT, © 2026 Andy Chan. Bare license text so GitHub's detector matches it.
+- `SECURITY.md`: private-advisory reporting for `ndisisnd/cook`, a distributed-from-`main` support policy, and a scope section grounded in what cook actually touches (local compiler, curl-pipe installer, local telemetry; no server or credentials).
+- `llms.txt`: an agent index with absolute raw URLs — Docs (SKILL + both protocols), Reference (architecture, flags, vocab, global floor, telemetry), and Optional (license, changelog, installer). Every path verified to exist.
+- `.claude/kermit/pref.json`, `.gitignore`: migrate kermit to the split config/state layout — volatile runtime state moves out of the committed pref into a git-ignored `state.json`.
+
+---
+
 ## [Unreleased] — 2026-07-11 · Domain flag + its own sub-refs loads a ref subset, not the full shelf
 
 **feat(cook): resolve `--<domain> --<domain>:<ref>` to the SKILL.md floor + named refs only.**

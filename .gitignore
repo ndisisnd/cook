@@ -58,3 +58,4 @@ build/
 !.env.example
 *.pem
 *.key
+.claude/kermit/state.json
