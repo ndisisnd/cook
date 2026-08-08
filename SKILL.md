@@ -1,6 +1,6 @@
 ---
 name: cook
-description: Keyword-driven orchestrator for this repository's coding standards. Receives a code-task summary from the invoking agent, extracts keywords, matches them against the global concern index and the relevant domain indexes, loads only the matched rules, and returns a single compiled standards payload.
+description: React, Next.js, Flutter, Swift, macOS, TypeScript, Node.js, SQL, PostgreSQL, Supabase, GraphQL and CSS coding standards for refactor, audit, bug fix, feature and code review work — this keyword-driven orchestrator receives a code-task summary from the invoking agent, extracts keywords, matches them against the global concern index and the relevant domain indexes, loads only the matched rules, and returns a single compiled standards payload.
 metadata:
   triggers:
     files:

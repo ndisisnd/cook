@@ -4,6 +4,17 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-08-09 · Codex CLI compatibility — one install, two agents
+
+**feat(cook): OpenAI Codex CLI support via the shared Agent Skills standard.**
+
+- `install.sh`: two new post-install steps. `cook_link_codex` symlinks `~/.agents/skills/cook` → the install dir so Codex discovers the same tree (never destructive — a pre-existing real directory is warned about and left alone; `COOK_NO_CODEX=1` opts out). `cook_write_codex_containment` hides the per-domain standards shelves from Codex's skill picker — Codex registers every nested `SKILL.md` as a top-level skill (verified live via `codex debug prompt-input`) — by rewriting an idempotent marker block of `[[skills.config]] … enabled = false` entries in `~/.codex/config.toml`, globbing shelves at install time so untracked shelves (security) are covered.
+- `SKILL.md`: description now front-loads the domain and task keywords (React → CSS, refactor → review) because Codex matches implicitly on the description alone and truncates from the end; `metadata.triggers` and the body untouched, so Claude Code behavior is unchanged.
+- `agents/openai.yaml`: new Codex invocation-policy file (`allow_implicit_invocation: true`).
+- `scripts/gen_install_files.py`: `agents/` added to the manifest prefixes; manifest regenerated (129 entries, `standards/security/` still excluded).
+- `README.md` / `ARCHITECTURE.md`: Codex usage section (`$cook`, `/skills`, flags-as-prose) and dual-agent install-layout note.
+- `.gitignore`: ignore `update/` working docs (plus the pre-existing `.tokensave` line).
+
 ## [Unreleased] — 2026-07-20 · Public-facing docs land — a stranger gets a header, license, security policy, and an agent index
 
 **docs(cook): add README header + badges, LICENSE, SECURITY, and llms.txt.**

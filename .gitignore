@@ -1,4 +1,5 @@
 # Project-specific
+update/
 standards/security/
 archive/security-unrouted/
 adr.md
@@ -59,3 +60,4 @@ build/
 *.pem
 *.key
 .claude/kermit/state.json
+.tokensave
