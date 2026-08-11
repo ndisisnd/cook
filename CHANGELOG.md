@@ -4,6 +4,15 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-08-11 · Public docs stop promising a security shelf that nobody receives
+
+**docs(mkpub): refresh README, SECURITY and llms.txt against the current repo.**
+
+- `README.md`: the Available Standards table and the FAQ both advertised the granular security library, but `standards/security/` is gitignored and excluded from the installer manifest — a stranger installing cook never gets it. Both places now say so plainly and point at `standards/global/refs/security.md`, which does ship and loads on every default run.
+- `SECURITY.md`: scope rewritten rather than patched, because the surface genuinely grew. It now covers both agents (Claude Code and the OpenAI Codex CLI) and, more importantly, discloses that the installer writes outside its own install directory — the `~/.agents/skills/cook` symlink and the marked block in `~/.codex/config.toml`, with the `COOK_NO_CODEX=1` opt-out. Supported-versions section updated now that `v1.0.0` is tagged.
+- `llms.txt`: `RELEASES.md` indexed, and `CHANGELOG.md` re-described as the per-commit technical log now that release history lives elsewhere. All existing links verified against disk.
+- `LICENSE.md`: no change — the 2026 copyright year still matches the repo's first and latest commits.
+
 ## [Unreleased] — 2026-08-11 · Someone already running cook can see there's a newer version without leaving the README
 
 **docs(readme): add v1.0.0 release blurb to the header.**

@@ -22,5 +22,6 @@ cook holds no rules of its own. It reads a task surface (file paths, prose, git 
 ## Optional
 
 - [LICENSE.md](https://raw.githubusercontent.com/ndisisnd/cook/main/LICENSE.md): MIT
-- [CHANGELOG.md](https://raw.githubusercontent.com/ndisisnd/cook/main/CHANGELOG.md): release history
+- [RELEASES.md](https://raw.githubusercontent.com/ndisisnd/cook/main/RELEASES.md): user-facing release notes, newest first
+- [CHANGELOG.md](https://raw.githubusercontent.com/ndisisnd/cook/main/CHANGELOG.md): per-commit technical log — what changed in each commit and why
 - [install.sh](https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh): the curl-pipe installer that fetches and unpacks the skill
