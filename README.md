@@ -39,6 +39,14 @@ With little to zero software engineering knowledge, expertise, and skills, you c
 
 </div>
 
+<!-- mkpub:release v1.0.0 -->
+> [!NOTE]
+> **🚀 New in v1.0.0 · Cook now runs in the OpenAI Codex CLI**
+>
+> One install serves both Claude Code and Codex, so there is no second copy to keep in sync. Re-run the installer to pick it up.
+> Update with `curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bash` · [Release notes](RELEASES.md)
+<!-- /mkpub:release -->
+
 ___
 
 `cook` is the knowledge layer. Before your coding agent starts planning or writing code changes, ask it to fire up `cook`. The skill checks your codebase, searches the most relevant coding references, compresses them, and outputs to your coding agent ready to be used.

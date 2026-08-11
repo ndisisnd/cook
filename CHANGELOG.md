@@ -4,6 +4,12 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-08-11 · Someone already running cook can see there's a newer version without leaving the README
+
+**docs(readme): add v1.0.0 release blurb to the header.**
+
+- `README.md`: marked `<!-- mkpub:release v1.0.0 -->` block between the centered header and the `___` rule, using GitHub's `> [!NOTE]` alert so it renders as a bounded card on github.com and stays skippable for first-time readers. Leads with Codex CLI support — the change that matters to an existing user — and carries the installer one-liner as the update CTA plus a link to `RELEASES.md`. The marker is load-bearing: later `--release` or `--update` runs replace this block rather than stacking a second one.
+
 ## [Unreleased] — 2026-08-11 · Release notes land — a user can see what changed for them without reading the commit log
 
 **docs(release): add `RELEASES.md` with inaugural v1.0.0 notes.**
