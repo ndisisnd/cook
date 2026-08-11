@@ -61,6 +61,14 @@ COOK_DIR=/path/to/destination bash install.sh
 
 **Requirements:** `curl`, `tar`, `python3`
 
+### OpenAI Codex CLI
+
+cook is a plain Agent Skill, so one install serves both agents. The installer symlinks `~/.agents/skills/cook` → `~/.claude/skills/cook`, which is where Codex looks for user skills. One copy on disk, one source of truth, nothing to keep in sync.
+
+In Codex you can call it explicitly with `$cook`, pick it from the `/skills` list, or simply describe your task and let Codex select it implicitly from the skill description. The `/cook` slash syntax is Claude Code-only.
+
+Flags and prose arguments behave identically in both agents. `$cook --react fix re-renders` in Codex does exactly what `/cook --react fix re-renders` does in Claude Code — the arguments are passed through as plain text and cook parses them itself, rather than relying on the harness.
+
 ## How it Works
 
 ```mermaid

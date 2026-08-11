@@ -34,6 +34,11 @@ SKILL.md (cook)               thin entry point: identity + pointer
 
 Each `standards/` folder contains a `SKILL.md`, an `_INDEX.md` (concern/ref routing table), and a `refs/` directory of detailed ref files.
 
+The installed tree lives at `~/.claude/skills/cook` and that is the single source
+of truth. The installer additionally links `~/.agents/skills/cook` to it so the
+OpenAI Codex CLI discovers the same skill from its own search path. One copy on
+disk, two agents, no drift.
+
 ---
 
 ## Protocol

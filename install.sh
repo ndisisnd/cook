@@ -12,6 +12,13 @@ DEST="${COOK_DIR:-$HOME/.claude/skills/cook}"
 # Usage: COOK_SRC=/path/to/cook bash install.sh
 SRC="${COOK_SRC:-}"
 
+# OpenAI Codex CLI discovers user skills under ~/.agents/skills. cook is installed
+# once (at $DEST) and surfaced to Codex through a symlink, so both agents read the
+# same tree. Set COOK_NO_CODEX=1 to skip every Codex step.
+CODEX_SKILLS_DIR="${COOK_CODEX_DIR:-$HOME/.agents/skills}"
+CODEX_HOME="${COOK_CODEX_HOME:-$HOME/.codex}"
+CODEX_CONFIG="$CODEX_HOME/config.toml"
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
@@ -20,6 +27,7 @@ RESET='\033[0m'
 
 FILES=(
   SKILL.md
+  agents/openai.yaml
   refs/protocol-cook.md
   refs/protocol-explicit.md
   refs/telemetry.md
@@ -203,6 +211,108 @@ install_file() {
   return 1
 }
 
+# Point ~/.agents/skills/cook at the install so Codex CLI can discover it.
+# Never destructive: a pre-existing real directory (left by another sync tool)
+# is reported and left alone rather than replaced.
+cook_link_codex() {
+  if [[ -n "${COOK_NO_CODEX:-}" ]]; then
+    echo -e "${CYAN}Codex:${RESET} skipped (COOK_NO_CODEX is set)"
+    return 0
+  fi
+
+  local link="$CODEX_SKILLS_DIR/cook"
+
+  # -L before -e: -e follows the link, and a dangling link is -L but not -e.
+  if [[ -L "$link" ]]; then
+    ln -sfn "$DEST" "$link" || {
+      echo -e "${RED}Codex: could not update the symlink at $link${RESET}" >&2
+      return 0
+    }
+    echo -e "${CYAN}Codex:${RESET} symlink repointed — $link -> $DEST"
+    return 0
+  fi
+
+  if [[ -e "$link" ]]; then
+    echo -e "${RED}Codex: $link is a real directory, not a symlink.${RESET}" >&2
+    echo -e "${RED}  It predates this installer (another tool copied cook there) and was left untouched.${RESET}" >&2
+    echo -e "${RED}  To let the installer manage it:  rm -rf \"$link\" && re-run this installer${RESET}" >&2
+    return 0
+  fi
+
+  mkdir -p "$CODEX_SKILLS_DIR" 2>/dev/null || {
+    echo -e "${RED}Codex: could not create $CODEX_SKILLS_DIR — skipping Codex setup.${RESET}" >&2
+    return 0
+  }
+  ln -s "$DEST" "$link" 2>/dev/null || {
+    echo -e "${RED}Codex: could not create the symlink at $link — skipping Codex setup.${RESET}" >&2
+    return 0
+  }
+  echo -e "${CYAN}Codex:${RESET} linked — $link -> $DEST"
+}
+
+# Codex registers EVERY nested SKILL.md as its own top-level skill, so cook's
+# per-domain shelves would each show up in the picker. Disable them by name in
+# ~/.codex/config.toml inside a marker block the installer rewrites in place.
+# The shelf list is globbed at install time, so an installed tree carrying extra
+# shelves (e.g. the untracked security shelf) is covered too.
+cook_write_codex_containment() {
+  [[ -n "${COOK_NO_CODEX:-}" ]] && return 0
+
+  # Only touch the config of a machine that actually has Codex installed.
+  if [[ ! -d "$CODEX_HOME" ]]; then
+    return 0
+  fi
+
+  local shelves=""
+  shelves="$(python3 - "$CODEX_CONFIG" "$CODEX_SKILLS_DIR/cook" <<'PY'
+import glob, json, os, sys
+
+cfg_path, base = sys.argv[1], sys.argv[2]
+START = "# >>> cook: shelf containment >>>"
+END = "# <<< cook: shelf containment <<<"
+
+shelves = sorted(glob.glob(os.path.join(base, "standards", "*", "SKILL.md")))
+
+lines = [
+    START,
+    "# Managed by cook's installer — this block is rewritten on every install.",
+    "# Codex registers every nested SKILL.md as a separate skill; these entries",
+    "# hide cook's per-domain standards shelves so only `cook` appears in the",
+    "# picker. cook still reads them by path at runtime.",
+    "# Keep this block at the end of the file.",
+]
+for path in shelves:
+    lines += ["", "[[skills.config]]", f"path = {json.dumps(path)}", "enabled = false"]
+lines.append(END)
+block = "\n".join(lines)
+
+try:
+    text = open(cfg_path, encoding="utf-8").read()
+except FileNotFoundError:
+    text = ""
+
+s, e = text.find(START), text.find(END)
+if s != -1 and e != -1 and e > s:
+    new = text[:s] + block + text[e + len(END):]
+else:
+    new = (text.rstrip("\n") + "\n\n" if text.strip() else "") + block + "\n"
+
+if new != text:
+    os.makedirs(os.path.dirname(cfg_path) or ".", exist_ok=True)
+    with open(cfg_path, "w", encoding="utf-8") as fh:
+        fh.write(new)
+
+print(len(shelves))
+PY
+)" || {
+    echo -e "${RED}Codex: could not update $CODEX_CONFIG — shelves may show as separate skills.${RESET}" >&2
+    return 0
+  }
+
+  echo -e "${CYAN}Codex:${RESET} $shelves standards shelves hidden via $CODEX_CONFIG"
+  echo -e "  Restart Codex for the config change to take effect."
+}
+
 main() {
   check_deps
 
@@ -248,6 +358,11 @@ main() {
 
   local total="${#FILES[@]}"
   echo -e "${GREEN}${BOLD}Installed $total files to $DEST${RESET}"
+  echo ""
+
+  # Codex CLI: one skill tree, surfaced through a symlink, shelves contained.
+  cook_link_codex
+  cook_write_codex_containment
   echo ""
   echo -e "${BOLD}Usage${RESET}"
   echo "  Ask your coding agent to run /cook (or 'cook') before any coding task."

@@ -1,4 +1,5 @@
 # Project-specific
+update/
 standards/security/
 archive/security-unrouted/
 adr.md
@@ -16,6 +17,12 @@ improve/
 telemetry/
 token-cut/
 */token-cut
+
+# Local agent workspace / private instructions
+.claude/
+.codex/
+.serena/
+CLAUDE.local.md
 
 # OS
 .DS_Store
@@ -58,4 +65,4 @@ build/
 !.env.example
 *.pem
 *.key
-.claude/kermit/state.json
+.tokensave

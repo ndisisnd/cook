@@ -5,7 +5,7 @@ The array was hand-maintained (114 entries) and drifted from disk. This script
 derives it from `git ls-files --cached --others --exclude-standard` — tracked
 plus untracked-but-not-ignored files — filtered to the runtime surface:
 
-  SKILL.md, refs/, vocab/, scripts/, standards/
+  SKILL.md, agents/, refs/, vocab/, scripts/, standards/
 
 Gitignored content (standards/security/, dev dirs) is excluded automatically,
 matching the shipping policy. Run after adding/removing any runtime file:
@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTALL = ROOT / "install.sh"
-PREFIXES = ("refs/", "vocab/", "scripts/", "standards/")
+PREFIXES = ("agents/", "refs/", "vocab/", "scripts/", "standards/")
 
 
 def runtime_files() -> list[str]:
