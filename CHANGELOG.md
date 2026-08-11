@@ -4,6 +4,13 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-08-11 · Release notes land — a user can see what changed for them without reading the commit log
+
+**docs(release): add `RELEASES.md` with inaugural v1.0.0 notes.**
+
+- `RELEASES.md`: new user-facing release-notes page, separate from this technical changelog. The v1.0.0 section summarises the full history since the 2026-05-19 initial commit — thirteen domain shelves, explicit flag and prose invocation, the one-line installer, caching and payload budgeting, opt-in local telemetry, and dual-agent support for Claude Code and the OpenAI Codex CLI. Written in user voice: no file names, no internal machinery.
+- `.claude/kermit/pref.json`: kermit re-initialised for this repo. Records this changelog's own format (unnumbered `## [Unreleased] — <date> · <outcome>` entries with a bold conventional-commit line and path-led bullets) as a custom protocol, so future entries match the existing ~30 rather than switching to kermit's default numbered style. Gate mode set to `flash`; the merge-to-main guard was declined. Both kermit files stay local — the `.claude/` ignore rule covers them.
+
 ## [Unreleased] — 2026-08-11 · Local agent workspace stays local — private notes can't be committed by accident
 
 **chore(git): untrack `.claude/`, `.codex/`, `.serena/` and `CLAUDE.local.md`.**
