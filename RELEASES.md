@@ -4,12 +4,12 @@ What's new for you, release by release.
 
 ## v1.0.0 — 2026-08-11
 
-> cook gives your coding agent the right standards at the right moment. You describe the task; cook works out which languages, frameworks and concerns it touches, and hands your agent only the rules that apply — instead of a wall of guidance it has to wade through. This first release covers thirteen technology areas and works in both Claude Code and the OpenAI Codex CLI from a single install.
+> cook gives your coding agent the right standards at the right moment. You describe the task; cook works out which languages, frameworks and concerns it touches, and hands your agent only the rules that apply — instead of a wall of guidance it has to wade through. This first release covers twelve technology areas plus a global set of rules that applies to any codebase, and works in both Claude Code and the OpenAI Codex CLI from a single install.
 
 ### ✨ New
 
 - Ask your agent to run cook before any coding task and it loads the standards that match what you're actually changing — no manual setup, no choosing rules yourself.
-- Standards for thirteen areas: React, Next.js, TypeScript, Node.js, Swift, macOS, Flutter, Dart, CSS, GraphQL, SQL databases, Supabase, plus a global set of cross-cutting rules covering architecture, API design, security, authentication, error handling, performance, debugging and CI.
+- Standards for twelve areas: React, Next.js, TypeScript, Node.js, Swift, macOS, Flutter, Dart, CSS, GraphQL, SQL databases and Supabase — plus a global set of cross-cutting rules covering architecture, API design, security, authentication, error handling, performance, debugging and CI.
 - Name what you want directly when you already know: ask for a specific area, or narrow to a single topic within it, and cook loads exactly that and nothing more.
 - Describe a task in plain words instead of flags, and cook picks the relevant rules for you.
 - Install in one line, with nothing to clone or configure. You can also install from a local copy when you're offline.

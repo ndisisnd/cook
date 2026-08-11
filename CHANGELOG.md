@@ -4,6 +4,13 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-08-11 · Docs agree on how many standards there are, and a typo stops distracting readers
+
+**docs: correct the domain count in the release notes and fix a README typo.**
+
+- `RELEASES.md`: the v1.0.0 highlight and the New section both said "thirteen technology areas", counting the Global shelf among the domains. The README badge and flag list say twelve, which is the right count — Global is a cross-cutting floor, not a domain. Both lines now read "twelve areas plus a global set". The published v1.0.0 GitHub release body was updated to match, so the two don't disagree.
+- `README.md`: `tpyes` → `types` in the caching paragraph.
+
 ## [Unreleased] — 2026-08-11 · Public docs stop promising a security shelf that nobody receives
 
 **docs(mkpub): refresh README, SECURITY and llms.txt against the current repo.**
