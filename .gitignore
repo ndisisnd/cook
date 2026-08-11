@@ -20,6 +20,8 @@ token-cut/
 
 # Local agent workspace / private instructions
 .claude/
+.codex/
+.serena/
 CLAUDE.local.md
 
 # OS
