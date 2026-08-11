@@ -18,6 +18,10 @@ telemetry/
 token-cut/
 */token-cut
 
+# Local agent workspace / private instructions
+.claude/
+CLAUDE.local.md
+
 # OS
 .DS_Store
 Thumbs.db
@@ -59,5 +63,4 @@ build/
 !.env.example
 *.pem
 *.key
-.claude/kermit/state.json
 .tokensave

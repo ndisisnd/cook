@@ -4,6 +4,13 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-08-11 · Local agent workspace stays local — private notes can't be committed by accident
+
+**chore(git): untrack `.claude/` and `CLAUDE.local.md`.**
+
+- `.gitignore`: ignore the whole `.claude/` directory and `CLAUDE.local.md`, so per-machine agent config and private project instructions never enter the repo. The narrower `.claude/kermit/state.json` rule is dropped as redundant.
+- `.claude/kermit/pref.json`: removed from tracking (kept on disk) — kermit's config is now local-only, matching its already-ignored `state.json`.
+
 ## [Unreleased] — 2026-08-09 · Codex CLI compatibility — one install, two agents
 
 **feat(cook): OpenAI Codex CLI support via the shared Agent Skills standard.**
