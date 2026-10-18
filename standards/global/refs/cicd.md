@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Cicd
 
 Cross-cutting concern: the vendor-neutral shape of a CI/CD pipeline — gating order,

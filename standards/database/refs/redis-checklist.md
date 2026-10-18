@@ -1,30 +1,34 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Redis Review Checklist
 
 ## Setup & Configuration
 
-- [ ] **Connection Resilience**: Is a connection pool used with non-zero min/max settings?
-- [ ] **Error Handling**: Are `ioredis` (or similar) error listeners attached to avoid unhandled rejections?
-- [ ] **Security (ACL)**: Are specific users used instead of a global `requirepass`?
-- [ ] **Security (TLS)**: Is TLS enabled for transit between app and Redis cluster?
-- [ ] **Dangerous Commands**: Are `FLUSHALL`, `CONFIG`, and `KEYS` disabled or renamed?
+- [ ] **Client lifecycle**: One long-lived client per process (no connect-per-request); dedicated connections only for blocking commands and Pub/Sub.
+- [ ] **Error handling**: An `error` listener is attached; timeouts and backoff are configured.
+- [ ] **Security (ACL)**: Least-privilege ACL users instead of a global `requirepass`.
+- [ ] **Security (TLS)**: TLS between app and Redis.
+- [ ] **Dangerous commands**: `FLUSHALL`, `FLUSHDB`, `CONFIG`, `KEYS` blocked for the app user.
+- [ ] **Engine/licence**: Redis vs Valkey and version choice is deliberate (Redis 7.4+ / 8+ licence terms differ from BSD).
 
 ## Performance & Commands
 
-- [ ] **O(N) Avoidance**: strictly no `KEYS`? Are list/set scans using `SCAN`/`SSCAN`?
-- [ ] **Background Deletion**: Are large keys being deleted with `UNLINK`?
-- [ ] **Range Limits**: Do `ZRANGE`, `LRANGE`, and `HGETALL` have explicit limits or small expected sizes?
-- [ ] **Lua/Atomicity**: Are multi-step updates using `EVALSHA` for atomicity?
-- [ ] **Pipelining**: If performing bulk operations, is a pipeline used?
+- [ ] **O(N) avoidance**: No `KEYS`; iteration uses `SCAN` family.
+- [ ] **Background deletion**: Large keys deleted with `UNLINK`.
+- [ ] **Range limits**: `ZRANGE`, `LRANGE`, `HGETALL` are bounded.
+- [ ] **Atomicity**: Multi-step updates use Redis Functions (`FCALL`), `MULTI`/`EXEC`, or a Lua script — not read-modify-write from the app.
+- [ ] **Pipelining**: Bulk operations are pipelined.
 
 ## Memory & Data Design
 
-- [ ] **TTL**: strictly enforced on all ephemeral keys?
-- [ ] **Jitter**: Is random jitter applied to TTLs for high-velocity cache keys?
-- [ ] **Data Types**: Are Hashes used for object storage instead of full JSON strings?
-- [ ] **Eviction Policy**: Is the `maxmemory-policy` aligned with the workload (e.g., `allkeys-lru`)?
+- [ ] **TTL**: Every ephemeral key has a TTL, with jitter on high-volume keys.
+- [ ] **Data types**: Hashes for field-addressable objects instead of whole JSON strings.
+- [ ] **Eviction policy**: `maxmemory` and `maxmemory-policy` match the workload.
 
 ## Monitoring & Ops
 
-- [ ] **Instrumentation**: Are metrics like `Cache Hit Ratio` and `RSS Memory` being logged or exported?
-- [ ] **Bigkeys Review**: Has the keyspace been scanned for unexpectedly large values?
-- [ ] **Latency**: Have the most frequent scripts been benchmarked or checked via `SLOWLOG`?
+- [ ] **Instrumentation**: Hit ratio, memory, and client count are exported.
+- [ ] **Big keys**: Keyspace checked for unexpectedly large values.
+- [ ] **Latency**: `SLOWLOG` reviewed for new scripts and commands.

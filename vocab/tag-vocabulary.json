@@ -16,7 +16,7 @@
     },
     "database": {
       "routes_to": ["domain:database"],
-      "aliases": ["db", "datastore", "persist", "table", "record", "sql", "schema", "migration", "postgres", "postgresql", "prisma", "PrismaService", "TypeOrmModule", "PostgresModule", "redis", "cache", "ttl", "eviction", "index", "RLS", "transaction", "query plan", "explain"]
+      "aliases": ["db", "datastore", "persist", "table", "record", "sql", "schema", "migration", "postgres", "postgresql", "prisma", "PrismaService", "TypeOrmModule", "PostgresModule", "redis", "cache", "ttl", "eviction", "index", "RLS", "transaction", "query plan", "explain", "drizzle", "valkey", "pgbouncer", "supavisor"]
     },
     "supabase": {
       "routes_to": ["domain:supabase"],

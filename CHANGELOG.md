@@ -4,6 +4,24 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-18 · Seven standards shelves catch up with the October 2026 toolchain, and stale rules now show up on their own
+
+**fix(standards): refresh typescript, nodejs, css, global, swift, macos and database to current versions.**
+
+- `standards/typescript/`: targets TypeScript 6.x (7.x-compatible). The tsconfig template moves to `nodenext`/`bundler` with `"types": ["node"]`, `verbatimModuleSyntax` and `erasableSyntaxOnly`. ESLint uses `defineConfig` with type-aware `strictTypeChecked`. CI reads Node from `.nvmrc` instead of pinning end-of-life Node 20. The `enum` contradiction, the `JWT_SECRET!` assertion and the Zod 3 APIs are gone. `_INDEX.md` now routes to its refs — before, none were reachable.
+- `standards/nodejs/`: targets Node 24 LTS. New rules for native type stripping, `--env-file`, the permission model, `node:` imports and `require(esm)`. Corepack advice reflects that Node 25+ no longer bundles it. Express hardening moved here from typescript.
+- `standards/css/`: targets Baseline Widely Available plus Tailwind v4. A Baseline-status table covers anchor positioning, popover, view transitions and `:has()`. The Tailwind ref no longer loads on every `.tsx` edit. v4 `!` syntax fixed; the dead link into the unshipped security shelf removed.
+- `standards/global/`: the always-loaded `SKILL.md` drops from 101 to 73 lines (unused trigger block and repeated anti-patterns removed). It adds fail-closed, structured logging, LLM-output-is-untrusted and accessibility rules, and splits token storage into web vs native. `refs/security.md` moves to OWASP Top 10 2025 and adds the missing API7 SSRF row. `refs/auth.md` renumbers OWASP IDs and follows NIST SP 800-63B-4 password rules.
+- `standards/swift/`: targets Swift 6.2+ (6.4 notes). Six P0 concurrency rules are now inline. `os_unfair_lock` replaced by `Mutex`/`OSAllocatedUnfairLock`; one shared GCD/Combine exception list; the custom `Clock` that shadowed the stdlib renamed `DateProvider`.
+- `standards/macos/`: targets macOS 26+ built with Xcode 27. Intel/Rosetta facts are current, the TCC grant-path contradiction is resolved, deprecated `activate(ignoringOtherApps:)`, calendar keys and `DYLD_PRINT_STATISTICS` are fixed, and the HIG ref gains Liquid Glass, toolbar, sidebar and `Table`.
+- `standards/database/`: the expand-contract recipe no longer renames a live column and backfills in batches. The broken autovacuum entry is split out. Safe-migration rules (`lock_timeout`, `NOT VALID`/`VALIDATE`, `CONCURRENTLY`), PostgreSQL 17/18 features, Prisma/Drizzle triggers and current Redis/Valkey guidance added.
+- `scripts/check_freshness.py`: new validator. Fails when a standards file has no `last_reviewed` date (or a SKILL.md no `targets`) and warns past 90 days, so drift is visible before the next audit.
+- `scripts/cook_telemetry.py`: drops bare non-path entries (the `x/x` records) and records `unspecified` unless the intent is a vocabulary label.
+- `vocab/tag-vocabulary.json`: `drizzle`, `valkey`, `pgbouncer`, `supavisor` route to database.
+- `install.sh`: manifest regenerated to ship `scripts/check_freshness.py`.
+
+---
+
 ## [Unreleased] — 2026-08-11 · Docs agree on how many standards there are, and a typo stops distracting readers
 
 **docs: correct the domain count in the release notes and fix a README typo.**

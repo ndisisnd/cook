@@ -1,11 +1,15 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Auth
 
 Cross-cutting concern: authentication, token storage, session, CSRF, RBAC,
 service-to-service auth, and credential hashing. Loads alongside whatever domain also
 matched. For injection,
 CORS, SSRF, XSS, secret-scanning, and the OWASP detection tables, see
-[security.md](security.md). Maps to OWASP A01/A02/A04/A07/A08 and API2/API4/API5/API6
-— referenced, not restated.
+[security.md](security.md). Maps to OWASP Top 10 2025 A01/A04/A06/A07/A08 and
+API2/API4/API5/API6 — referenced, not restated.
 
 Each rule below carries a detection signal so review mode can flag it. P0 unless
 tagged `P1 (design)`.
@@ -15,30 +19,34 @@ tagged `P1 (design)`.
 - **PKCE on every OAuth2 authorization-code flow; never implicit or password grant.**
   Signal: `response_type=token`, an implicit-flow config, or `grant_type=password`.
 - **Access tokens are short-lived and carry `exp`; no long-lived JWT without a
-  revocation path.** (OWASP A07 / API2)
+  revocation path.** (OWASP A07:2025 / API2)
   Signal: a JWT signed with no `exp`, or a `maxAge` measured in days.
 - **Verify the JWT signature with a pinned algorithm and the expected key; never trust
   `decode` output for authorization, and reject `alg:none`. Validate `aud` and `iss`.**
-  (OWASP A08 / API2)
+  (OWASP A08:2025 / API2)
   Signal: `jwt.decode(` feeding an authz decision, `verify` with no `algorithms`
   allowlist, or no `audience`/`issuer` check.
 - **Every authorization-code flow sends a `state` value verified on callback and
-  validates `redirect_uri` against an exact-match allowlist.** (OWASP A01 / API2)
+  validates `redirect_uri` against an exact-match allowlist.** (OWASP A01:2025 / API2)
   Signal: an OAuth callback with no `state` comparison, or a `redirect_uri`/return URL
   taken from the request without an allowlist.
 - **P1 (design):** refresh tokens are one-time-use and rotated, revocable
-  server-side; minimize OAuth scopes to least privilege. P1 because an agent often
-  cannot confirm these from a diff.
+  server-side; minimize OAuth scopes to least privilege; sender-constrain high-value
+  tokens with DPoP or mTLS. P1 because an agent often cannot confirm these from a diff.
 
 ## Token & Session Storage
 
-- **Store tokens in `httpOnly` + `Secure` + `SameSite` cookies; never
-  `localStorage`/`sessionStorage`.**
-  Signal: `localStorage.setItem('…token…')`, or `sessionStorage` holding a token.
+- **Web: store tokens in `httpOnly` + `Secure` cookies with `SameSite=Lax` by default
+  (`Strict` for high-risk cookies such as admin or step-up sessions); never
+  `localStorage`/`sessionStorage`. Native: Keychain / Android Keystore / platform
+  secure storage.**
+  Signal: `localStorage.setItem('…token…')`, `sessionStorage` holding a token, or a
+  token in plain app preferences.
 - **Cookie-based auth requires CSRF defense** — a double-submit token, or
-  `SameSite=Strict` plus an origin check.
+  `SameSite` plus an `Origin` check. `SameSite=Lax` alone does not cover
+  state-changing `GET`s.
   Signal: a state-changing `POST` under cookie auth with no CSRF token and no
-  `SameSite`.
+  `SameSite`, or a `GET` handler that mutates state.
 - **Regenerate the session on privilege change and invalidate it on logout.**
   (session fixation)
   Signal: a login path with no session rotation, or a logout that does not
@@ -47,17 +55,18 @@ tagged `P1 (design)`.
 ## Brute-Force & Abuse Protection
 
 - **Rate-limit and back off repeated auth failures — login, token, OTP, and
-  password-reset endpoints; lock or throttle after a threshold.** (OWASP A04 / API4)
+  password-reset endpoints; lock or throttle after a threshold.** (OWASP A06:2025 / API4)
   Signal: a login/verify/reset handler with no rate-limit middleware, attempt counter,
   or backoff.
 
 ## Authorization (RBAC)
 
 - **RBAC is deny-by-default and additive — start from zero, grant up.**
-  (OWASP A01 / API5)
+  (OWASP A01:2025 / API5)
   Signal: a default-allow guard, or a route with no guard.
 - **P1 (design):** support MFA and require step-up re-authentication for sensitive
-  actions — password/email change, payment, privilege grant. P1 because presence is
+  actions — password/email change, payment, privilege grant. Prefer passkeys
+  (WebAuthn/FIDO2) — phishing-resistant — over SMS or TOTP. P1 because presence is
   rarely confirmable from a single diff.
 
 ## Service-to-Service Auth
@@ -78,7 +87,7 @@ tagged `P1 (design)`.
 ## Credential Handling
 
 - **Hash credentials with argon2id / bcrypt / scrypt; never MD5/SHA1/plaintext.**
-  (OWASP A02)
+  (OWASP A04:2025)
   Signal: `md5(` or `sha1(` applied to a password field.
 - **Never log tokens, passwords, or session IDs.**
   Signal: a logger call whose arguments include a token, password, or session
@@ -95,9 +104,12 @@ tagged `P1 (design)`.
 - **Compare secrets, tokens, and hashes in constant time.**
   Signal: `==`/`===` on a token, signature, or reset code instead of
   `crypto.timingSafeEqual` / a constant-time compare.
-- **P1 (design):** enforce a password policy on input — a length floor per NIST 800-63B
-  and a breached-password (k-anonymity) check. P1 because it spans registration, reset,
-  and change flows. Complements the hashing rule above.
+- **Password policy per NIST SP 800-63B-4: minimum 15 characters when the password
+  is the only factor, 8 when it is part of MFA; allow at least 64; no composition
+  rules (forced mixed case/digits/symbols); no scheduled rotation (force a change
+  only on evidence of compromise); check against a breached-password blocklist.**
+  Signal: a `minLength` below the floor, a regex requiring character classes, or a
+  password-expiry job.
 
 ## Secure Patterns
 
@@ -105,7 +117,7 @@ tagged `P1 (design)`.
 
 ```typescript
 // httpOnly + Secure + SameSite — not readable by JS, sent only over TLS
-res.cookie('session', token, { httpOnly: true, secure: true, sameSite: 'strict' });
+res.cookie('session', token, { httpOnly: true, secure: true, sameSite: 'lax' });
 // Never: localStorage.setItem('token', token)   // readable by any XSS
 ```
 
@@ -151,7 +163,7 @@ const { access_token } = await fetchToken({ grantType: 'client_credentials',
 ## Anti-Patterns
 
 Implicit/password OAuth grants · tokens in `localStorage`/`sessionStorage` · cookie
-auth with no CSRF defense · JWT without `exp` · unverified / `alg:none` JWT · missing
+auth with no CSRF defense · composition rules or forced rotation on passwords · JWT without `exp` · unverified / `alg:none` JWT · missing
 OAuth `state` or open `redirect_uri` · default-allow authorization · MD5/SHA1 password
 hashing · no rate limiting on login · account enumeration via distinct errors ·
 non-constant-time secret comparison · replayable or long-lived password-reset tokens ·

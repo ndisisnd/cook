@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Tooling
 
 Use this ref when configuring the CSS toolchain: Stylelint, Prettier, PostCSS/Lightning CSS, autoprefixer/browser targets, or Sass/SCSS conventions and native nesting.
@@ -44,10 +48,10 @@ Lint CSS/SCSS for correctness and consistency. Start from the standard config an
 
 ```jsonc
 // package.json
-"browserslist": ["> 0.5%", "last 2 versions", "not dead"]
+"browserslist": ["baseline widely available"]
 ```
 
-`browserslist` is the single source of truth for autoprefixer, `postcss-preset-env`, and Lightning CSS. Tightening it drops dead prefixes and shrinks output.
+`browserslist` is the single source of truth for autoprefixer, `postcss-preset-env`, and Lightning CSS. The Baseline query matches the target in the SKILL; widen it (for example `baseline widely available with downstream`) only for a known audience need.
 
 ## Native nesting vs Sass
 

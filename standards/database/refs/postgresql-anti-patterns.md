@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # PostgreSQL Anti-Patterns ("Don't Do This")
 
 Synthesized from the official Postgres Wiki.
@@ -6,45 +10,49 @@ Synthesized from the official Postgres Wiki.
 
 - **Don't use `money`**:
   - **Why?** Locale-dependent output, confusing rounding, hard to migrate.
-  - **Do:** Use `numeric(precision, scale)` or integer (store cents).
-- **Don't use `char(n)`**:
-  - **Why?** Pads with spaces. 'a' becomes 'a '. Slower usually due to padding overhead.
-  - **Do:** Use `text` or `varchar` (without length). `text` is the native optimized string type.
+  - **Do:** Use `numeric(precision, scale)` or integer minor units (cents).
+- **Don't use `char(n)` or `varchar(n)` as a length check**:
+  - **Why?** `char(n)` pads with spaces; changing `varchar(n)` later needs a migration.
+  - **Do:** Use `text`, with a `CHECK (length(col) <= n)` when a limit is a business rule.
 - **Don't use `serial`**:
-  - **Why?** Old, non-standard, permissions hassle (sequence ownership).
-  - **Do:** Use `GENERATED ALWAYS AS IDENTITY` (SQL Standard).
+  - **Why?** Non-standard, sequence-ownership and permission hassles.
+  - **Do:** Use `GENERATED ALWAYS AS IDENTITY`, or UUIDs (`uuidv7()` on PG18+, `gen_random_uuid()` before).
 - **Don't use `timestamp` (without time zone)**:
-  - **Why?** Assumes local server time. Breaks when server moves or users are global.
-  - **Do:** Use `timestamptz`. Stores as UTC, displays in client timezone.
+  - **Why?** No zone information; breaks for global users and DST.
+  - **Do:** Use `timestamptz`.
 
 ## 2. SQL Constructs
 
-- **Don't use `NOT IN` with NULLs**:
-  - **Why?** `val NOT IN (1, NULL)` evaluates to `NULL` (unknown), not `FALSE`.
-  - **Do:** Use `NOT EXISTS` or `LEFT JOIN ... WHERE id IS NULL`.
+- **Don't use `NOT IN` with a subquery or list that can contain NULL**:
+  - **Why?** `val NOT IN (1, NULL)` evaluates to `NULL`, never `TRUE`.
+  - **Do:** Use `NOT EXISTS`.
 - **Don't use `BETWEEN` for timestamps**:
-  - **Why?** `BETWEEN` is inclusive. `2023-01-01` to `2023-02-01` includes midnight Feb 1st.
+  - **Why?** `BETWEEN` is inclusive at both ends.
   - **Do:** `created_at >= '2023-01-01' AND created_at < '2023-02-01'`.
-- **Don't use `UPPER CASE` identifiers**:
-  - **Why?** Postgres folds unquoted identifiers to lowercase. `"UserTable"` != `UserTable`.
-  - **Do:** Use `snake_case` for everything (`user_table`).
+- **Don't use quoted or mixed-case identifiers**:
+  - **Why?** Postgres folds unquoted identifiers to lowercase; `"UserTable"` then needs quoting forever.
+  - **Do:** Use `snake_case` for everything.
 
 ## 3. Operations
 
 - **Don't use `psql -W`**:
-  - **Why?** Prompts for password, preventing automation.
-  - **Do:** Use `.pgpass` file or environment variables.
+  - **Why?** Forces a password prompt, blocking automation.
+  - **Do:** Use a `.pgpass` file or environment variables.
 - **Don't use Rules (`CREATE RULE`)**:
-  - **Why?** Complex, often rewritten unexpectedly. Can double-execute functions.
-  - **Do:** Use Triggers (`CREATE TRIGGER`).
-  - **Why?** Table bloat will kill performance and eventually database availability (transaction ID wraparound).
-  - **Do:** Tune `autovacuum_vacuum_scale_factor` for large tables.
+  - **Why?** Query rewriting is hard to reason about and can double-execute functions.
+  - **Do:** Use triggers (`CREATE TRIGGER`).
+- **Don't disable or ignore autovacuum**:
+  - **Why?** Table bloat degrades performance; unchecked, transaction ID wraparound forces the database read-only.
+  - **Do:** Keep autovacuum on; tune per table (`ALTER TABLE ... SET (autovacuum_vacuum_scale_factor = 0.01)`) for large, high-churn tables.
+- **Don't use MD5 password authentication**:
+  - **Why?** Deprecated in PG18; removal is planned for a future major version.
+  - **Do:** Use `scram-sha-256`.
 
-## 4. Concurrency Anti-Patterns
+## 4. Concurrency
 
 - **Don't hold transactions open**:
-  - **Why?** Holds locks, prevents vacuuming of old row versions (bloat), increases deadlock risk.
-  - **Do:** Commit as soon as the logical unit of work is done.
+  - **Why?** Holds locks, blocks vacuum cleanup, increases deadlock risk.
+  - **Do:** Commit as soon as the unit of work is done; set `idle_in_transaction_session_timeout` (and `transaction_timeout` on PG17+).
 - **Don't use `LOCK TABLE`**:
-  - **Why?** serializes all access to the table, killing performance.
-  - **Do:** rely on Row-Level locks or advisory locks (`pg_advisory_lock`) if needed.
+  - **Why?** Serializes all access to the table.
+  - **Do:** Use row-level locks or transaction-scoped advisory locks (`pg_advisory_xact_lock`).

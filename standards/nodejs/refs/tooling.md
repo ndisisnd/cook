@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Node.js Tooling
 
 Use this ref for runtime pinning, package-manager pinning, frozen installs, environment validation at boot, and production logging setup. CI pipeline topology lives in `global/refs/cicd.md`; secret policy lives in `global/refs/security.md`.
@@ -5,7 +9,7 @@ Use this ref for runtime pinning, package-manager pinning, frozen installs, envi
 ## Runtime And Package Manager Pinning
 
 - Pin a maintained LTS Node version for production. Acceptable mechanisms include `engines.node`, `.nvmrc`, `.node-version`, Volta/asdf/mise config, Docker base image, and CI setup. Signal: local, CI, and production can drift across Node majors.
-- Pin the package manager with `packageManager` where Corepack-compatible, or with the repo's equivalent toolchain config. Signal: pnpm/yarn repo without a committed package-manager version.
+- Pin the package manager with the `packageManager` field or the repo's equivalent toolchain config (Volta, mise). Corepack is not bundled from Node 25 on: install it explicitly (`npm install -g corepack`) in CI and Docker, or use the package manager's own version pinning. Signal: pnpm/yarn repo without a committed package-manager version, or a Node 25+ image that assumes `corepack enable` works out of the box.
 - Keep Docker and CI versions aligned with the repo pin. Signal: `.nvmrc` says one major and Docker/CI uses another.
 
 ## Frozen Installs
@@ -19,13 +23,15 @@ Use this ref for runtime pinning, package-manager pinning, frozen installs, envi
 - Read and validate required environment variables at process boot, before accepting traffic or running jobs. Signal: required env is first read lazily in a request handler or job body.
 - Fail fast on missing or invalid config. Do not substitute insecure defaults for production secrets.
 - `.env` files are local development inputs only. Do not commit them; secret storage policy lives in `global/refs/security.md`.
+- Load local `.env` files with `node --env-file=.env` (`--env-file-if-exists` when optional) or `process.loadEnvFile()`. No `dotenv` dependency is needed.
 
 ```js
+// Zod 4
 import { z } from 'zod';
 
 const Env = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
 });
 
 export const env = Env.parse(process.env);

@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # PostgreSQL Production Gotchas
 
 ## `UPDATE ... FROM` Query
@@ -39,8 +43,8 @@ Use the containment operator `@>` instead of `->>` for better performance on lar
 
 ```sql
 -- FAST (Uses GIN index)
-SELECT * FROM logs WHERE data @> '{"level": "error"}';
+SELECT id FROM logs WHERE data @> '{"level": "error"}';
 
 -- SLOW (Linear scan)
-SELECT * FROM logs WHERE data->>'level' = 'error';
+SELECT id FROM logs WHERE data->>'level' = 'error';
 ```

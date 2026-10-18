@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Layout
 
 Use this ref when building layout: choosing Flexbox vs Grid, using container queries, sizing intrinsically, applying logical properties, or building fluid/responsive behaviour.
@@ -76,7 +80,7 @@ Shorthands: `margin-inline: auto`, `padding-block: var(--space-2)`, `inset: 0`.
 Replace breakpoint-stepped values with continuous fluid values.
 
 ```css
-/* Fluid type: min 1rem, scales with viewport, capped at 1.5rem */
+/* Fluid type: min 1.5rem, scales with viewport, capped at 2.5rem */
 h1 { font-size: clamp(1.5rem, 1rem + 2vw, 2.5rem); }
 
 /* Fluid gutter with a floor and ceiling */

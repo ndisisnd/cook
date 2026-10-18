@@ -31,6 +31,7 @@ FILES=(
   refs/protocol-cook.md
   refs/protocol-explicit.md
   refs/telemetry.md
+  scripts/check_freshness.py
   scripts/check_index_routes.py
   scripts/cook_cache.py
   scripts/cook_compile.py

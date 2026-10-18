@@ -25,9 +25,13 @@ metadata:
       - retain cycle
       - Swift Testing
       - SwiftLint
+  targets: "Swift 6.2+ · Swift 6 language mode · Xcode 27 (Swift 6.4 notes)"
+  last_reviewed: 2026-10-18
 ---
 
 # Swift Standards
+
+Target: Swift 6.2+ in Swift 6 language mode, built with Xcode 27 (Swift 6.4 features flagged where used).
 
 Default load: this file only; pull refs (see References) on demand.
 
@@ -39,7 +43,14 @@ Swift owns language-level correctness only: optionals, errors, concurrency seman
 
 ### Language Mode, Isolation & Concurrency
 
-P0 rules → `refs/concurrency.md` — load for any concurrency, isolation, or language-mode task.
+- New targets: Swift 6 language mode. Apps default to `MainActor` isolation; library/domain packages stay `nonisolated`. Check the module's default before reasoning about a bare declaration.
+- Structured concurrency first (`async let`, `TaskGroup`). Every unstructured `Task {}` has an owner that cancels it; `Task.detached` almost never.
+- Mark CPU-heavy work `@concurrent`; under Approachable Concurrency a `nonisolated async` function runs on the caller's actor.
+- Re-validate actor state after every `await` (reentrancy). Small sync critical sections use `Mutex` or `OSAllocatedUnfairLock`, not an actor.
+- `@unchecked Sendable` / `nonisolated(unsafe)` only with a lock and a justification comment. Continuations resume exactly once.
+- No GCD or Combine as architecture — the only allowed uses are the exception list in `refs/concurrency.md`.
+
+Full rules, isolated conformances, Swift 6.4 additions → `refs/concurrency.md`.
 
 ### Availability
 - Gate every API newer than the deployment target with `if #available` / `@available` and a real fallback path. Annotate declarations rather than sprinkling runtime checks. Never raise the deployment target to dodge a check.
@@ -96,7 +107,7 @@ P1 rules → `refs/language-conventions.md` — load when authoring APIs or revi
 
 - `!`, `as!`, `try!` outside tests; IUO stored properties in new code
 - `try?` to discard errors that matter; returning `nil` to signal failure
-- `DispatchQueue.main.async` / semaphores / GCD state-queues inside async code
+- `DispatchQueue.main.async` / semaphores / GCD state-queues inside async code (exceptions → `refs/concurrency.md`)
 - `Task.detached` as a habit; fire-and-forget `Task {}` sprawl with no cancellation
 - `@unchecked Sendable` / `nonisolated(unsafe)` without a lock and a justification comment
 - Blanket `[weak self]` everywhere — or missing it on stored/long-running closures

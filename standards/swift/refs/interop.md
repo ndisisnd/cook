@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Swift Interop — C / Objective-C / CoreFoundation
 
 Bridging boundaries are where Swift's safety guarantees stop. Ownership, nullability, and lifetime become your responsibility again — get them wrong and you get the classic crash/leak pairs below.
@@ -23,6 +27,7 @@ This is the single most common CF bug — mismatching the rule leaks or crashes.
 ## Pointer Lifetime
 
 - Pointers vended by `withUnsafeBytes`, `withUnsafeMutableBufferPointer`, `withExtendedLifetime`, etc. are valid **only inside the closure**. Never let the pointer (or anything derived from it) escape the closure — the buffer may be deallocated or moved the moment the closure returns.
+- Prefer `Span`/`MutableSpan`/`RawSpan` (Swift 6.2+) over escaping `Unsafe*Pointer`s for contiguous access: a span cannot escape its source's lifetime, so the compiler rejects the escape bug above. Drop to unsafe pointers only at the C call itself. Swift 6.4 bridges `Span` with C++20 `std::span`.
 - Don't take the address of a Swift value and stash it; there's no guarantee of a stable address for a Swift variable across statements.
 - When a C API needs a buffer to outlive a single call, allocate it explicitly (`UnsafeMutablePointer.allocate(capacity:)`) and `deallocate()` it deterministically — pair them like `defer`.
 

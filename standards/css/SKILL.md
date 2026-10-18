@@ -2,6 +2,8 @@
 name: css
 description: Pragmatic, battle-tested CSS conventions. Use when authoring or reviewing styles — a small set of durable principles (keep specificity low, scope by default, tokenize, respect the user) plus a minimal accessibility/security floor. CSS is forgiving, so this favours judgment and consistency over rigid rules; depth (layout, theming, performance, Tailwind, tooling) lives in refs.
 metadata:
+  targets: "Baseline Widely Available (web-features, Oct 2026) · Tailwind CSS v4"
+  last_reviewed: 2026-10-18
   triggers:
     files:
       - '**/*.css'
@@ -43,6 +45,8 @@ metadata:
 
 # CSS
 
+Target: Baseline Widely Available browsers; Tailwind CSS v4 for Tailwind projects.
+
 CSS is forgiving and subjective — there is rarely one "correct" stylesheet. Optimise for **consistency, low specificity, and not breaking the user**, not for rule-compliance. This file is the whole standard for most styling work; pull a ref only when you need depth.
 
 The single biggest lever is **matching what the codebase already does**. A convention you'd not have picked, applied consistently, beats a "better" one applied unevenly. Propose a methodology or tooling migration (BEM ↔ utilities, adding Tailwind, swapping Sass) as its own explicit task — never as a drive-by inside a feature change.
@@ -53,8 +57,15 @@ The single biggest lever is **matching what the codebase already does**. A conve
 2. **Scope by default.** Leaking styles is the root cause of most "why did *that* change?" bugs. Reach for CSS Modules, a naming convention (BEM/utilities), or `@scope`; keep bare element selectors to resets and base. → `refs/architecture.md`
 3. **Tokenize; don't hardcode.** Keep one source of truth for colour, spacing, and type. Use custom properties for anything themeable, and derive values from a scale instead of scattering magic numbers. → `refs/theming.md`
 4. **Lay out with Flexbox and Grid.** They solve cleanly what floats, absolute positioning, and fixed heights only ever hacked around. Reach for `gap`, intrinsic sizing, and container queries before adding media queries. → `refs/layout.md`
-5. **Use the platform; don't over-tool.** Modern CSS (nesting, custom properties, `clamp()`, `color-mix()`) covers most of what preprocessors were for. Add Sass/PostCSS/Tailwind because the team gets real leverage from it, not by reflex — and don't ship a shiny new feature to production without checking your browser support. → `refs/tooling.md`, `refs/tailwind.md`
+5. **Use the platform; don't over-tool.** Modern CSS (nesting, custom properties, `clamp()`, `color-mix()`) covers most of what preprocessors were for. Add Sass/PostCSS/Tailwind because the team gets real leverage from it, not by reflex. Target **Baseline Widely Available** (`browserslist`: `baseline widely available`); use newer features only as progressive enhancement (see below). → `refs/tooling.md`, `refs/tailwind.md`
 6. **Prefer deleting and composing over overriding.** CSS only ever grows, and every override is future debt. If you're writing a rule to defeat another rule, fix the first one instead.
+
+## Modern features — Baseline status (web-features, Oct 2026)
+
+- **Widely Available — use freely:** `:has()`, native nesting, subgrid, container size queries, `@layer`.
+- **Newly Available — use with a harmless fallback:** `popover` with `@starting-style` entry transitions; same-document view transitions (`document.startViewTransition()`); container style queries (`@container style(--x: y)`); `text-wrap: balance` for short headings.
+- **Limited availability — gate with `@supports` and keep a working fallback:** anchor positioning (`@supports (anchor-name: --a)`); scroll-driven animations (`@supports (animation-timeline: scroll())`); cross-document view transitions (`@view-transition { navigation: auto; }`); `text-wrap: pretty`.
+- Unsupported `text-wrap` values and `@view-transition` are ignored, so they need no guard. Gate every new animation behind `prefers-reduced-motion`.
 
 ## The floor (non-negotiable)
 

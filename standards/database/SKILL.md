@@ -6,93 +6,89 @@ metadata:
     files:
       - '**/*.entity.ts'
       - 'prisma/schema.prisma'
+      - 'prisma/migrations/*/migration.sql'
       - '**/migrations/*.sql'
+      - 'drizzle.config.ts'
+      - 'drizzle/**/*.sql'
       - '**/redis.config.ts'
     keywords:
       - postgres
       - postgresql
-      - migration
+      - prisma
       - TypeOrmModule
       - PrismaService
       - PostgresModule
       - redis
-      - cache
       - ttl
       - eviction
+  targets: "PostgreSQL 16+ (17/18 features flagged) · Redis 7.2+ / Valkey 8+"
+  last_reviewed: 2026-10-18
 ---
 
 # Database Standards
+
+Targets: PostgreSQL 16+ (17/18-only features are flagged) · Redis 7.2+ / Valkey 8+.
+Supabase-specific rules (`auth.uid()`, `service_role`, Supavisor) live in `supabase`.
 
 ## Priority: P0 — PostgreSQL Correctness
 
 ### Schema & Access
 
 - Isolate persistence logic behind repositories or database services. Do not scatter raw database access across handlers.
-- Model relations explicitly. Avoid redundant raw ID mirror fields when the ORM relation already expresses the dependency.
 - Enforce integrity in the database with primary keys, foreign keys, `NOT NULL`, `CHECK`, and `UNIQUE` constraints.
-- Prefer `timestamptz` for timestamps, `text` or unbounded `varchar` for strings, and `numeric` or integer minor units for money.
+- Use `timestamptz`, `text`, `numeric` or integer minor units for money, and `GENERATED ALWAYS AS IDENTITY` or UUIDs for keys (see [postgresql-anti-patterns](refs/postgresql-anti-patterns.md)).
 
 ### Migrations
 
-- Never use `synchronize: true` in production.
-- Use explicit migrations for every schema change.
-- Follow expand-contract for destructive changes: add, backfill, deploy, then remove.
-- Generated ORM migrations do not reliably capture Row-Level Security. Write RLS policies as explicit SQL.
-- On hot tables, avoid blocking changes and prefer concurrent index creation where supported.
+- Use explicit, version-controlled migrations for every schema change. ORM schema sync is dev-only:
+  - TypeORM: never `synchronize: true` outside local dev.
+  - Prisma: `prisma migrate deploy` in CI/prod; `migrate dev` and `db push` are dev-only.
+  - Drizzle: `drizzle-kit generate` + `migrate` for shared environments; `drizzle-kit push` is prototyping-only.
+- Destructive or renaming changes use expand-contract — the recipe is [postgresql-implementation](refs/postgresql-implementation.md).
+- On live tables, set `lock_timeout`, build indexes `CONCURRENTLY`, and add constraints `NOT VALID` then `VALIDATE` — see the migration section of [postgresql-checklist](refs/postgresql-checklist.md).
+- Generated ORM migrations do not capture Row-Level Security. Write RLS as explicit SQL.
 
 ### Queries & Performance
 
-- Paginate every list query.
-- Index every hot filter, join, and foreign-key column. Columns referenced by RLS predicates must be indexed.
-- Use transactions for multi-step mutations.
-- Prevent N+1 access patterns with joins, batching, or ORM query builders.
-- Avoid `SELECT *` in application queries; project only the columns you need.
+- Paginate every list query (keyset for deep pages).
+- Index every hot filter, join, foreign-key, and RLS-predicate column.
+- Use short transactions for multi-step mutations. Prevent N+1 with joins or batching.
+- Project only the columns you need; no `SELECT *` in application queries.
+- Behind a transaction-mode pooler (PgBouncer, Supavisor), do not rely on session state — see the pooling section of [postgresql-best-practices](refs/postgresql-best-practices.md).
 
 ## Priority: P0 — Redis Safety
 
 ### Data Design
 
-- Redis is a cache, queue, or coordination layer. It must not be the sole source of truth for critical business data.
-- Namespace keys with colons, for example `app:user:123`.
-- Every non-permanent key needs a TTL or a deliberate eviction strategy.
-- Add TTL jitter for high-volume cache keys to avoid synchronized expirations.
+- Redis/Valkey is a cache, queue, or coordination layer — never the sole source of truth for critical business data.
+- Namespace keys with colons (`app:user:123`). Every non-permanent key needs a TTL; add TTL jitter on high-volume keys.
 - Prefer hashes for field-addressable objects over large JSON blobs.
 
 ### Commands & Operations
 
-- Never use `KEYS` in production. Use `SCAN` and related cursor-based commands.
-- Use `UNLINK` instead of `DEL` for large-key deletion.
-- Bound `ZRANGE`, `LRANGE`, and `HGETALL` usage. Do not fetch unbounded collections.
-- Use pipelines for bulk operations and `EVALSHA` for atomic multi-step cache logic.
-- Keep application and Redis in the same region and connect through stable hostnames.
-
-### Security & Resilience
-
-- Use Redis ACLs instead of a shared global password where possible.
-- Enable TLS for production traffic.
-- Disable or rename dangerous commands such as `FLUSHALL`, `CONFIG`, and `SHUTDOWN`.
-- Use connection pooling plus retry and timeout settings tuned for transient failures.
+- Never use `KEYS` in production; use `SCAN`. Use `UNLINK` for large keys. Bound every range read.
+- Use pipelines for bulk operations and Redis Functions (`FCALL`) or Lua scripts for atomic multi-step logic.
+- Use ACL users, TLS, and disabled dangerous commands in production.
 
 ## Anti-Patterns
 
-- `synchronize: true` in production
-- Destructive schema changes without expand-contract sequencing
-- Missing indexes on hot filters, joins, or RLS columns
-- `timestamp` without time zone for user or cross-region data
-- `money`, `char(n)`, or `serial` in new PostgreSQL schema work
-- N+1 queries, long-running transactions, or blanket `SELECT *`
-- Treating Redis as the durable source of truth
-- `KEYS` in production, unbounded range reads, or TTL-less ephemeral keys
-- Storing large opaque blobs in Redis when field-level access is needed
+- ORM schema sync (`synchronize: true`, `prisma db push`, `drizzle-kit push`) against shared databases
+- Destructive schema changes without expand-contract; long-locking DDL without `lock_timeout`
+- Missing indexes on hot filters, joins, foreign keys, or RLS columns
+- Session-level `SET`, advisory locks, or SQL `PREPARE` through a transaction-mode pooler
+- Treating Redis as the durable source of truth; `KEYS` in production; TTL-less ephemeral keys
 
 ## References
 
 Load only what the task requires:
 
-- [postgresql-implementation](refs/postgresql-implementation.md) — expand-contract migration examples
-- [postgresql-best-practices](refs/postgresql-best-practices.md) — indexing, partitioning, locking, extensions, and diagnostics
-- [postgresql-checklist](refs/postgresql-checklist.md) — review checklist for migrations and complex queries
-- [postgresql-anti-patterns](refs/postgresql-anti-patterns.md) — schema and SQL pitfalls to avoid
+PostgreSQL:
+- [postgresql-implementation](refs/postgresql-implementation.md) — canonical expand-contract migration recipe
+- [postgresql-best-practices](refs/postgresql-best-practices.md) — indexing, pooling, RLS pointer, partitioning, locking, diagnostics, PG17/18 features
+- [postgresql-checklist](refs/postgresql-checklist.md) — review checklist incl. safe-migration rules
+- [postgresql-anti-patterns](refs/postgresql-anti-patterns.md) — types, SQL constructs, and operations to avoid
 - [sql-gotchas](refs/sql-gotchas.md) — `UPDATE ... FROM`, timezone, `NULL`, `ILIKE`, and `JSONB` caveats
-- [redis-best-practices](refs/redis-best-practices.md) — caching, memory, command efficiency, and security details
+
+Redis / Valkey:
+- [redis-best-practices](refs/redis-best-practices.md) — caching, memory, commands, clients, security, licensing
 - [redis-checklist](refs/redis-checklist.md) — review checklist for Redis setup and cache behavior

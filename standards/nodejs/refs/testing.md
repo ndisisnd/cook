@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Node.js Testing
 
 Use this ref for Node service, CLI, worker, integration, or network-boundary tests. General test strategy for TypeScript projects lives in `standards/typescript/refs/testing.md`; API contract assertions live in `global/refs/api-design.md`.

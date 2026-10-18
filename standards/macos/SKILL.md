@@ -35,9 +35,13 @@ metadata:
       - String Catalog
       - VoiceOver
       - App Intents
+  targets: "macOS 26+ deployment · built with Xcode 27 / macOS 27 SDK · Swift 6.2+"
+  last_reviewed: 2026-10-18
 ---
 
 # macOS Standards
+
+Target: macOS 26+ deployment for new apps, built with Xcode 27 and the macOS 27 SDK.
 
 Default load: this file only; pull refs only when needed.
 
@@ -47,14 +51,15 @@ Applies to macOS app targets only — never iOS/iPadOS/watchOS/visionOS, even wh
 
 ## P0 — Platform Correctness
 
-### Platform Baseline (2026)
-- Ship universal 2 (arm64 + x86_64) while the deployment target spans Intel-capable macOS; verify with `lipo -info`. arm64-only is a deliberate decision → `refs/distribution.md`.
-- Build with the current Xcode/SDK — required for Liquid Glass and current-OS behavior. SDK version ≠ deployment target.
-- New apps: minimum deployment macOS 15 default; 14 is the practical floor (loses `@Observable`, modern scene APIs). Never bump an existing target as a side effect.
+### Platform Baseline (Oct 2026)
+- Build with Xcode 27 / macOS 27 SDK. SDK version ≠ deployment target. App Store Connect has required Xcode 26+ for uploads since 2026-04-28.
+- New apps: deployment target macOS 26 (Liquid Glass APIs, `Observations`). Go lower (15, or 14 as the `@Observable` floor) only for a stated user-base reason. Never bump an existing target as a side effect; keep deliberate `@available` floors.
+- Architectures: macOS 27 runs only on Apple silicon; macOS 26 is the last release for Intel Macs, and macOS 27 is the last with general Rosetta 2 support. Below a 27 deployment target `$(ARCHS_STANDARD)` is universal (arm64 + x86_64); at 27+ it is arm64-only — add `x86_64` to `ARCHS` explicitly to stay universal. Verify with `lipo -info` → `refs/distribution.md`.
+- Ship a `PrivacyInfo.xcprivacy` privacy manifest in the app, and require one from every third-party SDK.
 
 ### App Structure & Lifecycle
 - SwiftUI lifecycle (`@main struct App: App`); never `@NSApplicationMain`, hand-written `main.swift`, or `NSApplication.main()` for new *app* code (non-app bundles legitimately differ).
-- `@NSApplicationDelegateAdaptor` only for what SwiftUI can't do; keep it a thin bridge. Scope, Dock-reopen gap, URL schemes → `refs/windows-and-scenes.md`.
+- `@NSApplicationDelegateAdaptor` only for what SwiftUI can't do; keep it a thin bridge. Scope, Dock reopen, URL schemes → `refs/windows-and-scenes.md`.
 - AppKit bridging: SwiftUI-first; wrap only the missing control, never a whole screen; strict concurrency on (AppKit is `@MainActor`-only). Gaps + pattern → `refs/architecture-and-state.md`.
 
 ### Sandbox & File Access
@@ -64,7 +69,7 @@ Applies to macOS app targets only — never iOS/iPadOS/watchOS/visionOS, even wh
 
 ### Permissions (TCC)
 - Request lazily at point of use with clear purpose strings; on denial degrade gracefully and deep-link to System Settings; never re-prompt loop.
-- Per-resource grant paths (some have no prompt API) + stable-dev-signing-identity rule → `refs/sandbox-and-tcc.md`.
+- Per-resource grant paths (Full Disk Access has no prompt API; Accessibility/Screen Recording prompt but finish in System Settings) + stable-dev-signing-identity rule → `refs/sandbox-and-tcc.md`.
 
 ### Distribution
 - Outside the App Store: Developer ID + hardened runtime + notarization is effectively mandatory (macOS 15+ removed the easy Gatekeeper bypass). Signing/stapling/CI mechanics → `refs/distribution.md`.
@@ -84,7 +89,10 @@ Applies to macOS app targets only — never iOS/iPadOS/watchOS/visionOS, even wh
 
 ## P1 — Platform Conventions (HIG)
 
-Load from refs: windows/scenes/menus/documents → `refs/windows-and-scenes.md`; SwiftUI view hygiene + accessibility → `refs/performance-accessibility.md`; Liquid Glass appearance, undo, pasteboard, App Intents → `refs/hig-conventions.md`.
+- Previews use the `#Preview` macro, never `PreviewProvider`.
+- Swift concurrency rules, including when GCD/Combine are allowed → `standards/swift/refs/concurrency.md`.
+
+Load from refs: windows/scenes/menus/documents → `refs/windows-and-scenes.md`; SwiftUI view hygiene + accessibility → `refs/performance-accessibility.md`; Liquid Glass, toolbar/sidebar/Table/Settings, undo, pasteboard, App Intents → `refs/hig-conventions.md`.
 
 ## Anti-Patterns
 
@@ -98,6 +106,7 @@ Load from refs: windows/scenes/menus/documents → `refs/windows-and-scenes.md`;
 - Un-notarized Developer ID builds; `get-task-allow` in release entitlements; outside-in signing; Sparkle in a MAS build
 - Unretained `NSStatusItem` or window controllers (silently vanish)
 - Re-prompt loops for denied TCC permissions; attempting to "prompt" for Full Disk Access (no API exists)
+- Missing `PrivacyInfo.xcprivacy`; `PreviewProvider` in new code
 - Hardcoded English strings; sentence-building by concatenation; `String(format:)` for user-facing numbers; `DateFormatter` allocated inside `body`
 - `NSManagedObject` crossing actor boundaries; `viewContext` used for background work
 - Unstable `ForEach` identity; `AnyView` in hot hierarchies
@@ -106,14 +115,14 @@ Load from refs: windows/scenes/menus/documents → `refs/windows-and-scenes.md`;
 - Deprecated APIs: `SMLoginItemSetEnabled`, `SMJobBless`, `altool`
 - Hand-building a Preferences window instead of the `Settings` scene; mutating `NSMenu` where `.commands {}` works; mouse-only custom controls
 - iOS-isms on Mac: no menu bar items, hidden navigation, touch-only affordances; assuming free Dynamic Type from `Font.TextStyle`
-- Colors that ignore dark mode or contrast; UI untested under Reduce Transparency; new Rosetta-dependent components
+- Colors that ignore dark mode or contrast; UI untested under Reduce Transparency; new Rosetta-dependent components (Rosetta's general support ends after macOS 27)
 
 ## References
 
 - [architecture-and-state](refs/architecture-and-state.md) — AppKit bridging + gap list, Observation, `@State`/`@Bindable` ownership, DI, MVVM, SwiftData vs Core Data
-- [windows-and-scenes](refs/windows-and-scenes.md) — scenes/windows, delegate adaptor + Dock-reopen gap, menu bar apps, commands/keyboard, focus, document apps
+- [windows-and-scenes](refs/windows-and-scenes.md) — scenes/windows, delegate adaptor + Dock reopen, menu bar apps, commands/keyboard, focus, document apps
 - [sandbox-and-tcc](refs/sandbox-and-tcc.md) — App Sandbox, entitlements, hardened runtime, Keychain, TCC grant flows, code signing, XPC security
 - [distribution](refs/distribution.md) — certificates, `notarytool`/stapling, MAS constraints, Sparkle 2, universal binaries, dmg/pkg, CI signing
 - [performance-accessibility](refs/performance-accessibility.md) — view hygiene, Instruments, main-thread/beachball, background work + `SMAppService`/App Nap, launch time, VoiceOver, `@ScaledMetric`
 - [localization](refs/localization.md) — String Catalogs, plurals, `FormatStyle`, formatter caching, pseudo-localization, RTL
-- [hig-conventions](refs/hig-conventions.md) — Liquid Glass appearance, dark-mode colors, SF Symbols, drag & drop/`Transferable`, undo, pasteboard, App Intents
+- [hig-conventions](refs/hig-conventions.md) — Liquid Glass (`glassEffect`), toolbar, sidebar, `Table`, Settings scene, dark-mode colors, SF Symbols, drag & drop/`Transferable`, undo, pasteboard, App Intents

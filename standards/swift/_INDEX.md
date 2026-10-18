@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED from SKILL.md frontmatters — do not edit manually -->
+<!-- Hand-maintained routing index. Keep in sync with SKILL.md frontmatter. -->
 # swift Skills Index
 
 ## File Match (auto-check against the file you are editing)
