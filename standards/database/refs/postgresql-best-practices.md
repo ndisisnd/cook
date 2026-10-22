@@ -1,87 +1,74 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # PostgreSQL Detailed Best Practices
 
 ## 1. Indexing Strategy
 
-- **B-Tree (Default)**: Use for `<`, `<=`, `=`, `>=`, `>`. Covers 95% of cases.
-- **GIN (Generalized Inverted Index)**:
-  - **JSONB**: `CREATE INDEX idx ON table USING GIN (data);` for `@>` containment operators.
-  - **Full Text Search**: `tsvector` columns.
-- **BRIN (Block Range Index)**: For very large tables with naturally ordered data (dates, IDs). Tiny index size.
-- **Partial Indexes**:
-  - `CREATE INDEX idx_users_active ON users (email) WHERE deleted_at IS NULL;`
-  - Reduces index size and maintenance cost.
-- **Covering Indexes**:
-  - `CREATE INDEX idx_users_email ON users (email) INCLUDE (id, name);`
-  - Allows Index-Only Scans (avoids heap lookup).
+- **B-tree (default)**: equality and range. Put the most selective, always-filtered columns first in multi-column indexes (PG18 skip scan helps when the leading column is unfiltered, but do not design around it).
+- **GIN**: JSONB containment (`@>`), full-text `tsvector`, `pg_trgm` pattern search.
+- **BRIN**: very large, naturally ordered tables (append-only time series).
+- **Partial**: `CREATE INDEX ... ON users (email) WHERE deleted_at IS NULL;`
+- **Covering**: `CREATE INDEX ... ON users (email) INCLUDE (id, name);` enables index-only scans.
 
-## 2. Performance Tuning
+## 2. Connection Pooling
 
-- **VACUUM & ANALYZE**:
-  - **Autovacuum**: Must run frequently. Prevents table bloat and transaction ID wraparound.
-  - **ANALYZE**: Updates statistics for query planner. Run manually after bulk inserts.
-- **Connection Pooling**:
-  - **PgBouncer**: Critical for high-concurrency apps (like Supabase/NestJS).
-  - Postgres handles ~100 direct connections well; beyond that, performance degrades sharply.
-- **Explain Analyze**:
-  - `EXPLAIN (ANALYZE, BUFFERS) SELECT ...`
-  - **Sequential Scan**: Bad on large tables (missing index?).
-  - **Index Scan**: Good.
-  - **Bitmap Heap Scan**: Okay for multiple index combinations.
+- Postgres uses one process per connection; put a pooler in front of high-concurrency or serverless apps.
+- **Transaction mode** (PgBouncer `pool_mode = transaction`, Supavisor) hands a server connection to a client per transaction. It breaks session state:
+  - Session `SET` leaks to other clients — use `SET LOCAL` inside a transaction, or connection-string parameters.
+  - Session advisory locks (`pg_advisory_lock`) — use `pg_advisory_xact_lock`.
+  - `LISTEN`/`NOTIFY`, `WITH HOLD` cursors, temp tables spanning transactions — use a direct or session-mode connection.
+  - SQL-level `PREPARE` — not supported. Protocol-level prepared statements need PgBouncer 1.21+ with `max_prepared_statements` > 0; otherwise disable them in the driver (e.g. Prisma `pgbouncer=true`).
+- Run migrations over a direct (or session-mode) connection, not the transaction pooler.
+- Supabase pooler (Supavisor) ports and modes: see `supabase/refs/edge-functions.md`.
 
-## 3. RLS (Row Level Security)
+## 3. Explain Analyze
 
-- **Always Enable**: `ALTER TABLE secure_table ENABLE ROW LEVEL SECURITY;`
-- **Performance Hazard**:
-  - Functions in policies run **per row**.
-  - Avoid complex joins in policies.
-  - **Wrap Session Variables**:
+- `EXPLAIN (ANALYZE, BUFFERS) SELECT ...`
+- Seq Scan on a large table usually means a missing or unusable index. Compare estimated vs actual rows to spot stale statistics (`ANALYZE` after bulk loads).
 
-    ```sql
-    -- Bad (Function call per row)
-    CREATE POLICY "User owns" ON items USING (auth.uid() = user_id);
+## 4. Row-Level Security
 
-    -- Better (Postgres caches stable functions, but be careful)
-    -- Best: Ensure `auth.uid()` is stable or wrapped in `(SELECT auth.uid())`
-    ```
+- Enable RLS on every table exposed to untrusted roles: `ALTER TABLE t ENABLE ROW LEVEL SECURITY;`
+- Write one policy per operation; use `WITH CHECK` on `INSERT`/`UPDATE`; index predicate columns.
+- Keep policy predicates cheap: functions in policies can run per row. Wrap stable session lookups in a scalar subquery (`(SELECT current_setting('app.tenant_id'))`) so they run once per statement.
+- Table owners and roles with `BYPASSRLS` skip policies; use `ALTER TABLE ... FORCE ROW LEVEL SECURITY` if the owner role also serves app traffic.
+- Supabase specifics (`auth.uid()`, `service_role`, `security_invoker` views) live in `supabase/refs/rls.md`.
 
-- **Bypass RLS**: Create a `service_role` user with `BYPASS RLS` attribute for admin tasks only.
+## 5. Partitioning
 
-## 4. Partitioning
+- Use declarative partitioning for very large tables or time-series with bulk retention.
+- Range (by date) or list (by tenant/category).
+- `DROP TABLE` / `DETACH PARTITION` on an old partition is instant; `DELETE` is slow and causes bloat.
 
-- **Declarative Partitioning**: Use for tables >100GB or with high delete rates (time-series).
-- **By Range**: Dates (e.g., monthly partitions).
-- **By List**: Status/Category.
-- **Drop vs Delete**: `DROP TABLE partition_2023` is instantaneous; `DELETE FROM table WHERE year=2023` is slow and generates bloat.
+## 6. Concurrency & Locking
 
-## 5. Concurrency & Locking
+- **Isolation**: Read Committed (default) per statement; Repeatable Read for consistent reports; Serializable needs retry logic on serialization failures.
+- **Deadlocks**: Lock rows in a consistent order; keep transactions short.
+- **Queues**: `SELECT ... FOR UPDATE SKIP LOCKED` for work queues.
 
-- **Transaction Isolation**:
-  - **Read Committed (Default)**: Sees data committed before the _query_ began.
-  - **Repeatable Read**: Sees data committed before the _transaction_ began. Use for complex reports to ensure consistency.
-  - **Serializable**: Strict but prone to serialization failures. Retry logic required.
-- **Deadlock Avoidance**:
-  - **Consistent Ordering**: Always update multiple rows in the same order (e.g., `ORDER BY id`).
-  - **Short Transactions**: The longer a transaction holds locks, the higher the deadlock risk.
-- **Explicit Locking**:
-  - `SELECT ... FOR UPDATE`: Locks rows for update. Use with care.
-  - `FOR UPDATE SKIP LOCKED`: Great for implementing work queues.
+## 7. Monitoring & Diagnostics
 
-## 6. Monitoring & Diagnostics
+- `pg_stat_statements`: track `calls`, `total_exec_time`, `mean_exec_time`, `shared_blks_hit`.
+- `log_min_duration_statement` (200–1000 ms), `log_lock_waits = on`, `log_checkpoints = on`.
 
-- **`pg_stat_statements`**:
-  - **Must-Have Extension**: Tracks execution stats of all SQL statements.
-  - **Key Metrics**: `calls`, `total_exec_time`, `rows`, `shared_blks_hit` (cache hit rate).
-- **Log Settings**:
-  - `log_min_duration_statement`: Set to `1000` (1s) or `200` (200ms) to catch slow queries.
-  - `log_checkpoints`: `on`. Helpful to diagnose I/O spikes.
-  - `log_lock_waits`: `on` (if > `deadlock_timeout`). Useful for debugging blocking issues.
+## 8. Extensions & IDs
 
-## 7. Extensions & Advanced Features
+- **UUIDs**: `uuidv7()` on PG18+ (time-ordered, index-friendly); `gen_random_uuid()` (built in since PG13) before 18. Do not add `uuid-ossp` for new work.
+- `pg_trgm` for fuzzy / `ILIKE '%...%'` search; `postgis` for geospatial.
+- Do not use JSONB for stable relational data.
 
-- **Common Extensions**:
-  - `uuid-ossp` or `pgcrypto`: For UUID generation.
-  - `pg_trgm`: For fuzzy search / trigram matching (better than `LIKE '%...%'`).
-  - `postgis`: Industry standard for geospatial data.
-- **JSONB Indexing**:
-  - Use `gin` index for efficient JSON queries (`@>`, `?`, `?&`).
-  - Avoid over-using JSONB for stable, relational data.
+## 9. PG17 / PG18 Features (version-gated)
+
+Use only when the deployed server version is confirmed.
+
+- **PG17**: `JSON_TABLE()` and SQL/JSON query functions; `MERGE ... RETURNING` with `merge_action()`; `COPY ... (ON_ERROR ignore)`; `transaction_timeout`; incremental backups (`pg_basebackup --incremental`).
+- **PG18**:
+  - `uuidv7()`.
+  - Virtual generated columns are the default (`GENERATED ALWAYS AS (...)`); add `STORED` to persist.
+  - `RETURNING old.col, new.col` on `INSERT`/`UPDATE`/`DELETE`/`MERGE`.
+  - B-tree skip scan for multi-column indexes.
+  - Asynchronous I/O (`io_method`) for sequential scans, bitmap heap scans, and vacuum.
+  - `NOT NULL` constraints can be added `NOT VALID`.
+  - MD5 password authentication deprecated — use `scram-sha-256`.

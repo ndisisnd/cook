@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Performance
 
 Use this ref when CSS is causing jank, slow paints, layout thrash, or a heavy bundle — or when adding animation, large lists, or web fonts.

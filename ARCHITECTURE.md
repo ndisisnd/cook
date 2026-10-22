@@ -21,6 +21,7 @@ SKILL.md (cook)               thin entry point: identity + pointer
     ├── flutter/         Flutter/Dart UI
     ├── dart/            Dart 3 language
     ├── swift/           Swift 6 language
+    ├── ios/             iOS/iPadOS app platform (SwiftUI/UIKit) — pairs with swift
     ├── macos/           macOS app platform (SwiftUI/AppKit) — pairs with swift
     ├── nextjs/          Next.js App Router
     ├── react/           React (non-Next)
@@ -139,7 +140,8 @@ defeats the cache's core guarantee that a hit never wakes the model).
 | security | Comprehensive security standards library. Three always-apply P0 rules (no hardcoded credentials, approved crypto, certificate hygiene) plus 30+ concern-specific refs and 100+ OWASP cheat sheets. Use for security-focused work; `global/refs/security.md` is the lighter standalone alternative. |
 | flutter | Flutter/Dart UI standards covering widgets, state management, navigation, architecture, performance, and testing. |
 | dart | Dart 3.x language standards: null safety, patterns, sealed classes, records, class modifiers, naming, immutability, collections, async, and import organisation. |
-| swift | Swift 6.x language standards: optionals, error handling, strict concurrency (actors, Sendable, @MainActor), value types, protocols/generics, ARC, naming, and access control. Language-only; pairs with macos for platform concerns. |
+| swift | Swift 6.x language standards: optionals, error handling, strict concurrency (actors, Sendable, @MainActor), value types, protocols/generics, ARC, naming, and access control. Language-only; pairs with ios and macos for platform concerns. |
+| ios | iOS/iPadOS app development standards: SwiftUI app and scene lifecycle, navigation and sheets, iPad and foldable adaptivity, UI and accessibility, background work, push, Live Activities and widgets, privacy and permissions, sign-in and account deletion, signing and App Store distribution, and UI testing. Scoped to iOS/iPadOS only. |
 | macos | macOS app development standards: SwiftUI/AppKit app structure, scenes/windows, menu bar apps, App Sandbox/TCC, signing/notarization, distribution, persistence choice, localization, and HIG conventions. Scoped to macOS only (not iOS/iPadOS/watchOS/visionOS). |
 | nextjs | Next.js App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
 | react | React + TypeScript standards: hook rules, component structure, prop typing, and boundary safety for non-Next.js projects. |
@@ -261,6 +263,15 @@ protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
 - `refs/distribution.md`: Signing certificates, notarytool/stapling, MAS constraints, Sparkle 2, universal binaries, dmg/pkg packaging.
 - `refs/performance-accessibility.md`: Instruments templates, main-thread/beachball hygiene, background work, launch-time optimization, VoiceOver, Dynamic Type/@ScaledMetric.
 - `refs/localization.md`: String Catalogs, plural rules, FormatStyle, pseudo-localization, RTL, testing with -AppleLanguages.
+
+### ios
+
+- `refs/app-lifecycle-and-navigation.md`: App/scene lifecycle, the iOS 27 SDK UIScene mandate, scenePhase, NavigationStack paths, presentation, size classes, iPad and iPhone Duo adaptivity, state restoration, deep and universal links.
+- `refs/ui-and-accessibility.md`: Dynamic Type, VoiceOver and assistive settings, Liquid Glass, buttons, bottom sheets, snackbar host pattern, lists and input, haptics, previews.
+- `refs/background-and-notifications.md`: BGTaskScheduler task kinds, background URLSession, notification permission, APNs, Live Activities, WidgetKit, App Intents.
+- `refs/privacy-and-permissions.md`: Usage strings and prompt timing, ATT, privacy manifests, Keychain and data protection, passkeys, Sign in with Apple, account deletion.
+- `refs/distribution.md`: Upload requirements, CI signing with an App Store Connect API key, build and upload, TestFlight, App Review gotchas, release.
+- `refs/testing.md`: XCUITest, accessibility audits, snapshot tests, device matrix, launch metrics.
 
 ### nextjs
 

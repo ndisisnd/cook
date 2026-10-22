@@ -4,6 +4,54 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · Standards payloads get about a quarter smaller on 8 shelves, with no hard rule lost
+
+**perf(standards): condense low-risk refs and SKILL files on 8 shelves.**
+
+- Scope: 17 files, 23,288 → 16,929 tokens (−27%). The 7 low-risk refs shrink 40%. The 8 SKILL files shrink 25% and are now all ≤ 1,400 tokens. `standards/global/SKILL.md` shrinks 3% because nearly all of it is P0.
+- Shelves: typescript, nodejs, global, swift, macos, ios, css, database.
+- `standards/nodejs/SKILL.md`: detail on built-ins (`node:` prefix), env files (`--env-file`), the permission model, ESM/CJS (`require(esm)`) and structured logging moved to `standards/nodejs/refs/tooling.md`. The "Node.js owns runtime failure modes only" ownership line is restored in tightened form.
+- `standards/swift/SKILL.md`: Codable detail moved to `standards/swift/refs/language-conventions.md`. The "Swift owns language-level correctness only" ownership line is restored in tightened form.
+- `standards/css/SKILL.md`: the Baseline newer-features section moved to `standards/css/refs/layout.md`.
+- `standards/nodejs/_INDEX.md`: tooling ref row gains keywords `node:fs`, `--env-file`, `permission model`, `require(esm)`, `pino`, `winston`, so moved text stays findable.
+- `standards/css/_INDEX.md`: layout ref row gains keywords `@supports` and `css baseline`.
+- `vocab/tag-vocabulary.json`: new aliases on `nodejs` (`node:fs`, `--env-file`, `permission model`, `require(esm)`) and `css` (`@supports`, `css baseline`). Bare `baseline`, `ESM` and `logging` are not added because they would route unrelated work.
+- `verify/rule_inventory.py`: new guard rail. It snapshots every hard rule (never/must/always/…) per file and diffs before and after. It fails on any lost P0 rule or on a version string gone from a SKILL.md. Phase 1 result: 0 lost P0 rules, 0 lost SKILL versions. Non-P0 removals were reviewed and approved.
+
+---
+
+## [Unreleased] — 2026-10-23 · iPhone and iPad apps get their own standards, and SwiftUI work stops loading Mac rules
+
+**feat(standards): add the ios shelf and route shared Apple vocabulary by platform.**
+
+- `standards/ios/`: new domain shelf. Targets iOS/iPadOS 18+ built with Xcode 27 / iOS 27 SDK. P0 covers the three iOS 27 SDK breakers (UIScene lifecycle mandatory, launch screen mandatory, `UIDesignRequiresCompatibility` ignored), lifecycle and navigation, iPad and iPhone Duo adaptivity, accessibility, background work, privacy, account deletion and CI signing. Six refs: app-lifecycle-and-navigation, ui-and-accessibility, background-and-notifications, privacy-and-permissions, distribution, testing. Platform-neutral SwiftUI state and localization stay on the macOS shelf and are linked, not copied.
+- `vocab/tag-vocabulary.json`: new `ios` tag (49 iOS-only aliases). New `apple-shared` tag takes the 24 aliases that are valid on both platforms (SwiftUI, SwiftData, Keychain, entitlement, …) out of `macos`, plus privacy manifest, App Store Connect and TestFlight. `macos` keeps 34 Mac-only aliases.
+- `scripts/cook_cache.py`: a native Xcode project (no `package.json` or `pubspec.yaml`) declares its platform from `SDKROOT`/`SUPPORTED_PLATFORMS`. `classify` narrows `apple-shared` to that platform; with no platform signal it routes nowhere and returns `platform_ambiguous: true`. `Info.plist`, `.entitlements` and `PrivacyInfo.xcprivacy` route by folder first, so a Flutter or React Native `ios/Info.plist` now loads iOS rules instead of macOS rules.
+- `refs/protocol-cook.md`: Step 2 says how to resolve `platform_ambiguous`.
+- `standards/macos/SKILL.md`: scope line points iOS work at the new shelf.
+- `README.md`, `ARCHITECTURE.md`, `FLAG-LIST.md`, `SKILL.md`: document the 13th domain and its `--ios` (+ sub-ref) flags. `FLAG-LIST.md` also gains the missing `--macos:hig-conventions` row.
+- `install.sh`: manifest regenerated to ship the ios shelf.
+
+---
+
+## [Unreleased] — 2026-10-18 · Seven standards shelves catch up with the October 2026 toolchain, and stale rules now show up on their own
+
+**fix(standards): refresh typescript, nodejs, css, global, swift, macos and database to current versions.**
+
+- `standards/typescript/`: targets TypeScript 6.x (7.x-compatible). The tsconfig template moves to `nodenext`/`bundler` with `"types": ["node"]`, `verbatimModuleSyntax` and `erasableSyntaxOnly`. ESLint uses `defineConfig` with type-aware `strictTypeChecked`. CI reads Node from `.nvmrc` instead of pinning end-of-life Node 20. The `enum` contradiction, the `JWT_SECRET!` assertion and the Zod 3 APIs are gone. `_INDEX.md` now routes to its refs — before, none were reachable.
+- `standards/nodejs/`: targets Node 24 LTS. New rules for native type stripping, `--env-file`, the permission model, `node:` imports and `require(esm)`. Corepack advice reflects that Node 25+ no longer bundles it. Express hardening moved here from typescript.
+- `standards/css/`: targets Baseline Widely Available plus Tailwind v4. A Baseline-status table covers anchor positioning, popover, view transitions and `:has()`. The Tailwind ref no longer loads on every `.tsx` edit. v4 `!` syntax fixed; the dead link into the unshipped security shelf removed.
+- `standards/global/`: the always-loaded `SKILL.md` drops from 101 to 73 lines (unused trigger block and repeated anti-patterns removed). It adds fail-closed, structured logging, LLM-output-is-untrusted and accessibility rules, and splits token storage into web vs native. `refs/security.md` moves to OWASP Top 10 2025 and adds the missing API7 SSRF row. `refs/auth.md` renumbers OWASP IDs and follows NIST SP 800-63B-4 password rules.
+- `standards/swift/`: targets Swift 6.2+ (6.4 notes). Six P0 concurrency rules are now inline. `os_unfair_lock` replaced by `Mutex`/`OSAllocatedUnfairLock`; one shared GCD/Combine exception list; the custom `Clock` that shadowed the stdlib renamed `DateProvider`.
+- `standards/macos/`: targets macOS 26+ built with Xcode 27. Intel/Rosetta facts are current, the TCC grant-path contradiction is resolved, deprecated `activate(ignoringOtherApps:)`, calendar keys and `DYLD_PRINT_STATISTICS` are fixed, and the HIG ref gains Liquid Glass, toolbar, sidebar and `Table`.
+- `standards/database/`: the expand-contract recipe no longer renames a live column and backfills in batches. The broken autovacuum entry is split out. Safe-migration rules (`lock_timeout`, `NOT VALID`/`VALIDATE`, `CONCURRENTLY`), PostgreSQL 17/18 features, Prisma/Drizzle triggers and current Redis/Valkey guidance added.
+- `scripts/check_freshness.py`: new validator. Fails when a standards file has no `last_reviewed` date (or a SKILL.md no `targets`) and warns past 90 days, so drift is visible before the next audit.
+- `scripts/cook_telemetry.py`: drops bare non-path entries (the `x/x` records) and records `unspecified` unless the intent is a vocabulary label.
+- `vocab/tag-vocabulary.json`: `drizzle`, `valkey`, `pgbouncer`, `supavisor` route to database.
+- `install.sh`: manifest regenerated to ship `scripts/check_freshness.py`.
+
+---
+
 ## [Unreleased] — 2026-08-11 · Docs agree on how many standards there are, and a typo stops distracting readers
 
 **docs: correct the domain count in the release notes and fix a README typo.**

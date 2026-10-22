@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Layout
 
 Use this ref when building layout: choosing Flexbox vs Grid, using container queries, sizing intrinsically, applying logical properties, or building fluid/responsive behaviour.
@@ -76,7 +80,7 @@ Shorthands: `margin-inline: auto`, `padding-block: var(--space-2)`, `inset: 0`.
 Replace breakpoint-stepped values with continuous fluid values.
 
 ```css
-/* Fluid type: min 1rem, scales with viewport, capped at 1.5rem */
+/* Fluid type: min 1.5rem, scales with viewport, capped at 2.5rem */
 h1 { font-size: clamp(1.5rem, 1rem + 2vw, 2.5rem); }
 
 /* Fluid gutter with a floor and ceiling */
@@ -136,3 +140,9 @@ Align nested content to a parent grid's tracks — e.g. card titles and footers 
 - Physical properties in new code where logical ones internationalize for free.
 - `clamp()` with no viewport term (never scales) or no readable floor (breaks zoom).
 - Fixed pixel heights on containers that hold variable content.
+
+## Baseline status — newer features (web-features, Oct 2026)
+
+- **Newly Available — use with a harmless fallback:** `popover` with `@starting-style`; same-document view transitions (`document.startViewTransition()`); container style queries (`@container style(--x: y)`); `text-wrap: balance`.
+- **Limited — gate with `@supports`, keep a working fallback:** anchor positioning (`anchor-name: --a`); scroll-driven animations (`animation-timeline: scroll()`); cross-document view transitions (`@view-transition { navigation: auto; }`); `text-wrap: pretty`.
+- Unsupported `text-wrap` values and `@view-transition` are ignored; they need no guard.

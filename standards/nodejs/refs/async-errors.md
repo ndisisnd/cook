@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Node.js Async Errors
 
 Use this ref for Node-specific promise rejection lifecycle, callback/timer/event-boundary throws, global process handlers, and runtime timeout/cancellation mechanics. Error envelopes and domain error taxonomy live in `global/refs/error-handling.md`.

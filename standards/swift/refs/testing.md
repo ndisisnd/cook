@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Swift Testing
 
 ## Swift Testing vs XCTest
@@ -15,6 +19,7 @@
 | Availability | Swift 6 toolchain / Xcode 16+ | All Xcode versions |
 
 - Both frameworks can live in the same test target; `swift test` and Xcode run and merge results from both. Incremental adoption is practical — no forced big-bang migration.
+- Cross-framework assertions (ST-0021, Swift 6.4 / Xcode 27): `XCTAssert…` inside `@Test` and `#expect` inside `XCTestCase` are reported, and Xcode 27 enables interop by default. Set the mode to `complete` or `strict` (Test Plan setting; `SWIFT_TESTING_XCTEST_INTEROP_MODE` for `swift test`) so cross-framework failures fail the test instead of logging a warning. Still convert assertions to the host framework as you touch a file.
 - **Use Swift Testing for new code**: unit tests, integration tests, async tests, parameterized tests.
 - **Keep XCTest** for: UI automation (`XCUIApplication`/`XCUIElement`), performance tests (`measure { }`, `XCTMetric`), and existing large XCTest suites where the migration cost isn't currently justified. Also reach for XCTest where a third-party CI/coverage/report integration is only wired up for `XCTestCase` until it catches up.
 
@@ -33,7 +38,7 @@ struct UserRepositoryTests {
 }
 ```
 - `@Test` functions don't need a `test` name prefix and aren't required to live in a type — a free function annotated `@Test` is a valid test.
-- `@Suite` types can be a `struct`, `class`, or `actor`; a fresh instance is created per test by default (matching XCTest's per-test isolation), so shared mutable fixtures need explicit lifetime management (an `init`/`deinit` pair, or a shared fixture you deliberately opt into).
+- `@Suite` types can be a `struct`, `class`, or `actor`; a fresh instance is created per test by default (matching XCTest's per-test isolation), so shared mutable fixtures need explicit lifetime management (`init`, plus `deinit` in a `class`/`actor` suite, or a shared fixture you deliberately opt into).
 - Traits customize behavior: `.tags(_:)`, `.enabled(if:)`, `.disabled(_:)`, `.timeLimit(_:)`, `.bug(_:)`.
 
 ## `#expect` and `#require`
@@ -71,19 +76,26 @@ func validEmail(_ address: String) throws {
 ## Async & Concurrency
 
 - `@Test` functions can be `async throws` directly — no `XCTestExpectation`/`waitForExpectations` ceremony.
+- Callback/event assertions use `confirmation()` instead of `XCTestExpectation`; the event must fire before the closure returns:
+```swift
+await confirmation("saves once", expectedCount: 1) { saved in
+    store.onSave = { saved() }
+    await store.save(item)
+}
+```
 - Tests run in parallel by default (in-process, across suites); apply `.serialized` to a `@Suite` (or a parameterized `@Test`) when shared mutable state (a shared database, a singleton) makes parallel execution unsafe, rather than disabling parallelism project-wide. `.serialized` applies recursively to everything nested in that suite. Treat it as an escape hatch, not a default.
 
 ## Mocking via Protocols & Dependency Injection
 
-- Depend on protocols at architectural seams (network client, persistence, clock) and inject a fake/mock conforming implementation in tests — constructor injection over a shared/singleton default.
+- Depend on protocols at architectural seams (network client, persistence, current date) and inject a fake conforming implementation in tests — constructor injection over a shared/singleton default. Never name a seam `Clock` — it shadows the stdlib `Clock` protocol used for sleeping/timeouts (see `refs/concurrency.md`).
 ```swift
-protocol Clock {
+protocol DateProvider: Sendable {
     func now() -> Date
 }
 
-struct SystemClock: Clock { func now() -> Date { Date() } }
+struct SystemDateProvider: DateProvider { func now() -> Date { Date() } }
 
-struct FixedClock: Clock {
+struct FixedDateProvider: DateProvider {
     let fixedDate: Date
     func now() -> Date { fixedDate }
 }
@@ -99,7 +111,7 @@ struct FixedClock: Clock {
 ## Migration Guidance (XCTest → Swift Testing)
 
 - Migrate leaf/unit-test files first; leave UI and performance test targets on XCTest.
-- Mechanical mappings: `XCTAssertEqual(a, b)` → `#expect(a == b)`; `XCTAssertNil(x)` → `#expect(x == nil)`; `XCTAssertThrowsError` → `#expect(throws:)`; `XCTUnwrap` → `#require`; `setUp()`/`tearDown()` → the suite type's `init()`/`deinit`.
+- Mechanical mappings: `XCTAssertEqual(a, b)` → `#expect(a == b)`; `XCTAssertNil(x)` → `#expect(x == nil)`; `XCTAssertThrowsError` → `#expect(throws:)`; `XCTUnwrap` → `#require`; `setUp()` → the suite's `init()`; `tearDown()` → `deinit` only when the suite is a `class` or `actor` (a `struct` suite has no `deinit` — use a scoped helper or a test-scoping trait).
 - Don't migrate a suite purely for the sake of migrating — prioritize suites that would actually benefit from parameterization or parallelism.
 
 ## Anti-Patterns

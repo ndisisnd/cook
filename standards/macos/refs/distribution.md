@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # macOS Distribution
 
 ## Implementation Workflow
@@ -61,7 +65,7 @@ Attaches the notarization ticket directly to the `.app`, `.dmg`, or `.pkg` so Ga
 - `com.apple.security.cs.disable-library-validation` is generally disallowed for MAS — it undermines the sandbox trust model. Combining sandbox with hardened-runtime exception entitlements is a common rejection trigger.
 - **Sparkle-style self-updating is disallowed in MAS builds** (Review Guideline 2.4.5(vii)) — MAS apps use StoreKit/the App Store's own update mechanism. The standard pattern is two build configurations: one with Sparkle for direct distribution, one without for the Store.
 - **MAS apps do not need notarization** — App Review is the trust/security gate. The Catalina-era notarization requirement carves out the Mac App Store.
-- Upload MAS builds via **Xcode Organizer**, **Transporter**, or **Xcode Cloud** — not `notarytool`.
+- Upload MAS builds via **Xcode Organizer**, **Transporter**, or **Xcode Cloud** — not `notarytool`. App Store Connect has required Xcode 26 or later since 2026-04-28; check developer.apple.com/news/upcoming-requirements before each release.
 - Standard App Review constraints also apply: receipt validation for IAP, no private API usage, no sandbox-bypassing dynamic code loading, background-execution limits.
 
 ## Sparkle Framework (Direct-Distribution Auto-Updates)
@@ -75,9 +79,10 @@ Sparkle 2.x is the current, actively maintained major version.
 
 ## Universal Binaries / Apple Silicon vs Intel
 
-- Build with **Architectures = `$(ARCHS_STANDARD)`** (arm64 + x86_64) and **Build Active Architecture Only = No** for Release/Archive (Debug typically stays "Yes"). Xcode compiles per-architecture and merges with `lipo`.
-- Verify actual shipped architectures with `lipo -info MyApp` / `file MyApp` — don't trust the build setting; some Xcode 16.x point releases had regressions ignoring `ARCHS`/`ONLY_ACTIVE_ARCH`.
-- **Apple Silicon transition** (per Apple's stated roadmap through 2025–2026): macOS 26 "Tahoe" is the last macOS that installs on Intel Macs; the following major release is Apple-Silicon-only but still ships Rosetta 2; the release after that sharply curtails Rosetta. Going arm64-only is a deliberate deployment-target decision, not a build-setting default — treat "Apple Silicon only" as reasonable once your minimum deployment target and user base are confirmed Apple Silicon; ship universal otherwise. Don't assume a security-update tail for Intel beyond what Apple has stated.
+- Current facts (Oct 2026): macOS 27 runs only on Apple silicon Macs; macOS 26 is the last release for Intel Macs. macOS 27 is the last release with general Rosetta 2 support — macOS 28 keeps only a limited subset for older games.
+- Xcode 27 (Apple-silicon-only host) resolves `$(ARCHS_STANDARD)` to arm64 + x86_64 below a macOS 27 deployment target, and to **arm64 only** at 27+, with no warning. To ship universal on a 27+ target, set `ARCHS = arm64 x86_64` explicitly. The macOS 27 SDK back-deploys universal apps to macOS 12.
+- Ship universal while the deployment target is ≤ 26 and Intel users matter; arm64-only is a deliberate product decision tied to the deployment target and user base.
+- Release/Archive: **Build Active Architecture Only = No**. Verify shipped slices with `lipo -info` / `file` — never trust the build setting alone.
 
 ## .dmg vs .pkg Packaging
 
@@ -94,5 +99,6 @@ Sparkle 2.x is the current, actively maintained major version.
 - Notarizing a Mac App Store build; shipping Sparkle in a MAS build
 - Stapling a `.zip` directly (`stapler` can't) — staple the contained `.app`/`.dmg`/`.pkg`
 - Building "Apple Silicon only" without checking the minimum deployment target and user base
+- Raising the deployment target to 27 and silently losing the x86_64 slice
 - Trusting `ARCHS`/`Build Active Architecture Only` blindly — verify with `lipo -info`
 - Assuming `.cs.disable-library-validation` is acceptable in a MAS submission

@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Theming
 
 Use this ref when defining design tokens, building light/dark themes, choosing a colour model, or working with custom properties (`--var`), `@property`, or modern colour functions.

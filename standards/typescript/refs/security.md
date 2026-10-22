@@ -1,4 +1,10 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # TypeScript Security Patterns
+
+Examples use Zod 4. Express middleware hardening (security headers, body limits, CORS, duplicate parameters) lives in `standards/nodejs/refs/runtime-safety.md`. Secret policy lives in `global/refs/security.md`.
 
 ## Input Validation (Zod)
 
@@ -6,7 +12,7 @@
 import { z } from 'zod';
 
 const CreateUserSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   name:  z.string().min(1).max(100),
   role:  z.enum(['user', 'admin']),
 });
@@ -16,31 +22,49 @@ type CreateUserDto = z.infer<typeof CreateUserSchema>;
 app.post('/users', (req, res) => {
   const result = CreateUserSchema.safeParse(req.body);
   if (!result.success) {
-    return res.status(400).json({ errors: result.error.flatten().fieldErrors });
+    return res.status(400).json({ errors: z.flattenError(result.error).fieldErrors });
   }
   return userService.create(result.data); // fully typed and validated
 });
 ```
 
+- Use the top-level format schemas (`z.email()`, `z.url()`, `z.uuid()`). The `z.string().email()` forms are deprecated in Zod 4.
+- Use `z.flattenError(err)` for field errors. `err.flatten()` is deprecated.
+
 **Query string type coercion risk**: identical parameter names parse differently depending on repetition and bracket syntax (`?foo=bar` → string, `?foo=bar&foo=baz` → array, `?foo[bar]=baz` → object). Validate and coerce types explicitly — never assume a query param is a string.
+
+## Validated Environment
+
+Parse secrets once at boot. Never read `process.env.X!` at the point of use.
+
+```typescript
+// env.ts
+import { z } from 'zod';
+
+export const env = z.object({
+  JWT_SECRET: z.string().min(32),
+}).parse(process.env);
+```
 
 ## JWT Authentication
 
 ```typescript
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+import { env } from './env.ts';
 
-interface JWTPayload { userId: string; role: string; }
+const JWTPayload = z.object({ userId: z.string(), role: z.enum(['user', 'admin']) });
+type JWTPayload = z.infer<typeof JWTPayload>;
 
 export class AuthService {
-  private readonly secret: string;
+  readonly #secret: string;
 
-  constructor() {
-    this.secret = process.env.JWT_SECRET!;
-    if (!this.secret) throw new Error('JWT_SECRET environment variable is required');
+  constructor(secret: string = env.JWT_SECRET) {
+    this.#secret = secret;
   }
 
   generateToken(payload: JWTPayload): string {
-    return jwt.sign(payload, this.secret, {
+    return jwt.sign(payload, this.#secret, {
       expiresIn: '1h',
       algorithm: 'HS256',
       issuer: 'your-app',
@@ -50,8 +74,13 @@ export class AuthService {
 
   verifyToken(token: string): JWTPayload {
     try {
-      // Always pin the expected algorithm — defense-in-depth against algorithm confusion attacks
-      return jwt.verify(token, this.secret, { algorithms: ['HS256'] }) as JWTPayload;
+      // Pin algorithm, issuer, and audience — defense-in-depth against algorithm confusion
+      const decoded = jwt.verify(token, this.#secret, {
+        algorithms: ['HS256'],
+        issuer: 'your-app',
+        audience: 'your-api',
+      });
+      return JWTPayload.parse(decoded);
     } catch {
       throw new Error('Invalid or expired token');
     }
@@ -59,7 +88,7 @@ export class AuthService {
 }
 ```
 
-> **RS256 (multi-service):** Use a PEM RSA private key to sign (`process.env.JWT_PRIVATE_KEY`) and the corresponding public key to verify (`process.env.JWT_PUBLIC_KEY`). `HS256` with a shared secret is correct for single-service deployments; `RS256` is correct when verifiers must not have signing capability.
+> **RS256 (multi-service):** Sign with a PEM RSA private key and verify with the matching public key. `HS256` with a shared secret fits a single service; `RS256` fits when verifiers must not be able to sign.
 
 ## Secure Cookie Options
 
@@ -67,29 +96,10 @@ export class AuthService {
 const cookieOpts = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  sameSite: 'strict',
   maxAge: 60 * 60 * 1000, // 1 hour
-};
+} as const;
 // Verify your environment's NODE_ENV convention ('prod' vs 'production') before deploying.
-```
-
-## Middleware Stack (Express)
-
-```typescript
-import express from 'express';
-import helmet from 'helmet'; // sets 14 security headers automatically
-import cors   from 'cors';
-import hpp    from 'hpp';    // deduplicates repeated query/body params before handlers see them
-
-const app = express();
-
-app.use(helmet());
-app.use(hpp());
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [],
-  credentials: true,
-}));
-app.use(express.json({ limit: '10kb' })); // prevents memory exhaustion from large payloads
 ```
 
 ## Role-Based Access Control
@@ -98,30 +108,26 @@ app.use(express.json({ limit: '10kb' })); // prevents memory exhaustion from lar
 type Role       = 'admin' | 'user' | 'guest';
 type Permission = 'read'  | 'write' | 'delete';
 
-const rolePermissions: Record<Role, Permission[]> = {
+const rolePermissions = {
   admin: ['read', 'write', 'delete'],
   user:  ['read', 'write'],
   guest: ['read'],
-};
+} as const satisfies Record<Role, readonly Permission[]>;
 
-function requirePermission(permission: Permission) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const role = req.user?.role as Role | undefined;
-    if (!role || !rolePermissions[role]?.includes(permission)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    next();
-  };
+export function can(role: Role, permission: Permission): boolean {
+  return (rolePermissions[role] as readonly Permission[]).includes(permission);
 }
 ```
+
+Call `can()` from the framework's auth middleware or handler. Deny by default when the role is missing or unknown.
 
 ## Child Process Safety
 
 `child_process.exec()` forwards the command string to `/bin/sh` — any shell metacharacter in a dynamic value becomes a command injection vector. Use `execFile` with a static command and a separate args array; no shell is involved:
 
 ```typescript
-import { execFile } from 'child_process';
-import { promisify } from 'util';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
@@ -143,12 +149,12 @@ const bad = /^(([a-z])+.)+[A-Z]([a-z])+$/;
 const email = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 ```
 
-Run `npx vuln-regex-detector` on any non-trivial regex before shipping.
+Lint regexes with `eslint-plugin-regexp` (`regexp/no-super-linear-backtracking`) and cap input length before matching.
 
 ## Anti-Patterns
 
-- Missing `hpp()` middleware — duplicate query params can silently override validated values
-- `express.json()` without a `limit` — accepts arbitrarily large payloads
-- `jwt.verify()` without an explicit `algorithms` option — the library has key-type defaults, but pinning is standard defense-in-depth and makes intent explicit
+- `process.env.X!` read at the point of use — parse a validated env object at boot
+- `jwt.verify()` without an explicit `algorithms` option, or a decoded payload cast with `as` instead of parsed
+- Deprecated Zod 3 APIs in new code (`z.string().email()`, `err.flatten()`)
 - Nested quantifiers on overlapping character classes in regex
 - Stack traces or internal error details returned in API responses

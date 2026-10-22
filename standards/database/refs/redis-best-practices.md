@@ -1,52 +1,42 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Redis Detailed Best Practices
 
-## 1. Caching & Memory Strategies
+Applies to Redis 7.2+ and Valkey 8+ (command-compatible for everything below).
 
-- **Cache-Aside (Lazy Loading)**:
-  - App checks cache -> Miss -> Load from DB -> Set Cache -> Return.
-- **TTL Jitter**:
-  - `TTL = Base_TTL + Random(0, 10% of Base_TTL)`. Prevents "Cache Stampede".
-- **Eviction Policies**:
-  - `allkeys-lru`: Best for general caching where any key can be evicted.
-  - `volatile-lru`: Best for mixed workloads (some keys persistent, some expiring).
-- **Ziplist Optimization**: Redis uses `ziplist` for small hashes/lists/sets. Keep these structures small to leverage O(1) memory efficiency (check `hash-max-ziplist-entries` config).
+**Licensing**: Redis up to 7.2.4 and Valkey are BSD-3-Clause. Redis 7.4 is RSALv2/SSPLv1 only; Redis 8+ adds AGPLv3 as a third option. Choosing an engine or upgrading across 7.2 → 7.4/8 is a licensing decision — flag it, do not do it silently. Managed services (ElastiCache, Memorystore, Upstash) set their own terms.
+
+## 1. Caching & Memory
+
+- **Cache-aside**: check cache → on miss load from DB → set with TTL → return. Invalidate (delete) on write; do not update cache and DB in two non-atomic steps.
+- **TTL jitter**: `TTL = base + random(0, 10% of base)` to avoid synchronized expiry.
+- **Stampede protection**: on a hot-key miss, let one caller rebuild (lock key with `SET key val NX PX <ms>`) while others serve stale or wait.
+- **Eviction**: `allkeys-lru` (or `allkeys-lfu`) for pure caches; `volatile-*` only when non-expiring keys must survive.
+- **Compact encodings**: small hashes, lists, sets, and sorted sets use `listpack`. Keep them under `hash-max-listpack-entries` / `hash-max-listpack-value` (and the matching `zset-`/`set-` keys). The old `*-ziplist-*` names are aliases from Redis ≤ 6.2.
 
 ## 2. Command Efficiency
 
-- **O(N) Avoidance**:
-  - NEVER use `KEYS` in production. Use `SCAN` (cursor-based iteration).
-  - Use `UNLINK` instead of `DEL` for large keys to delete in a background thread.
-  - Use `MGET`/`MSET` for batching, but be careful with extremely large batches as they still account for atomic operation time.
-- **Lua Scripting**:
-  - Use `EVALSHA` to run pre-loaded scripts. This ensures atomicity for complex operations (e.g., "Check if exists, increment, update TTL").
-- **Limit Ranges**:
-  - Unbounded `ZRANGE` or `LRANGE` on massive collections can choke the network. Always use `LIMIT` or small ranges.
+- Never `KEYS` in production; use `SCAN` / `HSCAN` / `SSCAN` / `ZSCAN`.
+- `UNLINK` instead of `DEL` for large keys (background free).
+- Bound `LRANGE`, `ZRANGE`, `HGETALL`, `SMEMBERS` on collections that can grow.
+- Batch with pipelines or `MGET`/`MSET`; keep batches to hundreds, not hundreds of thousands.
+- **Atomic multi-step logic**: on 7.0+, prefer Redis Functions (`FUNCTION LOAD` + `FCALL`) — persisted and replicated, no `NOSCRIPT` handling. In Cluster, load the library on every primary. `EVAL`/`EVALSHA` remains valid for one-off scripts; handle `NOSCRIPT` by falling back to `EVAL`.
 
-## 3. Resilience & Cloud Patterns
+## 3. Clients & Resilience
 
-- **Connection Pooling**: Mandatory. Use a pool (e.g., `ioredis` built-in or `generic-pool`) to avoid the high cost of TCP handshakes.
-- **Regional Affinity**: Ensure the application and Redis cluster are in the same cloud region to minimize latency.
-- **Hostname vs IP**: Always connect via hostname. Cloud providers may change IPs during failover or scaling.
-- **Retry Logic**: Implement exponential backoff for connection retries.
+- `ioredis` and `node-redis` multiplex commands over one connection per client; they do not pool. Reuse one long-lived client per process; open dedicated connections only for blocking commands (`BLPOP`, `XREAD BLOCK`) and Pub/Sub subscribers.
+- Set connect and command timeouts, retry with exponential backoff, and attach an `error` listener.
+- Keep app and Redis in the same region; connect by hostname, not IP.
 
-## 4. Monitoring & Health
+## 4. Monitoring
 
-- **Key Metrics to Watch**:
-  - **Cache Hit Ratio**: `keyspace_hits / (keyspace_hits + keyspace_misses)`. Low ratio indicates poor caching strategy.
-  - **Memory RSS**: Total memory used by the process. If `RSS >> Dataset`, fragmentation is high.
-  - **CPU Usage**: Watch for the "Main Thread" saturation. High CPU usually indicates an O(N) command spike.
-  - **Connected Clients**: Monitor for sudden spikes (connection leaks).
-- **In-Built Tools**:
-  - `INFO MEMORY`: Detailed breakdown of memory usage.
-  - `bigkeys`: Use `redis-cli --bigkeys` to find memory hogs.
-  - `slowlog`: Regularly check `SLOWLOG GET` to identify poorly performing queries.
+- Hit ratio: `keyspace_hits / (keyspace_hits + keyspace_misses)`.
+- `INFO memory` (fragmentation ratio), `SLOWLOG GET`, `redis-cli --bigkeys` / `--memkeys`, connected-client spikes.
 
-## 5. Security Architecture
+## 5. Security
 
-- **ACLs (Redis 6+)**:
-  - Move away from `requirepass`. Use `ACL SETUSER` to create least-privilege users (e.g., `read-only-user`).
-- **Dangerous Commands**:
-  - Rename or disable commands in `redis.conf`:
-    - `rename-command FLUSHALL ""`
-    - `rename-command CONFIG ""`
-- **TLS**: Use TLS 1.2+ for all production traffic.
+- ACL users (`ACL SETUSER`) with least privilege instead of a single `requirepass`.
+- Block dangerous commands per ACL user (`-flushall -flushdb -config -keys -debug`). `rename-command` is the legacy fallback.
+- TLS for all production traffic; never expose the port publicly.

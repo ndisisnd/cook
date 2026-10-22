@@ -115,6 +115,18 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 | `--graphql:testing` | `standards/graphql/refs/testing.md` |
 | `--graphql:tooling` | `standards/graphql/refs/tooling.md` |
 
+### `--ios`
+
+| Flag | Loads |
+|---|---|
+| `--ios` | `standards/ios/SKILL.md` + all refs |
+| `--ios:app-lifecycle-and-navigation` | `standards/ios/refs/app-lifecycle-and-navigation.md` |
+| `--ios:background-and-notifications` | `standards/ios/refs/background-and-notifications.md` |
+| `--ios:distribution` | `standards/ios/refs/distribution.md` |
+| `--ios:privacy-and-permissions` | `standards/ios/refs/privacy-and-permissions.md` |
+| `--ios:testing` | `standards/ios/refs/testing.md` |
+| `--ios:ui-and-accessibility` | `standards/ios/refs/ui-and-accessibility.md` |
+
 ### `--macos`
 
 | Flag | Loads |
@@ -122,6 +134,7 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 | `--macos` | `standards/macos/SKILL.md` + all refs |
 | `--macos:architecture-and-state` | `standards/macos/refs/architecture-and-state.md` |
 | `--macos:distribution` | `standards/macos/refs/distribution.md` |
+| `--macos:hig-conventions` | `standards/macos/refs/hig-conventions.md` |
 | `--macos:localization` | `standards/macos/refs/localization.md` |
 | `--macos:performance-accessibility` | `standards/macos/refs/performance-accessibility.md` |
 | `--macos:sandbox-and-tcc` | `standards/macos/refs/sandbox-and-tcc.md` |

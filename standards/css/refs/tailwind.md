@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Tailwind CSS
 
 Use this ref when authoring or reviewing Tailwind: utility-first discipline, theme/token configuration (v4 `@theme` or v3 `tailwind.config`), the `cn()` merge pattern, component extraction, arbitrary values, dark mode, and plugins.
@@ -14,7 +18,7 @@ Tailwind is a **delivery mechanism for the same cascade** — the CSS `SKILL.md`
 | Content detection | Automatic | `content: [...]` globs required |
 | Prefixing/nesting | Built in | Needs PostCSS plugins |
 
-Default new projects to **v4**. Match the existing version in an existing project — don't mix paradigms.
+Default new projects to **v4**. Match the existing version in an existing project — don't mix paradigms. v4 requires Safari 16.4+, Chrome 111+, and Firefox 128+; check that against the project's `browserslist` and stay on v3.4 if older browsers must work.
 
 ### v4 setup (CSS-first)
 
@@ -63,7 +67,7 @@ const TONE = { danger: 'text-red-500', ok: 'text-green-500' } as const;
 
 ## `cn()` — conditional & merged classes
 
-Combine `clsx` (conditional) with `tailwind-merge` (dedupe conflicting utilities so the last wins). This is the standard pattern; use it wherever classes are dynamic or overridable.
+Combine `clsx` (conditional) with `tailwind-merge` (dedupe conflicting utilities so the last wins). This is the standard pattern for any framework; use it wherever classes are dynamic or overridable. Framework shelves (Next.js, React) point here instead of repeating it.
 
 ```ts
 // lib/utils.ts
@@ -144,5 +148,5 @@ const button = cva('inline-flex rounded-md font-medium', {
 - Arbitrary values (`w-[347px]`) for values that recur and should be tokens.
 - `dark:` sprinkled per-element instead of semantic light/dark tokens.
 - Bare `focus:` rings (show for mouse users) instead of `focus-visible:`.
-- Fighting a design decision with `!` important utilities (`!bg-red-500`) instead of fixing token/order.
+- Fighting a design decision with important utilities instead of fixing token/order. When unavoidable, v4 puts `!` at the end (`bg-red-500!`); the v3 leading form (`!bg-red-500`) is deprecated.
 - Mixing v3 JS-config and v4 CSS-config paradigms in one project.

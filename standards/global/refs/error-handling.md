@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Error Handling
 
 ## Error Architecture

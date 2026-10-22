@@ -1,12 +1,15 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # macOS Windows, Scenes, Commands & Documents
 
 ## Core Rules
 
 ### Windows & Scenes
 - Pick the right scene: `WindowGroup` (multi-instance), `Window` (single-instance), `Settings` (auto-wires ⌘, and the "Settings…" item — don't hand-build one), `MenuBarExtra` (status bar), `DocumentGroup` (document apps — read the Document-Based Apps section below before using).
-- Open/close via `openWindow`/`dismissWindow` environment actions; data-driven windows via `WindowGroup(for:)`. Use macOS 15+ scene modifiers (`defaultLaunchBehavior`, `restorationBehavior`, `windowResizability`) where the floor allows — gate with `#available` on a 14 floor. Rely on automatic window restoration; disable per-scene for About-style windows.
+- Open/close and geometry/restoration rules → Scene Selection below.
 - Menu bar apps: `MenuBarExtra` (`.window` style for popover content); `NSStatusItem` + `NSPanel` only for non-activating panels or custom positioning; retain the status item strongly. Opening Settings from an `.accessory` app needs the activation-policy recipe → Menu Bar Apps section below.
-- Own programmatic windows with an `NSWindowController`; don't toggle `isReleasedWhenClosed` to paper over close crashes.
 
 ### Menus & Keyboard
 - Full menu bar (App/File/Edit/View/Window/Help); every feature reachable from it. Build with the `Commands` API (`CommandGroup`/`CommandMenu`); never mutate `NSMenu` directly unless bridging legacy AppKit. Feed focused-window context via `@FocusedValue`/`.focusedSceneValue`.
@@ -19,7 +22,7 @@
 
 - `@NSApplicationDelegateAdaptor` only for what SwiftUI can't do: `applicationDidFinishLaunching` pre-UI setup, `applicationShouldTerminateAfterLastWindowClosed`, Dock-icon reopen, Apple events beyond simple URL opens, `NSStatusItem` setup. Keep the delegate a thin bridge, not a parallel architecture.
 - Use `.onOpenURL { }` for custom URL schemes; drop to raw `NSAppleEventManager` only for Apple Event classes beyond a simple GET-URL.
-- **Known gap**: `applicationShouldHandleReopen(_:hasVisibleWindows:)` never fires in a pure SwiftUI-lifecycle app, even with the adaptor. If Dock-click-to-reopen must show a window, use `applicationWillBecomeActive(_:)` — but guard on a visible-window check, since it fires on *every* activation (Cmd-Tab, alert dismissal), not just Dock reopen.
+- Dock-click reopen: if it must show a window, test that `applicationShouldHandleReopen(_:hasVisibleWindows:)` actually fires under the SwiftUI lifecycle on your deployment target. If it does not, fall back to `applicationWillBecomeActive(_:)` guarded by a visible-window check — that callback fires on *every* activation (Cmd-Tab, alert dismissal).
 
 ## Scene Selection
 
@@ -34,7 +37,7 @@
 - Open/close programmatically with the `openWindow` / `dismissWindow` environment actions. Data-driven windows: `WindowGroup(for: SomeID.self)` + `openWindow(value:)`.
 - `.defaultSize(_:)` / `.defaultWindowPlacement(_:)` set initial geometry. `.windowResizability(.contentSize)` constrains resizing to the content's intrinsic size range.
 - Window state restoration is automatic across relaunch — opt out per-scene with `.restorationBehavior(...)` only with a reason (e.g. an About window).
-- Use macOS 15+ scene modifiers (`defaultLaunchBehavior`, `restorationBehavior`) where the deployment floor allows; gate with `#available` on a 14 floor.
+- macOS 15+ scene modifiers (`defaultLaunchBehavior`, `restorationBehavior`) need an `#available` gate only on a 14 floor.
 - Own a programmatic `NSWindow` with an `NSWindowController`; don't toggle `isReleasedWhenClosed` to paper over a close crash — fix the ownership instead. Retain any `NSStatusItem` strongly or it silently vanishes.
 - Note: `pushWindow` is visionOS-only — it has no macOS equivalent.
 
@@ -42,7 +45,7 @@
 
 - `MenuBarExtra` with the `.window` style hosts arbitrary popover content. Use `NSStatusItem` + `NSPanel`/`NSHostingView` directly only for non-activating panels, custom positioning, richly-formatted labels, or distinguishing a right-click from a left-click (which `MenuBarExtra` can't).
 - **Opening Settings from an `.accessory` (menu-bar-only) app** needs an activation-policy recipe, because an accessory app has no normal app activation:
-  1. Before the Settings scene can show, flip the activation policy to `.regular` (`NSApp.setActivationPolicy(.regular)`) and `NSApp.activate(ignoringOtherApps:)`.
+  1. Before the Settings scene can show, flip the activation policy to `.regular` (`NSApp.setActivationPolicy(.regular)`) and call `NSApp.activate()` (macOS 14+; `activate(ignoringOtherApps:)` is deprecated).
   2. Open Settings (send the `showSettingsWindow:`/`showPreferencesWindow:` action, or use `@Environment(\.openSettings)` on macOS 14+).
   3. When the Settings window closes, flip the policy back to `.accessory` so the app returns to menu-bar-only.
   - Decouple the trigger from the window lifecycle via `NotificationCenter` rather than reaching across view layers; hide any stray blank window before Settings appears.

@@ -108,6 +108,15 @@ def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def intent_labels(cook_root: Path = COOK_ROOT_DEFAULT) -> set[str]:
+    """Valid intent labels from `vocab/intent-vocabulary.json` (empty on error)."""
+    try:
+        vocab = json.loads((cook_root / "vocab" / "intent-vocabulary.json").read_text())
+        return {i["label"] for i in vocab.get("intents", [])}
+    except (OSError, ValueError, KeyError, TypeError):
+        return set()
+
+
 def group_standards(skills: list[str]) -> dict[str, list[str]]:
     """Group `standards/<folder>/...` paths into folder → [standard, ...].
 
@@ -120,15 +129,14 @@ def group_standards(skills: list[str]) -> dict[str, list[str]]:
         if not rel:
             continue
         parts = Path(rel).parts
-        if len(parts) >= 3 and parts[0] == "standards":
-            folder = parts[1]
-            remainder = parts[2:]
-        elif len(parts) >= 2 and parts[0] == "standards":
-            folder = parts[1]
-            remainder = parts[2:]
-        else:
-            folder = parts[0] if parts else rel
-            remainder = parts[1:]
+        if parts and parts[0] == "standards":
+            parts = parts[1:]
+        # A bare token (e.g. "x", "global") is not a standards path — drop it
+        # rather than log a phantom folder/standard pair.
+        if len(parts) < 2:
+            continue
+        folder = parts[0]
+        remainder = parts[1:]
         stem = Path(parts[-1]).stem if parts else rel
         if len(remainder) >= 2 and remainder[0] == "refs":
             name = f"refs/{stem}"
@@ -177,9 +185,10 @@ def cmd_record(store: Path, _scope: str, args) -> int:
     if not data.get("enabled"):
         return 0  # opt-in: silent no-op when disabled
     skills = [s for s in (args.skills or "").split(",") if s.strip()]
+    intent = (args.intent or "").strip()
     entry = {
         "ts": _now(),
-        "intent": args.intent or "unspecified",
+        "intent": intent if intent in intent_labels() else "unspecified",
         "prompt": args.prompt or "",
         "mode": args.mode or "auto",
         "standards": group_standards(skills),

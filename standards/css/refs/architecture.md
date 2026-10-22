@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Architecture
 
 Use this ref when structuring a stylesheet system: choosing a methodology, setting up cascade layers, scoping styles, controlling specificity at scale, or organizing files.

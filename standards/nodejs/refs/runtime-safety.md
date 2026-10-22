@@ -1,6 +1,10 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Node.js Runtime Safety
 
-Use this ref when the task touches event-loop latency, streams, buffers, worker threads, process signals, or shutdown behaviour. Keep API contracts in `global/refs/api-design.md`, general performance strategy in `global/refs/performance.md`, and persistence rules in `standards/database/`.
+Use this ref when the task touches event-loop latency, streams, buffers, worker threads, process signals, shutdown behaviour, or Express hardening middleware. Keep API contracts in `global/refs/api-design.md`, general performance strategy in `global/refs/performance.md`, and persistence rules in `standards/database/`.
 
 ## Event Loop Budget
 
@@ -59,6 +63,31 @@ process.once('SIGTERM', shutdown);
 process.once('SIGINT', shutdown);
 ```
 
+## HTTP Server Hardening (Express)
+
+Moved from `standards/typescript/refs/security.md`. Header and CORS policy lives in `global/refs/security.md`; this is the Express wiring.
+
+```typescript
+import express from 'express';
+import helmet from 'helmet'; // sets a baseline of security response headers
+import cors from 'cors';
+import hpp from 'hpp';       // collapses repeated query/body params before handlers see them
+import { env } from './env.ts'; // validated at boot — see refs/tooling.md
+
+const app = express();
+
+app.use(helmet());
+app.use(hpp());
+app.use(cors({
+  origin: env.ALLOWED_ORIGINS,             // validated allowlist from boot-time env, never '*' with credentials
+  credentials: true,
+}));
+app.use(express.json({ limit: '10kb' })); // size the limit to the largest legitimate payload
+```
+
+- Set an explicit body-size limit on every body parser. Signal: `express.json()` or `express.urlencoded()` with no `limit`.
+- Collapse or reject duplicate parameters before validation. Signal: no `hpp()` (or equivalent) and handlers that read `req.query.x` as a string.
+
 ## Anti-Patterns
 
 - Sync fs/crypto/compression in handlers
@@ -67,3 +96,5 @@ process.once('SIGINT', shutdown);
 - Ignoring `write()` backpressure
 - `Buffer.allocUnsafe` sent externally before complete overwrite
 - Shutdown without readiness change or deadline
+- Body parsers with no size limit
+- Duplicate query/body params reaching validation unchecked

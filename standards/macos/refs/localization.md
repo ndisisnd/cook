@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # macOS Localization & Formatting
 
 Localize from the first line of UI, even a single-locale app — retrofitting concatenated strings and hardcoded formats later is far more expensive than doing it right up front.

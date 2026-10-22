@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Architecture
 
 ## Component & State Structure

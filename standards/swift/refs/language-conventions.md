@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # Swift Language Conventions
 
 Style and convention rules (P1) — naming, structure, and expression style.
@@ -16,3 +20,4 @@ Style and convention rules (P1) — naming, structure, and expression style.
 - Prefer interpolation over concatenation; raw strings (`#"..."#`) to avoid escaping; multiline literals (`"""`) for embedded text.
 - Property wrappers only for reusable cross-cutting storage behavior — not as a substitute for a plain computed property. Author a custom `@resultBuilder` only for a genuine declarative DSL, not to avoid an array literal.
 - Omit `self.` except where required (or where the team formatter enforces otherwise).
+- Codable: synthesized conformance + `CodingKeys`; set strategies on the encoder/decoder, don't hand-write keys; manual `init(from:)` only for versioned/polymorphic payloads; keep wire DTOs separate from domain models; compile-time-bundled resources may fail fast with a message instead of throwing.

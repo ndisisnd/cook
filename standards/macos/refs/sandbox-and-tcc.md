@@ -1,3 +1,7 @@
+---
+last_reviewed: 2026-10-18
+---
+
 # macOS Sandbox, Entitlements & TCC
 
 ## Implementation Workflow
@@ -83,29 +87,33 @@ let status = SecItemAdd(query as CFDictionary, nil)
 
 ## TCC / Privacy Permissions
 
-Two distinct grant mechanisms exist — know which one a resource uses.
+Three grant paths exist — know which one a resource uses.
 
-- Know the grant paths: Accessibility / Screen Recording — you trigger the prompt but the user completes the grant in System Settings; Automation — the first-Apple-event consent dialog *is* the grant; Full Disk Access / Input Monitoring — no prompt API exists, detect and deep-link only.
-
-**"Both" category** — Info.plist usage-description string *and* (when sandboxed) an entitlement *and* a standard per-app TCC consent dialog your code can trigger on first access:
+**1. In-app consent dialog** — Info.plist usage-description string, (when sandboxed) an entitlement, and a standard dialog your code triggers on first access:
 
 | Resource | Info.plist key | Entitlement |
 |---|---|---|
 | Camera | `NSCameraUsageDescription` | `com.apple.security.device.camera` |
 | Microphone | `NSMicrophoneUsageDescription` | `.device.microphone` / `.audio-input` |
 | Contacts | `NSContactsUsageDescription` | `.personal-information.addressbook` |
-| Calendars | `NSCalendarsUsageDescription` (+ `NSCalendarsFullAccessUsageDescription`) | `.personal-information.calendars` |
+| Calendars (macOS 14+) | `NSCalendarsFullAccessUsageDescription` or `NSCalendarsWriteOnlyAccessUsageDescription` | `.personal-information.calendars` |
+| Reminders (macOS 14+) | `NSRemindersFullAccessUsageDescription` | `.personal-information.calendars` (Reminders share the Calendar TCC service) |
 | Location | `NSLocationUsageDescription` | `.personal-information.location` |
 | Photos | `NSPhotoLibraryUsageDescription` | `.personal-information.photos-library` |
 | Bluetooth | `NSBluetoothAlwaysUsageDescription` | `.device.bluetooth` |
-| Automation | `NSAppleEventsUsageDescription` | `.automation.apple-events` |
+| Automation | `NSAppleEventsUsageDescription` | `.automation.apple-events` — the first-Apple-event dialog *is* the grant |
 
-**"System Settings only" category** — no public entitlement, no Info.plist key, no dialog your code can trigger. The user manually enables the app in System Settings → Privacy & Security; your code can only detect denial and deep-link there via an `x-apple.systempreferences:` URL:
+Request calendar/reminder access with `EKEventStore.requestFullAccessToEvents()` / `requestWriteOnlyAccessToEvents()` / `requestFullAccessToReminders()`; the pre-14 `requestAccess(to:)` and `NSCalendarsUsageDescription` are legacy (keep only for a pre-14 floor). Under hardened runtime a missing entitlement denies access silently — no dialog, no System Settings entry.
+
+**2. Code-triggered prompt, user completes the grant in System Settings** — no entitlement. Your code shows the system prompt, which sends the user to System Settings → Privacy & Security; the app usually must relaunch to see the grant:
+
+- **Accessibility API** — check with `AXIsProcessTrusted()`; prompt once with `AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary)`.
+- **Screen Recording** — `CGPreflightScreenCaptureAccess()` to check, `CGRequestScreenCaptureAccess()` to prompt; gates ScreenCaptureKit.
+- **Input Monitoring** — `IOHIDCheckAccess(kIOHIDRequestTypeListenEvent)` to check, `IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)` to prompt.
+
+**3. System Settings only** — no prompt API. Detect denial and deep-link via an `x-apple.systempreferences:` URL:
 
 - **Full Disk Access** — internally `kTCCServiceSystemPolicyAllFiles`.
-- **Accessibility API** — check with `AXIsProcessTrusted()`/`AXIsProcessTrustedWithOptions(_:)`.
-- **Screen Recording** — gates ScreenCaptureKit.
-- **Input Monitoring** — internally `kTCCServiceListenEvent`, checked via `IOHIDCheckAccess`.
 
 Use a **stable dev signing identity** — TCC grants are keyed to the code signature/Team ID + bundle ID, so ad-hoc signing resets them every build. `tccutil reset <service>` clears a grant during development.
 
@@ -132,7 +140,8 @@ Split work into a separate XPC service for **privilege separation** — isolate 
 - Secrets in `UserDefaults` or any plaintext file
 - Shipping `get-task-allow` in any release/notarized build; shipping `.cs.allow-unsigned-executable-memory` / `.cs.disable-library-validation` without a specific documented need
 - An Info.plist usage-description string with no matching entitlement/API call, or vice versa
-- Assuming Full Disk Access / Accessibility / Screen Recording / Input Monitoring can be granted programmatically
+- Assuming any TCC grant completes in code: Accessibility / Screen Recording / Input Monitoring prompts end in System Settings; Full Disk Access cannot be prompted at all
+- Repeat-calling a prompt API in a loop instead of prompting once and deep-linking
 - Trusting an XPC caller's PID instead of its audit token / code-signing requirement
 - Re-signing an already-signed bundle (invalidates the signature and TCC grants)
 - `kSecAttrAccessibleAlways` (deprecated) or omitting `kSecAttrAccessible`
