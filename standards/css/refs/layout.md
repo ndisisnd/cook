@@ -140,3 +140,9 @@ Align nested content to a parent grid's tracks — e.g. card titles and footers 
 - Physical properties in new code where logical ones internationalize for free.
 - `clamp()` with no viewport term (never scales) or no readable floor (breaks zoom).
 - Fixed pixel heights on containers that hold variable content.
+
+## Baseline status — newer features (web-features, Oct 2026)
+
+- **Newly Available — use with a harmless fallback:** `popover` with `@starting-style`; same-document view transitions (`document.startViewTransition()`); container style queries (`@container style(--x: y)`); `text-wrap: balance`.
+- **Limited — gate with `@supports`, keep a working fallback:** anchor positioning (`anchor-name: --a`); scroll-driven animations (`animation-timeline: scroll()`); cross-document view transitions (`@view-transition { navigation: auto; }`); `text-wrap: pretty`.
+- Unsupported `text-wrap` values and `@view-transition` are ignored; they need no guard.

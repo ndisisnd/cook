@@ -4,6 +4,22 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · Standards payloads get about a quarter smaller on 8 shelves, with no hard rule lost
+
+**perf(standards): condense low-risk refs and SKILL files on 8 shelves.**
+
+- Scope: 17 files, 23,288 → 16,929 tokens (−27%). The 7 low-risk refs shrink 40%. The 8 SKILL files shrink 25% and are now all ≤ 1,400 tokens. `standards/global/SKILL.md` shrinks 3% because nearly all of it is P0.
+- Shelves: typescript, nodejs, global, swift, macos, ios, css, database.
+- `standards/nodejs/SKILL.md`: detail on built-ins (`node:` prefix), env files (`--env-file`), the permission model, ESM/CJS (`require(esm)`) and structured logging moved to `standards/nodejs/refs/tooling.md`. The "Node.js owns runtime failure modes only" ownership line is restored in tightened form.
+- `standards/swift/SKILL.md`: Codable detail moved to `standards/swift/refs/language-conventions.md`. The "Swift owns language-level correctness only" ownership line is restored in tightened form.
+- `standards/css/SKILL.md`: the Baseline newer-features section moved to `standards/css/refs/layout.md`.
+- `standards/nodejs/_INDEX.md`: tooling ref row gains keywords `node:fs`, `--env-file`, `permission model`, `require(esm)`, `pino`, `winston`, so moved text stays findable.
+- `standards/css/_INDEX.md`: layout ref row gains keywords `@supports` and `css baseline`.
+- `vocab/tag-vocabulary.json`: new aliases on `nodejs` (`node:fs`, `--env-file`, `permission model`, `require(esm)`) and `css` (`@supports`, `css baseline`). Bare `baseline`, `ESM` and `logging` are not added because they would route unrelated work.
+- `verify/rule_inventory.py`: new guard rail. It snapshots every hard rule (never/must/always/…) per file and diffs before and after. It fails on any lost P0 rule or on a version string gone from a SKILL.md. Phase 1 result: 0 lost P0 rules, 0 lost SKILL versions. Non-P0 removals were reviewed and approved.
+
+---
+
 ## [Unreleased] — 2026-10-23 · iPhone and iPad apps get their own standards, and SwiftUI work stops loading Mac rules
 
 **feat(standards): add the ios shelf and route shared Apple vocabulary by platform.**

@@ -5,7 +5,7 @@
 
 | Skill | File pattern | Keywords |
 | ----- | ------------ | -------- |
-| **nodejs** | `server.{ts,js,mjs,cjs}`, `app.{ts,js,mjs,cjs}`, `**/*.server.{ts,js,mjs,cjs}`, `**/*.cjs`, `**/server/**`, `.nvmrc`, `.node-version` | node, express, fastify, nestjs, hono, elysia, node:http, process, event loop, stream, backpressure, worker_threads, graceful shutdown, npm ci, unhandledRejection, Buffer, AbortController, dotenv |
+| **nodejs** | `server.{ts,js,mjs,cjs}`, `app.{ts,js,mjs,cjs}`, `**/*.server.{ts,js,mjs,cjs}`, `**/*.cjs`, `**/server/**`, `.nvmrc`, `.node-version` | node, express, fastify, nestjs, hono, elysia, node:http, process, event loop, stream, backpressure, worker_threads, graceful shutdown, npm ci, unhandledRejection, Buffer, AbortController, dotenv, node:fs, --env-file, permission model, require(esm), pino, winston |
 
 > Load `<SKILLS>/nodejs/SKILL.md` for Node runtime work.
 > Load `<SKILLS>/nodejs/refs/runtime-safety.md` for event-loop, stream, buffer, worker, shutdown, or Express hardening middleware work.

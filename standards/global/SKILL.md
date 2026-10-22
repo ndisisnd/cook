@@ -20,10 +20,9 @@ Targets: language-agnostic; security rules track OWASP Top 10 2025.
 
 ### Readability
 
-- Use intention-revealing names. A reader should understand purpose without decoding abbreviations.
 - Guard clauses and early returns over deep nesting.
 - Explicit data flow over hidden side effects and global mutable state.
-- Comments explain why, constraints, or non-obvious tradeoffs — not what the code already says.
+- Comments explain why or non-obvious tradeoffs, not what the code says.
 
 ### Safety
 

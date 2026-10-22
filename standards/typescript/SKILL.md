@@ -63,36 +63,19 @@ export const Status = { Active: 'active', Disabled: 'disabled' } as const;
 export type Status = (typeof Status)[keyof typeof Status];
 ```
 
-### Generics
-- Use generics for reusable, type-safe code. Constrain with `extends` where appropriate.
-
-### Type Guards
-- Use `typeof`, `instanceof`, and predicate functions (`x is T`) to narrow types.
-
-### Utility Types
-- Prefer built-ins: `Partial`, `Required`, `Pick`, `Omit`, `Record`, `Readonly`, `NonNullable`.
+### Generics, Guards, Utility Types
+- Constrain generics with `extends` where appropriate.
+- Narrow with `typeof`, `instanceof`, and predicate functions (`x is T`).
+- Prefer built-in utility types (`Partial`, `Required`, `Pick`, `Omit`, `Record`, `Readonly`, `NonNullable`).
 - Prefer `satisfies` for object literals that must conform to a contract without widening the inferred type.
 
 ### Immutability
 - `readonly` on arrays and object properties. Use `as const` and `satisfies` for const assertions.
 
-### Discriminated Unions
+### Unions And Brands
 - Use a stable discriminant such as `kind` or `type` to narrow safely. Switch on the discriminant.
-
-```typescript
-type Result<T> = { kind: 'ok'; data: T } | { kind: 'err'; error: Error };
-```
-
-### Branded Types
-- Use brands only when structurally identical values such as IDs or units are easy to mix up across boundaries.
-
-```typescript
-type UserId = string & { readonly __brand: 'UserId' };
-function createUserId(id: string): UserId { return id as UserId; }
-```
-
-### Exhaustiveness
 - Use `never` in switch `default` to catch unhandled union members at compile time.
+- Use brands only when structurally identical values such as IDs or units are easy to mix up across boundaries.
 
 ---
 
@@ -114,29 +97,13 @@ function createUserId(id: string): UserId { return id as UserId; }
 
 ## Priority: P1 — Code Conventions
 
-### Naming
-- `PascalCase`: classes, types, interfaces.
-- `camelCase`: variables, functions, methods.
-- `UPPER_SNAKE_CASE`: static constants only.
-
-### Functions
 - Arrow functions for callbacks and inline logic. Function declarations for top-level exports.
-- Always type return values on public API functions.
-
-### Modules
 - Prefer named exports unless a framework or file convention requires a default export.
 - `import type` for types. With `verbatimModuleSyntax` on, a type-only import without `type` is a compile error.
-- Keep import grouping consistent with the repo. Load `refs/tooling.md` when changing lint enforcement.
-
-### Async
 - Prefer `async/await`. Use `Promise.all()` only for independent work that can safely run in parallel.
 - `try/catch` with `catch (e: unknown)` — narrow before use. Avoid `.then().catch()` chains.
-
-### Classes
-- Use explicit visibility when it protects internal state or materially improves readability. Avoid redundant `public` churn unless the repo standard requires it.
+- Explicit visibility when it protects internal state or materially improves readability. Avoid redundant `public` churn unless the repo standard requires it.
 - Favor composition over inheritance. Constructor injection with interfaces — not singletons. Declare fields explicitly; do not use constructor parameter properties.
-
-### Optional Chaining
 - `?.` and `??` over manual null checks.
 
 ---
@@ -149,29 +116,18 @@ After editing any `.ts`/`.tsx` file:
 2. Run the repo's typecheck command (`tsc --noEmit`, `pnpm typecheck`, or equivalent).
 3. Run the repo's lint and test commands for the changed surface. Use auto-fix only when the repo already expects it.
 
-> Fallback when no LSP tooling is configured: run the repo's typecheck command directly.
-
-Inspect inferred types before adding annotations that may fight the compiler. Check references before large renames or signature changes.
 
 ---
 
 ## Anti-Patterns
 
-- Broad `any` usage when `unknown`, generics, or a local escape hatch would work
-- `Function` type — use a typed signature `() => void`
-- Runtime `enum`, `namespace`, or parameter properties — not erasable; use literal unions / `as const` and explicit fields
-- Non-null assertion `!` — use narrowing
-- Default exports where the framework or file convention does not require them
 - `require()` in TypeScript source — use `import`
 - Empty interfaces — use `type` or a non-empty interface
 - Unsafe mock casts — use `vi.mocked()` / `jest.Mocked<T>` or `as unknown as T`
 - `@ts-ignore` — use `@ts-expect-error` (self-documents intent; fails if the error disappears)
 - Global `eslint-disable` — suppress per-line; fix root cause
-- `"strict": false` in a new project, or a one-step strict flip on a large legacy repo
+- A one-step strict flip on a large legacy repo
 - `eval`, `Function` constructor, or string literals as timer callbacks
-- Shell string interpolation with untrusted input (`execSync(\`cmd ${userInput}\`)`)
-- Unvalidated externally-sourced URLs passed to network or redirect APIs
-- Plaintext secrets in code, tests, fixtures, or Git
 
 ---
 

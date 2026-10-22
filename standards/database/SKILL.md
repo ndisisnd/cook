@@ -34,8 +34,8 @@ Supabase-specific rules (`auth.uid()`, `service_role`, Supavisor) live in `supab
 
 ### Schema & Access
 
-- Isolate persistence logic behind repositories or database services. Do not scatter raw database access across handlers.
-- Enforce integrity in the database with primary keys, foreign keys, `NOT NULL`, `CHECK`, and `UNIQUE` constraints.
+- Isolate persistence behind repositories or database services; do not scatter raw database access across handlers.
+- Enforce integrity in the database: primary keys, foreign keys, `NOT NULL`, `CHECK`, `UNIQUE`.
 - Use `timestamptz`, `text`, `numeric` or integer minor units for money, and `GENERATED ALWAYS AS IDENTITY` or UUIDs for keys (see [postgresql-anti-patterns](refs/postgresql-anti-patterns.md)).
 
 ### Migrations
@@ -67,28 +67,24 @@ Supabase-specific rules (`auth.uid()`, `service_role`, Supavisor) live in `supab
 ### Commands & Operations
 
 - Never use `KEYS` in production; use `SCAN`. Use `UNLINK` for large keys. Bound every range read.
-- Use pipelines for bulk operations and Redis Functions (`FCALL`) or Lua scripts for atomic multi-step logic.
-- Use ACL users, TLS, and disabled dangerous commands in production.
+- Use pipelines for bulk work; Redis Functions (`FCALL`) or Lua for atomic multi-step logic.
+- In production use ACL users, TLS, and disabled dangerous commands.
 
 ## Anti-Patterns
 
-- ORM schema sync (`synchronize: true`, `prisma db push`, `drizzle-kit push`) against shared databases
-- Destructive schema changes without expand-contract; long-locking DDL without `lock_timeout`
-- Missing indexes on hot filters, joins, foreign keys, or RLS columns
-- Session-level `SET`, advisory locks, or SQL `PREPARE` through a transaction-mode pooler
-- Treating Redis as the durable source of truth; `KEYS` in production; TTL-less ephemeral keys
+- Session-level `SET`, advisory locks, or SQL `PREPARE` through a transaction-mode pooler.
 
 ## References
 
 Load only what the task requires:
 
 PostgreSQL:
-- [postgresql-implementation](refs/postgresql-implementation.md) — canonical expand-contract migration recipe
-- [postgresql-best-practices](refs/postgresql-best-practices.md) — indexing, pooling, RLS pointer, partitioning, locking, diagnostics, PG17/18 features
-- [postgresql-checklist](refs/postgresql-checklist.md) — review checklist incl. safe-migration rules
-- [postgresql-anti-patterns](refs/postgresql-anti-patterns.md) — types, SQL constructs, and operations to avoid
-- [sql-gotchas](refs/sql-gotchas.md) — `UPDATE ... FROM`, timezone, `NULL`, `ILIKE`, and `JSONB` caveats
+- [postgresql-implementation](refs/postgresql-implementation.md) — expand-contract migration recipe
+- [postgresql-best-practices](refs/postgresql-best-practices.md) — indexing, pooling, RLS, partitioning, locking, diagnostics, PG17/18
+- [postgresql-checklist](refs/postgresql-checklist.md) — review checklist incl. safe migrations
+- [postgresql-anti-patterns](refs/postgresql-anti-patterns.md) — types, constructs, operations to avoid
+- [sql-gotchas](refs/sql-gotchas.md) — `UPDATE ... FROM`, timezone, `NULL`, `ILIKE`, `JSONB`
 
 Redis / Valkey:
 - [redis-best-practices](refs/redis-best-practices.md) — caching, memory, commands, clients, security, licensing
-- [redis-checklist](refs/redis-checklist.md) — review checklist for Redis setup and cache behavior
+- [redis-checklist](refs/redis-checklist.md) — Redis setup and cache review checklist
