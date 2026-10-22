@@ -17,7 +17,7 @@ __Optimising the vibe in vibecoding.__
 
 <p>
 <a href="LICENSE.md"><img src="https://badgen.net/badge/license/MIT/blue" alt="License"></a>
-<img src="https://badgen.net/badge/domains/12/8B5CF6" alt="domains">
+<img src="https://badgen.net/badge/domains/13/8B5CF6" alt="domains">
 <img src="https://badgen.net/badge/concerns/8/orange" alt="concerns">
 <a href="https://github.com/ndisisnd/cook/commits/main"><img src="https://badgen.net/github/last-commit/ndisisnd/cook" alt="last commit"></a>
 </p>
@@ -116,7 +116,7 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 
 **Concerns (8):** `--security`, `--auth`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd` — each loads one ref from `standards/global/refs/`; no P0.
 
-**Domains (12):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
+**Domains (13):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--ios`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
 
 **Sub-ref flags:** `--<domain>:<ref>` loads a single ref from a domain shelf without loading the domain SKILL.md. The `ref` is a file stem under `standards/<domain>/refs/`. Pair it with the bare domain flag to add the SKILL.md floor + only the named ref (the full shelf is suppressed): `--react --react:hooks` → `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only. Name several sub-refs to pick a wider subset: `--react --react:hooks --react:state-management`.
 
@@ -162,6 +162,7 @@ When enabled, each successful fire appends one record — the intent, the raw pr
 | Database | PostgreSQL schema design, expand-contract migrations, query optimisation, indexing, RLS, and Redis caching strategy (TTL, eviction, pipeline safety) |
 | Flutter | Widget best practices, state management (Bloc/Riverpod/GetX), navigation (GoRouter), architecture (feature-domain), networking (Dio), error handling (Either/dartz), and DI (GetIt) |
 | GraphQL | Schema design, resolver patterns, security (depth/complexity limits), performance (DataLoader, N+1 prevention), testing, and tooling (codegen, graphql-eslint) |
+| iOS | Native iOS/iPadOS app development: SwiftUI app and scene lifecycle (iOS 27 SDK UIScene and launch-screen mandates), NavigationStack and sheets, iPad and iPhone Duo adaptivity, Dynamic Type/VoiceOver/Liquid Glass, background tasks, APNs, Live Activities and widgets, permissions/ATT/privacy manifests, Keychain, Sign in with Apple and passkeys, account deletion, signing/TestFlight/App Review, and XCUITest. iOS-only (not macOS) |
 | macOS | Native macOS app development: SwiftUI/AppKit structure, scenes/windows/menu-bar apps, App Sandbox and TCC, code-signing/notarization, distribution (Sparkle, MAS), Observation state, persistence (SwiftData/Core Data), localization, performance/accessibility, and HIG conventions. macOS-only (not iOS) |
 | Next.js | App Router and Pages Router, Server/Client Components, data fetching, rendering and caching strategies, Server Actions, security, performance, and testing |
 | Node.js | Runtime safety, event loop, streams, backpressure, worker threads, graceful shutdown, async error handling, env validation, logging, and testing |

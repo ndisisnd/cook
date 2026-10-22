@@ -63,6 +63,11 @@ prints `canonical_tags`, `routes`, and `needs_llm`. Only when
 canonicalize the raw signals onto its tags — never invent a tag; drop and note
 any unmappable signal.
 
+`platform_ambiguous: true` means shared Apple vocabulary (SwiftUI, SwiftData,
+Keychain, ...) matched with no platform signal. Pick `domain:ios` (UIKit,
+iPhone/iPad, `ios/` paths) or `domain:macos` (AppKit, Mac, menu bar) from the
+task; if the task does not say, load neither platform shelf.
+
 **Sufficiency (never empty-handed):** ≥1 `domain:*` route → proceed with the
 resolver's `confidence`. None resolved, or the resolver said `fallback: true`
 → set `confidence: low`, `fallback: true`, and load broad in Steps 4–5

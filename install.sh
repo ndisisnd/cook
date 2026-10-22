@@ -93,6 +93,14 @@ FILES=(
   standards/graphql/refs/security.md
   standards/graphql/refs/testing.md
   standards/graphql/refs/tooling.md
+  standards/ios/SKILL.md
+  standards/ios/_INDEX.md
+  standards/ios/refs/app-lifecycle-and-navigation.md
+  standards/ios/refs/background-and-notifications.md
+  standards/ios/refs/distribution.md
+  standards/ios/refs/privacy-and-permissions.md
+  standards/ios/refs/testing.md
+  standards/ios/refs/ui-and-accessibility.md
   standards/macos/SKILL.md
   standards/macos/_INDEX.md
   standards/macos/refs/architecture-and-state.md

@@ -34,8 +34,9 @@ Subcommands
       against tag-vocabulary.json tag names and aliases (case-insensitive,
       word-bounded; single-character aliases are ignored as noise) and folds in
       the resolver's domain/concern hints. Prints canonical_tags, routes, the
-      per-tag match evidence, and needs_llm — true only when no domain:* route
-      resolved, i.e. the only case where the model must read the vocab itself.
+      per-tag match evidence, platform_ambiguous, and needs_llm — true when no
+      domain:* route resolved or shared Apple vocabulary has no platform signal,
+      i.e. the only cases where the model must read the vocab itself.
 
   heal --fingerprint F --degraded [P,...]
       Reconcile an existing entry's `degraded` flag with reality (Phase 3,
@@ -55,6 +56,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -72,6 +74,12 @@ NODE_SERVER_DEPS = {
     "express", "fastify", "@nestjs/core", "koa", "@hapi/hapi", "koa-router",
     "hono", "elysia", "@apollo/server", "apollo-server", "@trpc/server",
 }
+
+# Xcode SDK names → Apple platform shelves. Read from project.pbxproj build
+# settings (SDKROOT / SUPPORTED_PLATFORMS) so a native app declares its platform.
+APPLE_SDKS = {"iphoneos": "ios", "macosx": "macos"}
+APPLE_PLATFORMS = ("ios", "macos")
+APPLE_SHARED_TAG = "apple-shared"
 
 
 def sha256_text(text: str) -> str:
@@ -151,7 +159,29 @@ def manifest_frameworks(project: Path, manifests: list[str]) -> list[str]:
             fw.add("flutter" if "flutter:" in text or "flutter\n" in text else "dart")
         except OSError:
             pass
+    # Native Apple app only. Flutter and React Native/Expo projects also carry an
+    # .xcodeproj under ios/ or macos/, but their shelves own those hosts; there a
+    # platform shelf loads only when a changed file sits in that folder.
+    if not pub.exists() and not pkg.exists():
+        fw.update(xcode_platforms(project))
     return sorted(fw)
+
+
+def xcode_platforms(project: Path) -> set:
+    """Apple platforms declared by the project's Xcode build settings."""
+    found = set()
+    pbxprojs = (list(project.glob("*.xcodeproj/project.pbxproj"))
+                + list(project.glob("*/*.xcodeproj/project.pbxproj")))
+    for pbx in pbxprojs:
+        try:
+            text = pbx.read_text(errors="ignore")
+        except OSError:
+            continue
+        for line in re.findall(r"(?:SDKROOT|SUPPORTED_PLATFORMS) = ([^;]*);", text):
+            for sdk, platform in APPLE_SDKS.items():
+                if re.search(r"\b" + sdk + r"\b", line):
+                    found.add(platform)
+    return found
 
 
 def extensions(files: list[str]) -> list[str]:
@@ -232,17 +262,27 @@ def derive_domains(files, frameworks, project: Path):
         if "/migrations/" in low and low.endswith(".sql"):
             hints.add("database")          # belt-and-braces; the .sql arm also adds it
 
-    # macOS app platform — a SEPARATE pass, like supabase above. `.swift` alone is
-    # language-only (adds `swift` in the chain); the macOS *platform* shelf applies
-    # only when a macOS app signal is present. Gate on the exact markers the macos
-    # SKILL frontmatter triggers on — `**/*.entitlements` and `**/Info.plist` — so a
-    # pure-language Swift package never pulls the platform shelf. (The macos SKILL is
-    # self-scoped "macOS only"; this repo has no ios domain.)
+    # Apple app platform — a SEPARATE pass, like supabase above. `.swift` alone is
+    # language-only (adds `swift` in the chain); a platform shelf applies only when
+    # an app marker changed: `**/*.entitlements`, `**/Info.plist`,
+    # `**/PrivacyInfo.xcprivacy`. The marker's platform comes from its folder
+    # (`ios/`, `macos/` — the Flutter / React Native host layout), then from the
+    # platforms the Xcode project declares, then the legacy default `macos`.
+    declared = [p for p in APPLE_PLATFORMS if p in frameworks]
     for f in files:
         low = f.lower()
-        if low.endswith(".entitlements") or Path(low).name == "info.plist":
+        name = Path(low).name
+        if not (name.endswith(".entitlements") or name in ("info.plist", "privacyinfo.xcprivacy")):
+            continue
+        parts = Path(low).parts
+        if "ios" in parts:
+            hints.add("ios")
+        elif "macos" in parts:
             hints.add("macos")
-            break
+        elif declared:
+            hints.update(declared)
+        else:
+            hints.add("macos")
 
     return sorted(hints)
 
@@ -505,8 +545,6 @@ def cmd_classify(args):
     needed when this returns needs_llm: true (no domain resolved), which keeps
     classification deterministic and vocab-file reads out of the context.
     """
-    import re
-
     project = Path(args.project).resolve() if args.project else Path.cwd()
     signals = gather(args.path or [], project)
     prose = (args.prose or "").strip()
@@ -537,13 +575,25 @@ def cmd_classify(args):
                 matched[h] = {"routes_to": tags[h]["routes_to"],
                               "matched_on": f"signal:{kind}:{h}"}
 
+    # Shared Apple vocabulary (SwiftUI, SwiftData, Keychain, ...) is valid on both
+    # iOS and macOS. Narrow it to the platform the task already shows — a matched
+    # platform tag, a declared Xcode platform, or a marker-file hint. With none,
+    # route nowhere and say so: wrong-platform rules are worse than none.
+    platform_ambiguous = False
+    if APPLE_SHARED_TAG in matched:
+        known = [p for p in APPLE_PLATFORMS
+                 if p in matched or p in signals["frameworks"] or p in signals["domain_hints"]]
+        matched[APPLE_SHARED_TAG]["routes_to"] = [f"domain:{p}" for p in known]
+        platform_ambiguous = not known
+
     routes = sorted({r for m in matched.values() for r in m["routes_to"]})
     print(json.dumps({
         "canonical_tags": sorted(matched),
         "routes": routes,
         "matched": matched,
         "signals": signals,
-        "needs_llm": not any(r.startswith("domain:") for r in routes),
+        "platform_ambiguous": platform_ambiguous,
+        "needs_llm": platform_ambiguous or not any(r.startswith("domain:") for r in routes),
     }, separators=(",", ":")))
 
 

@@ -45,7 +45,7 @@ Target: macOS 26+ deployment for new apps, built with Xcode 27 and the macOS 27 
 
 Default load: this file only; pull refs only when needed.
 
-Applies to macOS app targets only — never iOS/iPadOS/watchOS/visionOS, even when `Info.plist`/entitlements globs match. Swift language rules → `standards/swift/`; universal rules → `standards/global/`; secret policy → `global/refs/security.md`.
+Applies to macOS app targets only — never iOS/iPadOS/watchOS/visionOS, even when `Info.plist`/entitlements globs match; iOS/iPadOS → `standards/ios/`. Swift language rules → `standards/swift/`; universal rules → `standards/global/`; secret policy → `global/refs/security.md`.
 
 **Scope:** full force for new targets and modules. In existing code, match established conventions; propose migrations (persistence stack, deployment target, architecture slices) as separate explicit tasks, never as a side effect.
 

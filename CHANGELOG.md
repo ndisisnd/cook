@@ -4,6 +4,20 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · iPhone and iPad apps get their own standards, and SwiftUI work stops loading Mac rules
+
+**feat(standards): add the ios shelf and route shared Apple vocabulary by platform.**
+
+- `standards/ios/`: new domain shelf. Targets iOS/iPadOS 18+ built with Xcode 27 / iOS 27 SDK. P0 covers the three iOS 27 SDK breakers (UIScene lifecycle mandatory, launch screen mandatory, `UIDesignRequiresCompatibility` ignored), lifecycle and navigation, iPad and iPhone Duo adaptivity, accessibility, background work, privacy, account deletion and CI signing. Six refs: app-lifecycle-and-navigation, ui-and-accessibility, background-and-notifications, privacy-and-permissions, distribution, testing. Platform-neutral SwiftUI state and localization stay on the macOS shelf and are linked, not copied.
+- `vocab/tag-vocabulary.json`: new `ios` tag (49 iOS-only aliases). New `apple-shared` tag takes the 24 aliases that are valid on both platforms (SwiftUI, SwiftData, Keychain, entitlement, …) out of `macos`, plus privacy manifest, App Store Connect and TestFlight. `macos` keeps 34 Mac-only aliases.
+- `scripts/cook_cache.py`: a native Xcode project (no `package.json` or `pubspec.yaml`) declares its platform from `SDKROOT`/`SUPPORTED_PLATFORMS`. `classify` narrows `apple-shared` to that platform; with no platform signal it routes nowhere and returns `platform_ambiguous: true`. `Info.plist`, `.entitlements` and `PrivacyInfo.xcprivacy` route by folder first, so a Flutter or React Native `ios/Info.plist` now loads iOS rules instead of macOS rules.
+- `refs/protocol-cook.md`: Step 2 says how to resolve `platform_ambiguous`.
+- `standards/macos/SKILL.md`: scope line points iOS work at the new shelf.
+- `README.md`, `ARCHITECTURE.md`, `FLAG-LIST.md`, `SKILL.md`: document the 13th domain and its `--ios` (+ sub-ref) flags. `FLAG-LIST.md` also gains the missing `--macos:hig-conventions` row.
+- `install.sh`: manifest regenerated to ship the ios shelf.
+
+---
+
 ## [Unreleased] — 2026-10-18 · Seven standards shelves catch up with the October 2026 toolchain, and stale rules now show up on their own
 
 **fix(standards): refresh typescript, nodejs, css, global, swift, macos and database to current versions.**
