@@ -9,6 +9,7 @@ Explicit args are the whole load surface: no automatic P0, no auto-matching, and
 - Tokens beginning with `--` are flags:
   - **Simple** (`--security`, `--react`, `--global`): validated against the runtime flag set derived from `vocab/tag-vocabulary.json` `routes_to`. Unknown flag: non-zero exit with the valid flag list.
   - **Sub-ref** (`--react:hooks`): `--<domain>:<ref>`, where `ref` is a file stem under `standards/<domain>/refs/`.
+  - **Full shelf** (`--react:all`): `--<domain>:all` loads the SKILL.md and every ref. `all` is reserved; no ref uses that stem.
 - A bare `--` token ends flag parsing (Unix convention): everything after it is prose, even if dash-prefixed.
 - All remaining text is the **prose** argument (whitespace-trimmed). Flag order is free: `/cook fix bug --react` is the same as `/cook --react fix bug`.
 

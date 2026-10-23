@@ -4,6 +4,17 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-24 · A bare domain flag loads only the refs the touched files match; `--<domain>:all` keeps the full shelf
+
+**feat(routing): bare domain flags match refs from touched files; --<domain>:all keeps the full shelf.**
+
+- `scripts/cook_route.py`: a bare `--<domain>` with no prose and no sub-ref now loads `SKILL.md`, every ref with no file pattern in `_INDEX.md` (always loads), and the refs whose file pattern matches the touched files (`--path`, else git). A patterned ref with no match is skipped. (Option C, 2026-10-24: the first build loaded only SKILL.md for react.) With zero file signals it loads the full shelf, as before. With prose, keyword matches are unioned with the file-pattern matches. `--<domain> --<domain>:<ref>` and `--global` are unchanged. New `refs_by_files()` and `explicit_fallbacks()`; `skill_list_explicit()` takes the touched files.
+- New flag `--<domain>:all`: the full shelf (`SKILL.md` + every ref), the old bare behaviour. `all` validates like any sub-ref and no shelf has a ref named `all`.
+- `scripts/cook_run.py`: the envelope carries `fallback_reason: "no_file_signals"` when a bare flag fell back to the full shelf. `--explain` names the file pattern and the matching file for each ref a bare flag loads.
+- `scripts/cook_cache.py`: explicit-flags fingerprints carry a rule version (`flag_rules: 2`), so entries built under the old full-shelf rule are not served. The key already included the file list. Auto-mode keys are byte-identical.
+- `refs/protocol-explicit.md`, `refs/protocol-manual.md`, `FLAG-LIST.md`, `README.md`: describe bare-flag matching, the fallback and `:all`.
+- Effect on `react-nextjs` with `--react --nextjs`: 79,996 B (`:all`) to 55,157 B, 69% of the full shelves (31% cut). Auto-mode fixtures: 0 skill lists changed, payloads byte-identical.
+
 ## [Unreleased] — 2026-10-23 · The model reads about 3 KB of protocol per /cook call instead of 6–10 KB
 
 **perf(protocol): move routing steps into cook_run, slim the protocol docs.**

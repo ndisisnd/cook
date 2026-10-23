@@ -41,8 +41,9 @@ Output: one compact JSON envelope on stdout:
   mode, status (hit|miss|stale|skip|needs_llm), fingerprint,
   payload {path, bytes, sections}, manifest_path, degraded,
   dropped_for_budget, needs_llm, platform_ambiguous,
-  stale_reason (when stale), llm_input (only when needs_llm),
-  explain (only with --explain).
+  stale_reason (when stale), fallback_reason ("no_file_signals" when a bare
+  domain flag had no prose and no touched files, so it loaded the full shelf),
+  llm_input (only when needs_llm), explain (only with --explain).
 
 Exit codes: 0 ok, 1 invalid flag (message on stderr), 2 usage or internal error.
 Telemetry is best-effort: a failure there never changes the exit code or envelope.
@@ -89,7 +90,7 @@ def build_explain(ctx: dict, skills, fallback: bool) -> dict:
     matched = {}
     if not flags:
         matched = cook_cache.do_classify(text, sig, ctx.get("resume_tags"))["matched"]
-    paths = [] if flags else sig["files"]
+    paths = sig["files"]
     return cook_route.explain(list(skills), flags=flags, text=text, paths=paths,
                               matched=matched, fallback=fallback)
 
@@ -103,8 +104,17 @@ def manifest_of(payload_path: str) -> str | None:
     return str(mf) if mf.is_file() else None
 
 
+def fallback_reason(ctx: dict) -> str | None:
+    """`no_file_signals` when a bare domain flag had no prose and no touched files."""
+    if ctx["flags"] and not ctx["prose"] and cook_route.explicit_fallbacks(
+            ctx["flags"], "", ctx["signals"]["files"]):
+        return "no_file_signals"
+    return None
+
+
 def envelope(*, mode, status, fp, payload, manifest, degraded, dropped,
-             platform_ambiguous=False, stale_reason=None, skills=None):
+             platform_ambiguous=False, stale_reason=None, skills=None,
+             fallback_reason=None):
     env = {
         "mode": mode,
         "status": status,
@@ -118,6 +128,8 @@ def envelope(*, mode, status, fp, payload, manifest, degraded, dropped,
     }
     if stale_reason:
         env["stale_reason"] = stale_reason
+    if fallback_reason:
+        env["fallback_reason"] = fallback_reason
     if skills is not None:
         env["skills"] = skills
     return env
@@ -177,7 +189,8 @@ def finish(ctx: dict, *, status, fp, skills, tags, confidence, fallback,
                    manifest=comp.get("manifest_path"), degraded=comp["degraded"],
                    dropped=comp["metadata"]["dropped_for_budget"],
                    platform_ambiguous=platform_ambiguous, stale_reason=stale_reason,
-                   skills=skills if ctx["show_skills"] else None)
+                   skills=skills if ctx["show_skills"] else None,
+                   fallback_reason=fallback_reason(ctx))
     if cache_error:
         env["cache_error"] = cache_error
     if ctx.get("explain"):
@@ -229,7 +242,7 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
         fp = resume_fp or cook_cache.fingerprint(signals, flags or None)
         ctx["prompt"] = prose
         if flags:
-            skills = cook_route.skill_list_explicit(flags, prose)
+            skills = cook_route.skill_list_explicit(flags, prose, signals["files"])
             return finish(ctx, status=lk["status"], fp=fp, skills=skills, tags=[],
                           confidence=lk["confidence"], fallback=False, cacheable=False)
         cl = cook_cache.do_classify(prose, signals, resume_tags)
@@ -247,7 +260,8 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
         fp = resume_fp
         cl = cook_cache.do_classify(ctx["task"], signals, resume_tags)
         if flags:
-            skills, tags, conf, fb = (cook_route.skill_list_explicit(flags), [],
+            skills, tags, conf, fb = (cook_route.skill_list_explicit(
+                                          flags, "", signals["files"]), [],
                                       signals["confidence"], False)
         else:
             skills, conf, fb = derive_auto(cl, signals, ctx["task"], p0=True)
@@ -271,7 +285,8 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
                                 "sections": p["sections"]},
                        manifest=manifest_of(p["path"]), degraded=p["degraded"],
                        dropped=p["metadata"].get("dropped_for_budget", []),
-                       skills=lk["routing"]["skills"] if ctx["show_skills"] else None)
+                       skills=lk["routing"]["skills"] if ctx["show_skills"] else None,
+                       fallback_reason=fallback_reason(ctx))
         record_telemetry(project, ctx["intent"], ctx["prompt"],
                          lk["routing"]["skills"], ctx["mode"])
         if ctx.get("explain"):
@@ -281,7 +296,7 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
 
     if status == "fallback":                      # corrupt cache: greedy, no write
         if flags:
-            skills = cook_route.skill_list_explicit(flags)
+            skills = cook_route.skill_list_explicit(flags, "", signals["files"])
         else:
             routes = cook_route.broad_routes([], signals["domain_hints"])
             skills = cook_route.skill_list_auto(routes, signals["files"],
@@ -302,7 +317,8 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
     stale_reason = lk.get("stale_reason")
     if flags:
         return finish(ctx, status=status, fp=fp,
-                      skills=cook_route.skill_list_explicit(flags), tags=[],
+                      skills=cook_route.skill_list_explicit(
+                          flags, "", signals["files"]), tags=[],
                       confidence=signals["confidence"], fallback=False,
                       stale_reason=stale_reason)
     cl = cook_cache.do_classify(ctx["task"], signals)

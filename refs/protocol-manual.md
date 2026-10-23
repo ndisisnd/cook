@@ -226,8 +226,14 @@ manual flow. The text below is verbatim.
   `standards/global/refs/<concern>.md` only (no P0 SKILL.md).
 - **Bare domain flag** (`--<domain>`) → `standards/<domain>/SKILL.md` **always**
   loads; which refs load beside it depends on what else names that same domain:
-  - **Alone** — no prose and no `--<domain>:<ref>` for it → every
-    `standards/<domain>/refs/*.md` (the **full shelf**).
+  - **Alone** — no prose and no `--<domain>:<ref>` for it → the SKILL.md plus
+    every ref with **no** file pattern in the `_INDEX.md` (always loads) and
+    every ref whose file pattern matches a touched file (the paths from
+    `--path`, else git). A ref with patterns and no match is skipped. With **zero** file signals → every
+    `standards/<domain>/refs/*.md` (the full shelf) and the envelope sets
+    `fallback_reason: "no_file_signals"`.
+  - **`--<domain>:all`** → the SKILL.md plus every ref (the **full shelf**),
+    whatever the files. `all` is reserved and is not a ref stem.
   - **+ one or more `--<domain>:<ref>` for the SAME domain** → the SKILL.md floor
     **plus only the named refs**; the full shelf is **suppressed** (the other
     `refs/*.md` do NOT load). The sub-ref flags select a subset on top of the
@@ -238,7 +244,8 @@ manual flow. The text below is verbatim.
     + `standards/macos/refs/distribution.md`, and **nothing else** — none of the
     other `standards/macos/refs/*.md` load.
   - **+ prose** (and no sub-ref for it) → the SKILL.md floor plus the refs the
-    domain's `_INDEX.md` keyword table matches against the prose. Zero matched
+    domain's `_INDEX.md` keyword table matches against the prose, **unioned**
+    with the pattern-free refs and the refs whose file patterns match the touched files. Zero matched
     refs still loads the SKILL.md — the flag guarantees the shelf entry. (If
     both prose and `--<domain>:<ref>` name the same domain, load the SKILL.md
     plus the **union** of the named refs and the prose-matched refs — both are

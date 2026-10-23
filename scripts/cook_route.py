@@ -29,10 +29,14 @@ Auto mode (protocol-manual.md Steps 3-5):
 Explicit mode (protocol-explicit.md "Path list"; no P0):
   * `global` -> global SKILL.md + every global ref.
   * concern flag (a stem of standards/global/refs) -> that ref only.
+  * `<d>:all` -> `standards/<d>/SKILL.md` plus every `standards/<d>/refs/*.md`
+    (the full shelf; `all` is reserved and no ref may use that stem).
   * bare domain flag `<d>`: `standards/<d>/SKILL.md`; with any `<d>:<ref>`
-    flag for the same domain -> plus only those refs; with prose and no
-    sub-ref -> plus the refs whose index keywords occur in the prose; with
-    both -> the union; otherwise -> plus every `standards/<d>/refs/*.md`.
+    flag for the same domain -> plus only those refs (plus prose keyword
+    matches); otherwise plus every ref with NO file pattern in the index (always
+    loads), plus the patterned refs whose pattern matches `paths`, plus the
+    refs whose index keywords occur in the prose. Bare, no prose, no files
+    -> every ref of the shelf, reported as a `no_file_signals` fallback.
   * `<d>:<ref>` with no bare `<d>` -> that ref only.
 """
 from __future__ import annotations
@@ -163,7 +167,30 @@ def skill_list_auto(routes: list[str], paths: list[str], prose: str,
     return _dedupe(out)
 
 
-def skill_list_explicit(flags: list[str], prose: str = "") -> list[str]:
+def refs_by_files(domain: str, paths: list[str]) -> list[tuple[str, str, str]]:
+    """(ref, pattern, file) for every ref whose _INDEX.md file pattern matches a path."""
+    out, seen = [], set()
+    for row in index_rows(domain):
+        for pat in row["patterns"]:
+            rx = glob_to_regex(pat)
+            hit = next((p for p in paths if rx.match(p)
+                        or ("/" not in pat and rx.match(p.rsplit("/", 1)[-1]))), None)
+            if hit is None:
+                continue
+            for r in row["refs"]:
+                if (r, pat) not in seen:
+                    seen.add((r, pat))
+                    out.append((r, pat, hit))
+    return out
+
+
+def patternless_refs(domain: str) -> list[str]:
+    """Refs of the shelf that no `_INDEX.md` row ties to a file pattern."""
+    patterned = {r for row in index_rows(domain) if row["patterns"] for r in row["refs"]}
+    return [r for r in refs_of(domain) if r not in patterned]
+
+
+def _explicit(flags: list[str], prose: str, paths: list[str]):
     names = [f.lstrip("-") for f in flags]
     global_refs = refs_of("global")
     glob_part: list[str] = []
@@ -173,30 +200,51 @@ def skill_list_explicit(flags: list[str], prose: str = "") -> list[str]:
             glob_part = [rel("global")] + [rel("global", r) for r in global_refs]
         elif ":" in f:
             d, r = f.split(":", 1)
-            dom.setdefault(d, {"bare": False, "subs": set()})["subs"].add(r)
+            info = dom.setdefault(d, {"bare": False, "subs": set(), "all": False})
+            if r == "all":
+                info["all"] = True
+            else:
+                info["subs"].add(r)
         elif f in global_refs:
             if rel("global", f) not in glob_part:
                 glob_part.append(rel("global", f))
         else:
-            dom.setdefault(f, {"bare": False, "subs": set()})["bare"] = True
+            dom.setdefault(f, {"bare": False, "subs": set(), "all": False})["bare"] = True
     out: list[str] = []
+    fallback: list[str] = []
     skill = [p for p in glob_part if p.endswith("/SKILL.md")]
     out += skill + sorted(p for p in glob_part if p not in skill)
     for d in sorted(dom):
         info = dom[d]
-        if info["bare"]:
+        if info["all"]:
+            out.append(rel(d))
+            refs = refs_of(d)
+        elif info["bare"]:
             out.append(rel(d))
             if info["subs"]:
                 refs = sorted(info["subs"] | (set(domain_refs_auto(d, [], prose))
                                               if prose else set()))
-            elif prose:
-                refs = domain_refs_auto(d, [], prose)   # index keywords vs prose
+            elif prose or paths:
+                refs = sorted(set(domain_refs_auto(d, paths, prose))
+                              | set(patternless_refs(d)))
             else:
-                refs = refs_of(d)
+                refs = refs_of(d)               # no prose, no file signals
+                fallback.append(d)
         else:
             refs = sorted(info["subs"])
         out += [rel(d, r) for r in refs]
-    return _dedupe(out)
+    return _dedupe(out), fallback
+
+
+def skill_list_explicit(flags: list[str], prose: str = "",
+                        paths: list[str] | None = None) -> list[str]:
+    return _explicit(flags, prose, paths or [])[0]
+
+
+def explicit_fallbacks(flags: list[str], prose: str = "",
+                       paths: list[str] | None = None) -> list[str]:
+    """Domains whose bare flag fell back to the full shelf (no prose, no files)."""
+    return _explicit(flags, prose, paths or [])[1]
 
 
 def broad_routes(routes: list[str], domain_hints: list[str]) -> list[str]:
@@ -238,9 +286,12 @@ def _split_skill(path: str):
     return parts[1], Path(parts[-1]).stem
 
 
-def index_reasons(domain: str, ref: str, paths: list[str], prose: str) -> list[str]:
+def index_reasons(domain: str, ref: str, paths: list[str], prose: str,
+                  bare: bool = False) -> list[str]:
     """Why a domain _INDEX.md row selects `ref`: the file pattern + file, or keyword."""
     out: list[str] = []
+    if bare and ref in patternless_refs(domain):
+        out.append("no file patterns: always loads")
     for row in index_rows(domain):
         if ref not in row["refs"]:
             continue
@@ -266,7 +317,7 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
     """Why each skill file loaded and why sibling candidates did not.
 
     Read-only: it never changes the skill list. `paths` and `text` must be the
-    ones the skill list was derived from (explicit flags use no paths). `matched`
+    ones the skill list was derived from. `matched`
     is do_classify()["matched"] (empty for explicit flags). Returns
     {"loaded": [{path, why: [..]}], "dropped": [{path, why}]}.
     """
@@ -276,6 +327,7 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
         if ":" in f:
             d, r = f.split(":", 1)
             subs.setdefault(d, set()).add(r)
+    fb = explicit_fallbacks(flags, text, paths) if names else []
     loaded, domains = [], []
     for s in skills:
         d, ref = _split_skill(s)
@@ -292,10 +344,14 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
             else:
                 if ref in subs.get(d, ()):
                     why.append(f"flag --{d}:{ref}")
-                if d in names and not subs.get(d) and not text:
-                    why.append(f"flag --{d} alone (full shelf)")
-                if d in names and text:
-                    why += index_reasons(d, ref, paths, text)
+                if f"{d}:all" in names:
+                    why.append(f"flag --{d}:all (full shelf)")
+                elif d in names and d in fb:
+                    why.append(f"flag --{d} alone (full shelf): no file signals "
+                               f"(fallback_reason no_file_signals)")
+                elif d in names:
+                    why += index_reasons(d, ref, paths if not subs.get(d) else [], text,
+                                         bare=not subs.get(d))
         else:                                       # routed (auto or prose)
             if d == "global" and ref is None:
                 why.append("P0: global SKILL.md loads on every auto run")
@@ -323,7 +379,9 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
                 if subs.get(d):
                     why = f"shelf suppressed: only the named --{d}:<ref> flags load"
                 elif d in names and text:
-                    why = "no _INDEX.md keyword matched the prose"
+                    why = "has file patterns and none matched the touched files"
+                elif d in names:
+                    why = "has file patterns and none matched the touched files"
                 else:
                     why = "no flag names it"
             elif d == "global":

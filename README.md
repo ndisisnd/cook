@@ -120,9 +120,11 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 
 **Concerns (9):** `--security`, `--auth`, `--crypto`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd` — each loads one ref from `standards/global/refs/`; no P0.
 
-**Domains (13):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--ios`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
+**Domains (13):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--ios`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the domain `SKILL.md` plus every ref with no file pattern in its `_INDEX.md` (always loads) and the refs whose file pattern matches the files the task touches (`--path`, else the git diff). With no file signals it loads the full shelf and the envelope says `fallback_reason: "no_file_signals"`. With prose, keyword matches are added.
 
-**Sub-ref flags:** `--<domain>:<ref>` loads a single ref from a domain shelf without loading the domain SKILL.md. The `ref` is a file stem under `standards/<domain>/refs/`. Pair it with the bare domain flag to add the SKILL.md floor + only the named ref (the full shelf is suppressed): `--react --react:hooks` → `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only. Name several sub-refs to pick a wider subset: `--react --react:hooks --react:state-management`.
+**Full shelf:** `--<domain>:all` (for example `--react:all`) loads the `SKILL.md` and every ref of that domain, whatever the files.
+
+**Sub-ref flags:** `--<domain>:<ref>` (`all` is reserved for the full shelf) loads a single ref from a domain shelf without loading the domain SKILL.md. The `ref` is a file stem under `standards/<domain>/refs/`. Pair it with the bare domain flag to add the SKILL.md floor + only the named ref (the full shelf is suppressed): `--react --react:hooks` → `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only. Name several sub-refs to pick a wider subset: `--react --react:hooks --react:state-management`.
 
 Your agent does not parse these flags. It passes the text after `/cook` to `cook_run.py --args '<text>'`, and the script splits flags from prose, rejects unknown flags, and picks the files. [`refs/protocol-explicit.md`](refs/protocol-explicit.md) holds the grammar for anyone parsing by hand.
 

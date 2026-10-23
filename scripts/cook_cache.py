@@ -481,6 +481,10 @@ def fingerprint(signals: dict, flags=None) -> str:
     }
     if flags:
         basis["flags"] = sorted(flags)
+        # v1.2.0 P5: a bare domain flag now selects refs from `files`; entries
+        # built under the old full-shelf rule must not be served. Explicit-flags
+        # keys only; auto-mode keys stay byte-identical.
+        basis["flag_rules"] = 2
     return hashlib.sha256(json.dumps(basis, sort_keys=True).encode("utf-8")).hexdigest()[:16]
 
 
@@ -546,7 +550,7 @@ def check_flags(flags):
                     f"'{domain_part}' is not a domain flag"
                 )
             else:
-                valid_refs = valid_sub_flags(domain_part)
+                valid_refs = valid_sub_flags(domain_part) | {"all"}
                 if ref_part not in valid_refs:
                     errors.append(
                         f"'{f}': '{ref_part}' not found in {domain_part}/refs/ "
