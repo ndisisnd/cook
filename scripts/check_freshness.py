@@ -14,7 +14,7 @@ Rules
   `targets:` (the one-line version target) and `last_reviewed: YYYY-MM-DD`.
 * `standards/<domain>/refs/*.md` — frontmatter must carry `last_reviewed:`.
 * `_INDEX.md` files are routing tables, not standards — skipped.
-* Gitignored shelves (e.g. `standards/security/`) are checked only when present.
+* Gitignored shelves (if any) are checked only when present.
 """
 from __future__ import annotations
 

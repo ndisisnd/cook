@@ -16,8 +16,7 @@ SKILL.md (cook)               thin entry point: identity + pointer
 │   ├── cook_compile.py          compiler: dedup, bucket, concatenate
 │   └── check_index_routes.py    CI validator: _INDEX.md route integrity
 └── standards/
-    ├── global/          universal P0 rules + concern refs (includes general security ref)
-    ├── security/        Security standards library (core/ + owasp/); superset of global refs/security.md
+    ├── global/          universal P0 rules + concern refs (includes the security ref)
     ├── flutter/         Flutter/Dart UI
     ├── dart/            Dart 3 language
     ├── swift/           Swift 6 language
@@ -26,7 +25,7 @@ SKILL.md (cook)               thin entry point: identity + pointer
     ├── nextjs/          Next.js App Router
     ├── react/           React (non-Next)
     ├── css/             CSS presentation layer (cascade, layout, theming) + Tailwind ref
-    ├── typescript/      TypeScript 5 language
+    ├── typescript/      TypeScript 6 language
     ├── nodejs/          Node.js runtime (event loop, streams, process lifecycle)
     ├── database/        PostgreSQL + Redis
     ├── supabase/        Supabase platform (RLS, keys, Edge functions) — co-loads with database
@@ -136,18 +135,17 @@ defeats the cache's core guarantee that a hit never wakes the model).
 | Skill | Description |
 |---|---|
 | cook | Entry-point orchestrator: cache-first routing, classification, and payload compilation. |
-| global | Universal P0 rules that apply to every task; concern refs are loaded on top by cook. Includes `refs/security.md`, a general-purpose security standard usable standalone. |
-| security | Comprehensive security standards library. Three always-apply P0 rules (no hardcoded credentials, approved crypto, certificate hygiene) plus 30+ concern-specific refs and 100+ OWASP cheat sheets. Use for security-focused work; `global/refs/security.md` is the lighter standalone alternative. |
+| global | Universal P0 rules that apply to every task; concern refs are loaded on top by cook. Includes `refs/security.md`, a general-purpose security standard; the security home for all stacks. |
 | flutter | Flutter/Dart UI standards covering widgets, state management, navigation, architecture, performance, and testing. |
 | dart | Dart 3.x language standards: null safety, patterns, sealed classes, records, class modifiers, naming, immutability, collections, async, and import organisation. |
-| swift | Swift 6.x language standards: optionals, error handling, strict concurrency (actors, Sendable, @MainActor), value types, protocols/generics, ARC, naming, and access control. Language-only; pairs with ios and macos for platform concerns. |
+| swift | Swift 6.2+ language standards: optionals, error handling, strict concurrency (actors, Sendable, @MainActor), value types, protocols/generics, ARC, naming, and access control. Language-only; pairs with ios and macos for platform concerns. |
 | ios | iOS/iPadOS app development standards: SwiftUI app and scene lifecycle, navigation and sheets, iPad and foldable adaptivity, UI and accessibility, background work, push, Live Activities and widgets, privacy and permissions, sign-in and account deletion, signing and App Store distribution, and UI testing. Scoped to iOS/iPadOS only. |
-| macos | macOS app development standards: SwiftUI/AppKit app structure, scenes/windows, menu bar apps, App Sandbox/TCC, signing/notarization, distribution, persistence choice, localization, and HIG conventions. Scoped to macOS only (not iOS/iPadOS/watchOS/visionOS). |
-| nextjs | Next.js App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
-| react | React + TypeScript standards: hook rules, component structure, prop typing, and boundary safety for non-Next.js projects. |
+| macos | macOS 26+ app development standards (Xcode 27): SwiftUI/AppKit app structure, scenes/windows, menu bar apps, App Sandbox/TCC, signing/notarization, distribution, persistence choice, localization, and HIG conventions. Scoped to macOS only (not iOS/iPadOS/watchOS/visionOS). |
+| nextjs | Next.js 16.x App Router standards: RSC boundaries, server data access, async route APIs, Server Actions, rendering/cache strategy, and Pages Router awareness. |
+| react | React 19.x + React Compiler standards: hook rules, component structure, prop typing, and boundary safety for non-Next.js projects. |
 | css | Lightweight, principle-driven CSS presentation-layer standards — the SKILL favours judgment over rigid rules: six battle-tested principles (low specificity, scope by default, tokenize, Flexbox/Grid, platform-first, compose over override) + a minimal accessibility/security floor, with depth (architecture, layout, theming, performance, accessibility, tailwind, tooling, security) pushed to on-demand refs. Co-loads with framework shelves. |
-| typescript | TypeScript 5.x language standards: type safety, narrowing, generics, modules, and async code. |
-| nodejs | Node.js runtime standards: event-loop safety, streams/backpressure, process lifecycle, Buffer safety, runtime pinning, installs, env loading, and logging. |
+| typescript | TypeScript 6.x language standards (7.x-compatible): type safety, narrowing, generics, modules, and async code. |
+| nodejs | Node.js 24 LTS runtime standards: event-loop safety, streams/backpressure, process lifecycle, Buffer safety, runtime pinning, installs, env loading, and logging. |
 | database | Database standards for PostgreSQL schema/migration/query design and Redis caching and cache invalidation. |
 | supabase | Supabase platform standards: Row-Level Security, the anon/service_role key boundary, Postgres/Edge function security, Storage, Realtime, and the CLI migration workflow. Co-loads with database on Supabase Postgres work. |
 | graphql | GraphQL schema design and resolver conventions: naming, nullability, types, input objects, mutations, queries, and operation structure. |
@@ -209,21 +207,12 @@ protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
 - `refs/architecture.md`: Component and state structure rules across layers.
 - `refs/api-design.md`: HTTP verb semantics, status codes, request/response shape.
 - `refs/error-handling.md`: Error architecture, propagation, and user-facing error design.
-- `refs/security.md`: General-purpose security rules (OWASP Top 10 quick-ref, parameterized queries, secret management, input validation). Usable standalone — lighter alternative to the full `security/` shelf.
+- `refs/security.md`: General-purpose security rules (OWASP Top 10 quick-ref, parameterized queries, secret management, input validation). The security home for all stacks.
 - `refs/auth.md`: Authentication and authorisation patterns.
 - `refs/performance.md`: Performance workflow and profiling discipline.
 - `refs/debug.md`: Scientific debugging method and instrumentation rules.
 - `refs/cicd.md`: CI/CD pipeline and deployment configuration.
-
-### security
-
-`standards/security/` uses two subdirectories rather than a flat `refs/` layout:
-
-**`core/`** — language-agnostic, always-applicable rules (23 files):
-- `hardcoded-credentials.md`, `crypto-algorithms.md`, `digital-certificates.md`: always-apply P0 rules checked on every task.
-- Concern refs: additional cryptography, API/web services, auth/MFA, authorization/access control, client-side web security, cloud/Kubernetes, data storage, DevOps/CI/CD/containers, file handling, framework-and-languages, IaC, input validation/injection, logging, MCP/AI security, mobile apps, privacy/data protection, C/C++ safe functions, session management/cookies, supply chain, XML/serialization.
-
-**`owasp/`** — detailed OWASP cheat sheet guidance (90+ files): authentication, authorization, injection, XSS/DOM-XSS, CSRF, session management, crypto storage, transport security, HTTP headers, OAuth2, JWT, SAML, IDOR, mass assignment, file upload, XXE, deserialization, Docker, Kubernetes, CI/CD, microservices, zero trust, and framework-specific sheets (Node.js, Django, Java, PHP, Ruby, .NET).
+- `refs/crypto.md`: Approved algorithms and modes, key management and rotation, randomness, encryption at rest, TLS, and certificate hygiene.
 
 ### flutter
 
@@ -248,6 +237,7 @@ protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
 
 ### swift
 
+- `refs/language-conventions.md`: Optionals, error handling, value types, protocols/generics, naming, access control, Codable.
 - `refs/concurrency.md`: Swift 6 migration, actors and reentrancy, Sendable/sending, structured vs unstructured tasks, AsyncSequence/AsyncStream, continuation bridging, deinit isolation.
 - `refs/memory-management.md`: ARC model, weak/unowned decisions, delegate and parent/child patterns, retain-cycle sources, Memory Graph Debugger.
 - `refs/testing.md`: Swift Testing (@Test/#expect/#require, parameterized, traits), what stays XCTest, protocol-based fakes, migration mapping.
@@ -257,6 +247,7 @@ protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
 
 ### macos
 
+- `refs/hig-conventions.md`: Human Interface Guidelines for Mac: Liquid Glass, toolbars, sidebars, `Table`, menus and keyboard shortcuts.
 - `refs/architecture-and-state.md`: Observation framework internals, @State/@Bindable ownership, @Environment/@Entry DI, MVVM tradeoffs, SwiftData vs Core Data decision.
 - `refs/windows-and-scenes.md`: Scene selection, window/menu-bar management, the Settings-from-accessory recipe, commands and focus/responder bridging, document apps.
 - `refs/sandbox-and-tcc.md`: App Sandbox, entitlement reference, hardened runtime exceptions, Keychain, TCC grant flows, code-signing basics, XPC security boundaries.
@@ -344,6 +335,7 @@ protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
 
 ### graphql
 
+- `refs/conventions.md`: Operation structure and naming conventions for queries, mutations and fragments.
 - `refs/schema-design.md`: Type naming, nullability defaults, and field design rules.
 - `refs/performance.md`: DataLoader usage, query complexity limits, and N+1 prevention.
 - `refs/security.md`: Depth limits, introspection policy, and auth on resolvers.

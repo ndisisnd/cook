@@ -56,3 +56,11 @@ Scope: protected resources, tracking, privacy manifests, credential storage, sig
 - Deletion removes the account and its personal data, not just a deactivation. If legal retention applies, say what stays and why.
 - Sign in with Apple accounts: call Apple's token revocation endpoint during deletion.
 - Confirm the destructive step; then sign out and clear Keychain items, caches, and the App Group container.
+
+## Transport & Integrity
+
+- Never override server trust validation (a `URLSessionDelegate` accepting any trust) to allow self-signed certs.
+- Pin only when you control both ends and can change pins without an app release. Pin the public key (SPKI) via `NSPinnedDomains` (`NSAppTransportSecurity`, iOS 14+; `SPKI-SHA256-BASE64` under `NSPinnedCAIdentities` or `NSPinnedLeafIdentities`) or TrustKit; prefer a CA key (intermediate) over a leaf, so server cert rotation needs no app release; always ship a different backup pin; never use trust-on-first-use or let users bypass a failure.
+- App integrity: `App Attest` (iOS 14+; verify attestation and assertion counters server-side); `DeviceCheck` for persistent per-device flags.
+- Hide sensitive UI in the app-switcher snapshot (`scenePhase == .inactive`) and on lock-screen widgets.
+- Siri intents and Shortcuts that touch sensitive data set `requiresUserAuthentication = true`; authenticate at deep-link landing screens.

@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-10-18
+last_reviewed: 2026-10-23
 ---
 
 # Cicd
@@ -33,3 +33,12 @@ Each rule carries a detection signal for review mode. P0 unless tagged `P1 (desi
   Signal: a deploy job running its own build step instead of consuming the CI artifact.
 - **P1 (design):** stage through environments with health checks and an automatic rollback or manual halt (P1: an agent often cannot confirm rollout wiring from a diff).
   Signal: a deploy straight to production with no staging gate, health check, or rollback path.
+
+## Supply Chain & Containers
+
+- **Install a release-age cooldown and disable dependency lifecycle scripts by default.** pnpm `minimumReleaseAge` (minutes, pnpm >=10.16; default 1440 from v11), npm `min-release-age` (days, npm >=11.10), Yarn `npmMinimalAgeGate` (minutes); exempt urgent security fixes by name. Scripts off: npm `ignore-scripts=true`, Yarn `enableScripts: false` (pnpm is off already: allow-list builds in `onlyBuiltDependencies` on v10, `allowBuilds` on v11); allow-list only packages that need a build.
+  Signal: no cooldown config; install scripts run for every dependency.
+- **Publish packages through trusted publishing (OIDC) (npm >=11.5.1) bound to one repo and workflow file; set publish access to "require 2FA and disallow tokens".** A lockfile and provenance are not enough: a hijacked maintainer or CI ships validly signed malware. After a compromise, rotate every secret reachable from dev machines and CI.
+  Signal: a long-lived `NPM_TOKEN` in publish CI.
+- **Container images: pin the base by tag and digest, run as a non-root `USER`, and keep secrets out of layers (BuildKit secret mounts).** Never mount `/var/run/docker.sock` or run `--privileged`; drop caps (`--cap-drop=ALL`, `no-new-privileges`) and use a read-only root filesystem.
+  Signal: `FROM x:latest`; no `USER`; a docker socket volume.

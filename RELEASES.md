@@ -2,6 +2,32 @@
 
 What's new for you, release by release.
 
+## v1.1.0 — 2026-10-23
+
+> cook now covers iPhone and iPad apps, and it ships a full set of security rules, including a new one for encryption. The standards were brought up to date with the tools and versions current in October 2026, and several are much shorter, so your agent reads less to get the same guidance. This release takes cook to thirteen technology areas and nine cross-cutting concerns.
+
+### ✨ New
+
+- Standards for iPhone and iPad apps: app lifecycle, navigation, accessibility, background work, privacy, account deletion and App Store signing. SwiftUI work no longer pulls in Mac-only rules, and Mac work no longer pulls in iPhone rules.
+- A new cryptography concern covers encryption choices, random numbers, key rotation and TLS. Ask for it directly, or let cook load it when your task mentions encryption.
+- Security rules that used to live in a private library now ship with cook. They were checked against OWASP, NIST and IETF guidance, and 18 factual errors were fixed along the way.
+- cook now flags standards that have not been reviewed recently, so stale rules show up before they mislead your agent.
+
+### 📈 Improved
+
+- Standards are refreshed to October 2026 versions: TypeScript 6, Node 24 LTS, Swift 6.2, macOS 26 with Xcode 27, PostgreSQL 16 to 18, Tailwind v4, OWASP Top 10 2025, React 19.3 and Next.js 16.4.
+- Payloads are smaller. Measured on the rules your agent reads: React is 41% smaller, Next.js 32%, Swift 25% and TypeScript 19%. The whole library is 2% smaller even with the new iOS and security rules added, and 8% smaller without them.
+- Rules that repeated each other across shelves now live in one place, so your agent no longer reads the same advice twice.
+
+### 🐛 Fixed
+
+- Flutter and React Native projects now load iOS rules for their iOS files, where before they loaded macOS rules.
+- Rules that contradicted each other or recommended out-of-date settings were corrected, including unsafe database migration steps and end-of-life Node versions.
+
+### Not in this release
+
+- GraphQL, Supabase, Flutter and Dart have not been refreshed yet. They are planned for next releases.
+
 ## v1.0.0 — 2026-08-11
 
 > cook gives your coding agent the right standards at the right moment. You describe the task; cook works out which languages, frameworks and concerns it touches, and hands your agent only the rules that apply — instead of a wall of guidance it has to wade through. This first release covers twelve technology areas plus a global set of rules that applies to any codebase, and works in both Claude Code and the OpenAI Codex CLI from a single install.

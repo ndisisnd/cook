@@ -1,135 +1,60 @@
+---
+last_reviewed: 2026-10-23
+---
+
 # React Tooling
 
-## Vite Setup
+Profiling and bundle analysis live in `refs/performance.md`.
 
-Prefer Vite over Create React App for new projects — faster dev server, better tree-shaking, native ESM.
+## Vite
+
+Use Vite (or a framework) for new projects. Create React App is deprecated.
 
 ```ts
-// vite.config.ts
+// vite.config.ts — Vite 8, @vitejs/plugin-react 6+ (Rolldown-based)
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 
 export default defineConfig({
-  plugins: [react()],
-  build: {
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        manualChunks: { vendor: ['react', 'react-dom'] },
-      },
-    },
-  },
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
 });
 ```
 
+- Install `@rolldown/plugin-babel`, `@babel/core`, and `babel-plugin-react-compiler` as dev dependencies for the compiler preset.
+- `@vitejs/plugin-react` below 6 takes the compiler inline: `react({ babel: { plugins: ['babel-plugin-react-compiler'] } })`. It must run first in the Babel pipeline.
+- Vite exposes only `VITE_`-prefixed vars via `import.meta.env`. Everything in the client bundle is public; keep secrets server-side.
+
+## React Compiler
+
+- React Compiler 1.0 is stable. Install `babel-plugin-react-compiler@latest`; it must run first in the Babel pipeline.
+- Next.js: set `reactCompiler: true` in `next.config.ts` (off by default).
+- The compiler skips components that break the Rules of React and keeps compiling the rest. Fix lint-reported violations over time; do not suppress them.
+- In compiled code, do not add new `useMemo` / `useCallback` / `React.memo` by default.
+
 ## StrictMode
 
-Always wrap the app in `<React.StrictMode>` in development. It double-invokes render and effects to surface side-effect bugs early. Remove only if a specific third-party library is incompatible.
+Wrap the app in `<StrictMode>` in development. It double-invokes render and effects to expose impure code and missing cleanup. Do not remove it to silence a double-effect; fix the missing cleanup.
 
-```tsx
-// main.tsx
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+## ESLint (Flat Config)
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+`eslint-plugin-react-hooks` (7.x) ships `rules-of-hooks`, `exhaustive-deps`, and the Compiler rules (`purity`, `refs`, `immutability`, `set-state-in-effect`, `set-state-in-render`, `static-components`, `preserve-manual-memoization`, and others) in its `recommended` preset.
+
+```js
+// eslint.config.js
+import { defineConfig } from 'eslint/config';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+
+export default defineConfig([
+  reactHooks.configs.flat.recommended,
+  {
+    plugins: { 'react-refresh': reactRefresh },
+    rules: { 'react-refresh/only-export-components': 'warn' },
+  },
+]);
 ```
 
-## Debugging Re-renders with `why-did-you-render`
-
-Traces unexpected re-renders in development. Remove before production builds.
-
-```tsx
-// wdyr.ts — Vite example; import this before React in main.tsx
-import React from 'react';
-
-if (import.meta.env.DEV) {
-  const whyDidYouRender = await import('@welldone-software/why-did-you-render');
-  whyDidYouRender.default(React, { trackAllPureComponents: true });
-}
-```
-
-Opt specific components into tracking:
-
-```tsx
-function ExpensiveList(props: Props) { /* ... */ }
-ExpensiveList.whyDidYouRender = true;
-```
-
-## React DevTools Profiler
-
-Use the Profiler API to measure actual render durations and find slow commits:
-
-```tsx
-import { Profiler } from 'react';
-
-function onRender(id: string, phase: string, actualDuration: number) {
-  if (actualDuration > 16) console.warn(`[Profiler] ${id} (${phase}): ${actualDuration.toFixed(1)}ms`);
-}
-
-<Profiler id="Feed" onRender={onRender}>
-  <Feed />
-</Profiler>
-```
-
-Open the Profiler tab in React DevTools browser extension and use "Highlight updates when components render" to spot unnecessary re-renders visually.
-
-## Custom Hook Debug Label
-
-```tsx
-function useOnlineStatus() {
-  const isOnline = useSyncExternalStore(subscribe, getSnapshot);
-  useDebugValue(isOnline ? 'Online' : 'Offline'); // shown in DevTools
-  return isOnline;
-}
-```
-
-## Bundle Analysis
-
-```bash
-# Vite
-npm install --save-dev rollup-plugin-visualizer
-# add visualizer() to vite.config.ts plugins, then:
-npm run build && open dist/stats.html
-
-# webpack / CRA
-npx source-map-explorer 'build/static/js/*.js'
-```
-
-Review the output for: large vendor chunks that could be split, libraries that appear multiple times (version conflicts), and modules that should be lazy-loaded.
-
-## ESLint
-
-Mandatory plugins for React projects:
-
-```json
-{
-  "plugins": ["react-hooks", "react-refresh"],
-  "rules": {
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "error",
-    "react-refresh/only-export-components": "warn"
-  }
-}
-```
-
-`exhaustive-deps` must never be disabled. Use `error` in strict repos and CI; `warn` is acceptable only during incremental adoption with tracked cleanup. If the project uses React Compiler-compatible tooling, enable the current `eslint-plugin-react-hooks` recommended rules rather than only the two legacy rules.
-
-Do not silence dependency warnings with comments. Move object/function creation, split effects, use `useEffectEvent` where appropriate, or redesign the synchronization.
-
-## Environment Variables
-
-Use `.env` files with Vite's `VITE_` prefix for client-side variables. Never put secrets in client-side env vars — they are embedded in the bundle.
-
-```bash
-# .env.local
-VITE_API_URL=https://api.example.com
-# Secrets go server-side only — never VITE_ prefixed
-```
-
-```tsx
-const apiUrl = import.meta.env.VITE_API_URL;
-```
+- Use `reactHooks.configs.flat['recommended-latest']` only to opt into experimental compiler rules.
+- In Next.js, `eslint-config-next` already includes `eslint-plugin-react-hooks`; do not register it twice.
+- Never disable `exhaustive-deps`. Move object creation into the effect, split effects, or use `useEffectEvent`.

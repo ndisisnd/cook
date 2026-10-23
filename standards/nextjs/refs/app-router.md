@@ -1,116 +1,50 @@
+---
+last_reviewed: 2026-10-23
+---
+
 # App Router
 
-Use this ref when creating App Router routes, layouts, loading/error states, dynamic segments, route groups, parallel/intercepting routes, Route Handlers, or self-hosting-sensitive App Router features.
+Use this ref when creating routes, layouts, error/loading states, parallel/intercepting routes, Route Handlers, `proxy.ts`, or self-hosting-sensitive features.
 
 ## File Conventions
 
-| File | Role |
-|---|---|
-| `page.tsx` | UI for a route segment |
-| `layout.tsx` | Shared UI wrapping children; persists across navigation |
-| `loading.tsx` | Route-level Suspense fallback |
-| `error.tsx` | Error boundary; must be a Client Component |
-| `not-found.tsx` | Not-found UI for segment |
-| `route.ts` | Server-side endpoint |
+- `error.tsx` must be a Client Component. `global-error.tsx` replaces the root layout and renders its own `<html>` and `<body>`.
+- Only the root `app/layout.tsx` has `<html>` and `<body>`.
+- `default.tsx` is required for every parallel route slot (`@modal`); builds fail without it. Return `null` or call `notFound()`.
+- `proxy.ts` (project root or `src/`) replaces `middleware.ts` in Next.js 16. Export `proxy`. It runs on the Node.js runtime only and cannot be configured; keep `middleware.ts` only if you need the Edge runtime. Without a `matcher` it runs on every request, including `_next/static`, `_next/image`, and `public/`; exclude those. Server Action calls are POSTs to the page route, so a matcher that skips the path skips them too. Security depth: `refs/security.md`.
+- Default exports are required for `page`, `layout`, `template`, `loading`, `error`, `global-error`, `not-found`, `default`, and metadata image files. `route.ts` uses named HTTP-method exports (`GET`, `POST`).
+- Route groups `(auth)` and private folders `_lib` do not change the URL. Colocate route-only code in the route folder.
 
-Only the root `app/layout.tsx` should include `<html>` and `<body>` tags.
+## Async Route APIs
 
-## Add A New Route
-
-1. Create `app/dashboard/page.tsx` as a Server Component by default.
-2. Add `app/dashboard/layout.tsx` only when the segment needs shared UI.
-3. Add `app/dashboard/loading.tsx` for route-level Suspense.
-4. Add `app/dashboard/error.tsx` with `'use client'` and a `reset` prop for local recovery.
-5. In Next.js 15+, `await params`, `searchParams`, `cookies()`, and `headers()`.
+- Synchronous `params`, `searchParams`, `cookies()`, `headers()`, and `draftMode()` are removed in Next.js 16. Always `await`.
+- Metadata image functions (`opengraph-image`, `icon`) receive `params` and `id` as Promises; `sitemap` receives `id` as a Promise. `generateImageMetadata` still receives sync `params`.
+- Type props with generated helpers (`PageProps<'/blog/[slug]'>`, `LayoutProps`, `RouteContext`); run `next typegen` in CI.
 
 ```tsx
-// app/(auth)/login/page.tsx - URL is /login, not /auth/login
-export default function LoginPage() {
-  return <LoginForm />;
-}
-
-// app/dashboard/error.tsx
-'use client';
-
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
-  return <button onClick={() => reset()}>Retry</button>;
+// app/blog/[slug]/page.tsx
+export default async function Page(props: PageProps<'/blog/[slug]'>) {
+  const { slug } = await props.params;
+  return <Post slug={slug} />;
 }
 ```
 
-## Routing Structure
+## Handlers, Auth Interrupts, After
 
-- Route Groups: use `(auth)` to organize without affecting the URL path.
-- Private Folders: use `_lib` to colocate files excluded from routing.
-- Dynamic Routes: use `[slug]` or `[...slug]`; use `generateStaticParams` for pre-rendered paths.
-- Parallel Routes: use `@modal` and pass the slot to the parent layout; provide `default.tsx` fallback.
-- Intercepting Routes: use `(.)route` or `(..)route` for advanced flows such as modals inside dashboards.
-- Colocation: keep route-specific components, styles, tests, and private helpers inside the route folder when they are not reused elsewhere.
-
-## Data And Functions
-
-- Default to Server Components; use `'use client'` only at interactive leaves.
-- Await async APIs in Next.js 15+: `params`, `searchParams`, `cookies()`, and `headers()`.
-- Use `middleware.ts` for edge-side authentication and redirects.
-- Secure every `route.ts` handler with appropriate auth, validation, and rate limiting.
-- Keep pages thin; call widgets, features, DAL functions, or Server Actions rather than embedding business logic.
+- Secure every `route.ts` handler with auth, validation, and rate limiting.
+- `forbidden()` (403) and `unauthorized()` (401) from `next/navigation` are still experimental: they need `experimental.authInterrupts: true`. Do not call them in the root layout or inside a `try/catch`.
+- `after(cb)` from `next/server` runs work after the response. In Server Components, read `cookies()` / `headers()` before `after` and pass values in; reading them inside the callback throws. Handlers and Server Actions may read them inside.
 
 ## Self-Hosting
 
-Use these rules when hosting Next.js outside Vercel.
-
-### Standalone Output
-
-Mandatory for production containers.
-
-```js
-// next.config.js
-module.exports = { output: 'standalone' };
-```
-
-Manually copy `public/` and `.next/static/` into the standalone directory's corresponding folders so assets are served correctly.
-
-### Distributed ISR Cache
-
-Filesystem cache breaks in multi-instance deployments. Use a shared Cache Handler.
-
-```js
-// next.config.js
-module.exports = {
-  cacheHandler: require.resolve('./cache-handler.js'),
-  cacheMaxMemorySize: 0,
-};
-```
-
-Storage options:
-
-- Redis: recommended for most apps.
-- S3: useful for high-volume static assets.
-
-### Environment Variables
-
-- `NEXT_PUBLIC_*` values are baked into the JavaScript bundle at build time.
-- Server-only values are loaded at runtime from the environment.
-
-### Image Optimization
-
-- Built-in image optimization works in Docker but requires `sharp`.
-- External loaders such as Cloudinary, Imgix, or Akamai are recommended at scale.
-
-```js
-// next.config.js
-module.exports = { images: { loader: 'custom' } };
-```
-
-## Cross-References
-
-- RSC serialization rules live in `refs/server-components.md`.
-- Rendering, ISR, and PPR strategy lives in `refs/rendering-and-caching.md`.
-- Docker and CI details live in `refs/tooling.md`.
+- `output: 'standalone'`: copy `public/` and `.next/static/` into the standalone directory.
+- The default cache is per instance. For multiple instances, set a shared `cacheHandler` (legacy ISR / fetch cache) and `cacheHandlers` (`'use cache'`), for example backed by Redis. Set `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` so all instances share one Server Action key.
+- `NEXT_PUBLIC_*` values are inlined at build time. Call `await connection()` before reading `process.env` when the value must be read at runtime.
+- Image optimization works in Docker (uses `sharp`). Use a custom `loader` for an external image CDN at scale.
 
 ## Anti-Patterns
 
-- Unawaited async route APIs in Next.js 15+.
-- `'use client'` at the tree root instead of leaves.
+- Unawaited async route APIs.
+- Parallel route slots without `default.tsx`.
 - `<html>` or `<body>` in nested layouts.
-- Missing `error.tsx` for segments that need local recovery.
 - Route Handlers without auth, validation, and rate limiting.

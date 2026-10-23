@@ -4,7 +4,59 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-23 · Standards payloads get about a quarter smaller on 8 shelves, with no hard rule lost
+## [v1.1.0] — 2026-10-23 · Next.js standards match Next.js 16.4 and stop repeating React rules
+
+**perf(standards): refresh and condense the nextjs shelf.**
+
+- Scope: 14 files, 14,917 → 11,731 tokens (−21%); every ref stamped `last_reviewed: 2026-10-23`. `refs/security.md` was finished in the security merge. The 2026-10-18 edits were reviewed against nextjs.org and kept, with fixes on top.
+- `standards/nextjs/SKILL.md`: Node 24 LTS recommended (Next's own minimum is 20.9, which is end of life); export rule allows the default exports Next.js file conventions require (`route.ts` and `proxy.ts` use named exports); generic React rules replaced by pointers to `standards/react/`.
+- `standards/nextjs/refs/app-router.md`: `proxy.ts` (Node-only), `forbidden()`/`unauthorized()` still behind `experimental.authInterrupts`, `after()` stable with request APIs read before the callback.
+- `standards/nextjs/refs/rendering-and-caching.md`, `data-fetching.md`, `server-components.md`, `server-actions.md`: Cache Components, `updateTag` vs `revalidateTag(tag, 'max')`, `connection()` inside `<Suspense>` for `new Date()`/`Math.random()` during prerender; walkthroughs reduced to rules; Server Action security points to `refs/security.md`.
+- `standards/nextjs/refs/architecture.md`: Feature-Sliced Design reduced to decision rules; `next analyze` (16.1+); Edge runtime deprecated, Cache Components needs Node.
+- `standards/nextjs/refs/styling-and-optimization.md`: Next.js 16 image defaults (`qualities: [75]`, 4-hour `minimumCacheTTL`, `remotePatterns` over `domains`, `preload` over `priority`).
+- `standards/nextjs/refs/testing.md`: Playwright for async Server Components; MSW 3; generic React testing points to `standards/react/refs/testing.md`.
+- `standards/nextjs/refs/i18n.md`: `next/root-params` stable from 16.3; on 16.0–16.2 it needs `experimental.rootParams`; next-intl 4 in `proxy.ts`.
+- `standards/nextjs/refs/pages-router.md`: legacy detail cut by 47%.
+- `standards/nextjs/_INDEX.md`, `vocab/tag-vocabulary.json`: keywords `proxy.ts`, `forbidden()`, `unauthorized()`, `after()` (specific forms, so a task that says "after" does not load Next.js).
+
+---
+
+## [v1.1.0] — 2026-10-23 · React standards match React 19.3 and the React Compiler, at 39% fewer tokens
+
+**perf(standards): refresh and condense the react shelf.**
+
+- Scope: 8 files, 10,695 → 6,520 tokens (−39%); every ref stamped `last_reviewed: 2026-10-23`. `refs/security.md` was finished in the security merge.
+- `standards/react/SKILL.md`: targets React 19.3; `useEffectEvent` (stable since 19.2) call-site limits; restated anti-patterns removed; the 2026-10-18 edits reviewed and kept, with the accessible-dialog and Compiler-first wording restored.
+- `standards/react/refs/hooks.md`: generic recipes (`useDebounce`, `useLocalStorage`, `useOnClickOutside`, `useInView`, `useWindowSize`) replaced by the rules they existed for — SSR-safe storage, cleanup, stable callbacks via `useEffectEvent`.
+- `standards/react/refs/tooling.md`: Vite 8 with `@vitejs/plugin-react` 6 (Rolldown) and the Compiler preset; `eslint-plugin-react-hooks` 7 flat configs and Compiler rules.
+- `standards/react/refs/performance.md`: memoization guidance follows React Compiler 1.0 — rely on the compiler in new code, keep existing `useMemo`/`useCallback`; Next-specific RSC notes left to the nextjs shelf.
+- `standards/react/refs/component-patterns.md`: decision rules only; React 19 `ref` as a prop and `<Context value>`.
+- `standards/react/refs/state-management.md`: Zustand 5 `useShallow`, TanStack Query 5 (no `cacheTime`, no query `onSuccess`, throw on `!res.ok`), Redux Toolkit 2.
+- `standards/react/refs/testing.md`: MSW 3 (`onUnhandledFrame`, ESM-only, Node 22+, advance fake timers yourself), Vitest 5, Testing Library 16, `vitest-axe`.
+- `standards/react/_INDEX.md`: `usePrevious` keyword.
+- `CHANGELOG.md`: the condensation entry now says `verify/rule_inventory.py` is a local tool.
+
+---
+
+## [v1.1.0] — 2026-10-23 · Every security rule now ships with cook, in one place per topic, and encryption work gets its own standard
+
+**feat(standards): fold the local security library into shipped shelves and add a `crypto` concern.**
+
+- `standards/security/` (local-only, 94 files, never installed): every source file triaged — 52 merged, 12 already covered, 26 dropped (Django, SAML, LDAP, Kubernetes, C, process docs), 2 deferred (GraphQL, Android/Flutter mobile). Shelf deleted; backup kept locally.
+- `standards/global/refs/crypto.md`: new 9th concern — AEAD choices and nonce limits, CSPRNG, envelope encryption and key rotation, TLS (incl. `X25519MLKEM768`, RFC 10024), certificate verification. Password hashing stays in `auth.md`.
+- `standards/global/refs/security.md`: injection and deserialization, XSS output encoding, CSP/HSTS/COOP/CORP, SSRF with IMDSv2, uploads, redirects, MCP transport and auth, more LLM/agent output rules, secret scanning.
+- `standards/global/refs/auth.md`: password-hash parameter floors, mass assignment, a Session Lifecycle section, transaction-approval binding, NIST SP 800-63B-4 MFA wording; owns CSRF and `__Host-` cookies.
+- `standards/global/refs/cicd.md`: package release-age cooldowns (npm `min-release-age`, pnpm `minimumReleaseAge`, Yarn `npmMinimalAgeGate`), install scripts off, trusted publishing, container hardening.
+- `standards/global/refs/error-handling.md`, `standards/nodejs/refs/runtime-safety.md`, `standards/database/refs/postgresql-best-practices.md`, `standards/ios/refs/privacy-and-permissions.md`, `standards/css/refs/security.md`: platform-specific security rules (log injection, PID 1 signals, `--disable-proto`, `sslmode=verify-full`, `NSPinnedDomains` CA-key pinning).
+- `standards/typescript/refs/security.md`, `standards/react/refs/security.md`, `standards/nextjs/refs/security.md`: generic rules removed in favour of the global owners (−18% across the three). Next.js file reviewed against Next.js 16 docs: `proxy.ts` codemod, Server Action origin checks and `allowedOrigins` format, taint caveats, nonce CSP vs Partial Prerendering, `use cache` per-user keys. TypeScript `can()` no longer throws on `__proto__`/`constructor` roles.
+- Review: two security reviewers checked every merged rule against OWASP, NIST, IETF and vendor docs; 18 factual errors fixed (e.g. MCP does not require mTLS; iOS pins CA keys, not leaves; Trusted Types is Baseline), 0 rules removed as unsafe.
+- `vocab/tag-vocabulary.json`: new `crypto` tag (29 aliases; password-hashing words stay on `auth`).
+- `refs/protocol-cook.md`, `refs/protocol-explicit.md`, `standards/global/_INDEX.md`, `standards/global/SKILL.md`, `FLAG-LIST.md`, `README.md`, `ARCHITECTURE.md`: concern count 8 → 9, `--crypto` flag; security-shelf references removed.
+- `.gitignore`, `scripts/check_freshness.py`, `scripts/gen_install_files.py`, `install.sh`: security-shelf references removed; manifest ships `crypto.md`.
+
+---
+
+## [v1.1.0] — 2026-10-23 · Standards payloads get about a quarter smaller on 8 shelves, with no hard rule lost
 
 **perf(standards): condense low-risk refs and SKILL files on 8 shelves.**
 
@@ -16,11 +68,11 @@ All notable changes to this project are documented here, newest first.
 - `standards/nodejs/_INDEX.md`: tooling ref row gains keywords `node:fs`, `--env-file`, `permission model`, `require(esm)`, `pino`, `winston`, so moved text stays findable.
 - `standards/css/_INDEX.md`: layout ref row gains keywords `@supports` and `css baseline`.
 - `vocab/tag-vocabulary.json`: new aliases on `nodejs` (`node:fs`, `--env-file`, `permission model`, `require(esm)`) and `css` (`@supports`, `css baseline`). Bare `baseline`, `ESM` and `logging` are not added because they would route unrelated work.
-- `verify/rule_inventory.py`: new guard rail. It snapshots every hard rule (never/must/always/…) per file and diffs before and after. It fails on any lost P0 rule or on a version string gone from a SKILL.md. Phase 1 result: 0 lost P0 rules, 0 lost SKILL versions. Non-P0 removals were reviewed and approved.
+- `verify/rule_inventory.py` (local dev tool; `verify/` is gitignored, so it does not ship): new guard rail. It snapshots every hard rule (never/must/always/…) per file and diffs before and after. It fails on any lost P0 rule or on a version string gone from a SKILL.md. Phase 1 result: 0 lost P0 rules, 0 lost SKILL versions. Non-P0 removals were reviewed and approved.
 
 ---
 
-## [Unreleased] — 2026-10-23 · iPhone and iPad apps get their own standards, and SwiftUI work stops loading Mac rules
+## [v1.1.0] — 2026-10-23 · iPhone and iPad apps get their own standards, and SwiftUI work stops loading Mac rules
 
 **feat(standards): add the ios shelf and route shared Apple vocabulary by platform.**
 
@@ -34,7 +86,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-18 · Seven standards shelves catch up with the October 2026 toolchain, and stale rules now show up on their own
+## [v1.1.0] — 2026-10-18 · Seven standards shelves catch up with the October 2026 toolchain, and stale rules now show up on their own
 
 **fix(standards): refresh typescript, nodejs, css, global, swift, macos and database to current versions.**
 

@@ -1,98 +1,58 @@
+---
+last_reviewed: 2026-10-23
+---
+
 # Server Actions
 
-Use this ref when implementing mutations, forms, RPC-style calls, optimistic updates, or secure action validation in App Router.
+Use this ref when implementing mutations, forms, optimistic updates, or post-mutation cache refresh in App Router. Auth, CSRF, and taint depth live in `refs/security.md`.
 
 ## Core Rules
 
-- Server Actions handle mutations without creating API endpoints.
-- Add `'use server'` at the top of the file or inside the action function.
-- Export async mutation functions from `actions.ts` or another server-only module.
-- Define actions outside components to avoid hidden closure encryption overhead and serialization bugs.
-- Validate all inputs, verify auth inside the action, mutate, then call `revalidatePath()` or `revalidateTag()`.
+- Put actions in `actions.ts` files that start with `'use server'`. Avoid inline actions that close over component scope.
+- Every exported action is a public POST endpoint. Validate, authenticate, and authorize inside it (`refs/security.md`).
+- Flow: validate -> auth -> mutate -> refresh cache -> return a minimal result or `redirect()`.
+- Return only what the UI needs; return values are serialized to the client.
 
-## Forms And Pending State
+## Forms And State
 
-- Use `<form action={createPost}>` for progressive enhancement.
-- Use `useFormStatus()` in a component rendered inside the form for submit-button pending state.
-- Use `useActionState` for React 19 / Next.js 15 form state and validation errors.
-- Use `useTransition` for non-form triggers so mutation UI does not block input.
-- Use `useOptimistic` to show expected state before the server confirms.
+- `<form action={fn}>` works before hydration (progressive enhancement).
+- Actions used with `useActionState` take `(prevState, formData)`. Return validation errors as state instead of throwing.
+- `useActionState`, `useFormStatus`, and `useOptimistic` rules: `react/SKILL.md` (React 19 APIs).
+- Call an action outside a form inside `startTransition`.
 
-## Secure Action Example
-
-Always validate `FormData` with a schema library such as Zod and check authorization in the action. See `refs/security.md` for broader Server Action and CSRF rules.
-
-```tsx
-// actions.ts
+```ts
+// app/feedback/actions.ts
 'use server';
-import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
+import { updateTag } from 'next/cache';
 
-const schema = z.object({
-  email: z.string().email(),
-  content: z.string().min(10),
-});
-
-export async function submitFeedback(prevState: any, formData: FormData) {
-  const validated = schema.safeParse({
-    email: formData.get('email'),
-    content: formData.get('content'),
-  });
-
-  if (!validated.success) {
-    return { errors: validated.error.flatten().fieldErrors };
-  }
-
-  const session = await auth();
-  if (!session) throw new Error('Unauthorized');
-
-  await db.feedback.create({ data: validated.data });
-  revalidatePath('/feedback');
+export async function submitFeedback(_prev: State, formData: FormData): Promise<State> {
+  const parsed = schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  // auth + authorization here: see refs/security.md
+  await db.feedback.create({ data: parsed.data });
+  updateTag('feedback');
   return { success: true };
 }
 ```
 
-## `useActionState`
+## Cache Refresh After Mutation
 
-```tsx
-// FeedbackForm.tsx
-'use client';
-import { useActionState } from 'react';
-import { submitFeedback } from './actions';
+| API | Use when |
+|---|---|
+| `updateTag(tag)` | The user must see their own change on the next read (Server Actions only) |
+| `revalidateTag(tag, 'max')` | Brief staleness is acceptable; the second argument is required |
+| `revalidatePath(path)` | The affected data is untagged |
+| `refresh()` | Re-render the current client router view without touching tags (Server Actions only) |
 
-export function FeedbackForm() {
-  const [state, action, isPending] = useActionState(submitFeedback, null);
-
-  return (
-    <form action={action}>
-      <input name="email" type="email" />
-      {state?.errors?.email && <span>{state.errors.email}</span>}
-      <button disabled={isPending}>Submit</button>
-    </form>
-  );
-}
-```
-
-## Data Refresh
-
-After successful mutation, refresh relevant cached views.
-
-- `revalidatePath('/')` updates a route path.
-- `revalidateTag('tag-name')` updates reads tagged by cache key.
-- `updateTag('tag-name')` can provide immediate same-request invalidation in Cache Components.
+All four import from `next/cache`.
 
 ## Redirects
 
-Use `redirect()` for success navigation. It throws a framework-handled exception, so do not wrap it in a `try/catch` that swallows the redirect.
-
-## Cross-Reference
-
-Security owns validation, auth, CSRF, and taint depth; this file owns mutation workflow and action-specific React APIs.
+`redirect()` throws a framework-handled exception. Call it after the `try/catch` block, never inside a `catch` that swallows it.
 
 ## Anti-Patterns
 
-- Unvalidated Server Action inputs.
-- Auth checks skipped because middleware already ran.
-- Actions defined inside components.
+- Actions without `'use server'`.
+- Actions that return full DB records.
+- `revalidateTag(tag)` with one argument.
 - `redirect()` inside a caught `try/catch`.
-- File uploads without size and MIME limits.

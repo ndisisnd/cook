@@ -39,7 +39,7 @@ python3 scripts/cook_cache.py lookup --project <dir> \
 
 - `--global` → `standards/global/SKILL.md` + every `standards/global/refs/*.md`
   — the complete global shelf, and the only explicit-mode opt-in to P0.
-- **Concern flag** (`--security`, `--auth`, `--performance`, `--architecture`,
+- **Concern flag** (`--security`, `--auth`, `--crypto`, `--performance`, `--architecture`,
   `--api-design`, `--error-handling`, `--debug`, `--cicd`) →
   `standards/global/refs/<concern>.md` only (no P0 SKILL.md).
 - **Bare domain flag** (`--<domain>`) → `standards/<domain>/SKILL.md` **always**

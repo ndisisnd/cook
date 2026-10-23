@@ -1,263 +1,95 @@
+---
+last_reviewed: 2026-10-23
+---
+
 # React Hooks
 
-Reusable custom hooks, rewritten in typed TypeScript. Each is the canonical implementation a reviewer can point to — the correctness note (cleanup, exhaustive deps, SSR-safe access) is what makes it standards-worthy, not the convenience.
+Generic hook recipes (`useDebounce`, `useOnClickOutside`, `useInView`, `useWindowSize`) are not listed: write them directly and apply the rules below.
 
-## Hook Correctness Baseline
+## Async Effects
 
-Hooks must run in the same order on every render. Do not call them inside loops, conditions, nested functions, event handlers, class components, callbacks passed to hooks, `try`/`catch`/`finally`, or after a conditional return. Keep `exhaustive-deps` enabled and fix dependency design instead of suppressing warnings.
-
-Use `useEffect` only to synchronize with external systems. Derived data belongs in render, and event-specific logic belongs in the event handler. For raw async effects, guard stale responses even when the work cannot be aborted:
+Guard stale results even when the work cannot be aborted (pair with `AbortController` when it can):
 
 ```tsx
 useEffect(() => {
   let ignore = false;
-
-  async function load() {
-    const result = await fetchUser(userId);
+  fetchUser(userId).then((result) => {
     if (!ignore) setUser(result);
-  }
-
-  load();
+  });
   return () => { ignore = true; };
 }, [userId]);
 ```
 
-For cancellable fetches, combine this with `AbortController`. Prefer route loaders, framework data APIs, TanStack Query, or SWR when the app already has them.
-
 ## useEffectEvent
 
-In React 19+, use `useEffectEvent` for callbacks that are only called from an effect and need the latest committed props/state without re-subscribing the effect. Do not use it to hide real dependencies that should re-run synchronization.
+Stable since React 19.2 (the `eslint-plugin-react-hooks` lint enforces the rules below).
+
+- Call it only from `useEffect`, `useLayoutEffect`, `useInsertionEffect`, or another Effect Event. Calling it in render or in an event handler throws.
+- Never list it in a dependency array; its identity changes every render on purpose.
+- Never pass it to child components or other hooks. Use `useCallback` or a plain function for those.
+- Never use it to skip a real dependency. A value that should re-run the effect stays in the array.
+- Inside a custom hook it can wrap a callback the hook receives, so callers may pass inline functions without resubscribing.
 
 ```tsx
-function ChatRoom({ roomId, theme }: { roomId: string; theme: Theme }) {
-  const onConnected = useEffectEvent(() => {
-    showToast('Connected', { theme });
-  });
-
+function useInterval(callback: () => void, delay: number | null) {
+  const onTick = useEffectEvent(callback);
   useEffect(() => {
-    const connection = createConnection(roomId);
-    connection.on('connected', onConnected);
-    connection.connect();
-    return () => connection.disconnect();
-  }, [roomId]);
+    if (delay === null) return;
+    const id = setInterval(() => onTick(), delay);
+    return () => clearInterval(id);
+  }, [delay]);
 }
 ```
 
-When `useEffectEvent` is unavailable, use a latest-ref fallback for effect-local callbacks only:
-
-```tsx
-function useLatest<T>(value: T) {
-  const ref = useRef(value);
-  useEffect(() => { ref.current = value; }, [value]);
-  return ref;
-}
-```
+Do not write a `useLatest` ref fallback on React 19.2+.
 
 ## useSyncExternalStore
 
-Use `useSyncExternalStore` for external subscriptions so React can read a consistent snapshot during concurrent rendering.
+Use it for external subscriptions (online status, `matchMedia`, window size, third-party stores) instead of `useState` plus an effect.
+
+- Define `subscribe` at module scope so its identity is stable; an inline `subscribe` resubscribes every render.
+- `getSnapshot` must return a cached or primitive value. A new object each call loops forever.
+- Always pass `getServerSnapshot` when the component renders on the server.
 
 ```tsx
-function subscribe(callback: () => void) {
-  window.addEventListener('online', callback);
-  window.addEventListener('offline', callback);
+function subscribe(cb: () => void) {
+  window.addEventListener('online', cb);
+  window.addEventListener('offline', cb);
   return () => {
-    window.removeEventListener('online', callback);
-    window.removeEventListener('offline', callback);
+    window.removeEventListener('online', cb);
+    window.removeEventListener('offline', cb);
   };
 }
-
-function getSnapshot() {
-  return navigator.onLine;
-}
-
-function getServerSnapshot() {
-  return true;
-}
-
-function useOnlineStatus() {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-}
+export const useOnlineStatus = () =>
+  useSyncExternalStore(subscribe, () => navigator.onLine, () => true);
 ```
 
-## useId And useLayoutEffect
+## useLayoutEffect
 
-Use `useId` for generated IDs that connect labels, descriptions, and controls. Do not use it for list keys.
+Use it only when DOM measurement or a synchronous visual adjustment must happen before paint. Default to `useEffect`. Do not rely on it for server-rendered output; it does not run on the server.
+
+## Browser Storage In Hooks
+
+- Never read `localStorage` or `window` in a `useState` initializer on code that server-renders; the first client render differs from the server and causes a hydration mismatch. Render the stored value after mount, or use `useSyncExternalStore` with a server snapshot.
+- Wrap storage parse and write in `try/catch`; quota and private-mode failures must not crash the tree.
+- Never store tokens or secrets in storage.
+
+## Cleanup And Stable Inputs
+
+- Every effect that adds a listener, timer, observer, or subscription returns its cleanup (`removeEventListener`, `clearTimeout`, `observer.disconnect()`).
+- Do not take inline object options (such as `IntersectionObserver` init) as effect dependencies; accept primitives (`rootMargin`, `threshold`) instead.
+- A custom hook that takes a callback wraps it in `useEffectEvent`, not a ref read during render.
+
+## Previous Value
+
+Never write a `usePrevious` that returns `ref.current`; it reads a ref during render, which the compiler and `react-hooks/refs` reject. Store the previous value in state and update it during render:
 
 ```tsx
-function Field({ label }: { label: string }) {
-  const id = useId();
-  return <label htmlFor={id}>{label}<input id={id} /></label>;
+const [prevCount, setPrevCount] = useState(count);
+if (prevCount !== count) {
+  setPrevCount(count);
+  setTrend(count > prevCount ? 'up' : 'down');
 }
 ```
 
-Use `useLayoutEffect` only when DOM measurement or synchronous visual adjustment must happen before paint. Default to `useEffect` for subscriptions, data loading, and non-visual work.
-
-```tsx
-function Tooltip({ targetRef }: { targetRef: RefObject<HTMLElement> }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const target = targetRef.current;
-    const tooltip = ref.current;
-    if (!target || !tooltip) return;
-    tooltip.style.top = `${target.getBoundingClientRect().bottom}px`;
-  }, [targetRef]);
-
-  return <div ref={ref} role="tooltip" />;
-}
-```
-
-React 19 can accept `ref` as a prop; older React still needs `forwardRef` for components that pass refs through. Match the project's React version instead of mixing styles.
-
-## useLocalStorage
-
-Persist state to `localStorage` and keep React in sync with it. Lazy-initialises so the read happens once, wraps every parse and write in `try/catch` (quota limits and private-mode failures must not crash the tree), supports a functional updater against the latest state like `useState`, and is SSR-safe via a `typeof window` guard. Do not use this for tokens or secrets.
-
-```tsx
-type SetValue<T> = (value: T | ((prev: T) => T)) => void;
-
-function useLocalStorage<T>(key: string, initial: T): [T, SetValue<T>] {
-  const [stored, setStored] = useState<T>(() => {
-    if (typeof window === 'undefined') return initial;
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initial;
-    } catch {
-      return initial;
-    }
-  });
-
-  const setValue: SetValue<T> = (value) => {
-    setStored((prev) => {
-      const next = typeof value === 'function' ? (value as (prev: T) => T)(prev) : value;
-      if (typeof window !== 'undefined') {
-        try {
-          window.localStorage.setItem(key, JSON.stringify(next));
-        } catch {
-          // ignore write errors (quota exceeded, private mode)
-        }
-      }
-      return next;
-    });
-  };
-
-  return [stored, setValue];
-}
-```
-
-## useDebounce
-
-Return a value that only updates after it has stopped changing for `delay` ms — the standard way to throttle search inputs and resize handlers. The timer is created and cleared inside an effect keyed on `[value, delay]`, so each change cancels the previous pending update and nothing leaks on unmount.
-
-```tsx
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState<T>(value);
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-
-  return debounced;
-}
-```
-
-## useWindowSize
-
-Track the viewport dimensions reactively. The `resize` listener is registered once and removed on cleanup, and the initial render is SSR-safe — it starts at `0` and reads `window` only after mount to avoid hydration mismatches.
-
-```tsx
-function useWindowSize(): { width: number; height: number } {
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    const onResize = () =>
-      setSize({ width: window.innerWidth, height: window.innerHeight });
-    onResize();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  return size;
-}
-```
-
-## useOnClickOutside
-
-Fire a handler when a click or tap lands outside the referenced element — the basis for dismissible menus and modals. It listens on both `mousedown` and `touchstart` for parity across devices, guards with `contains` so clicks inside the element are ignored, and removes both listeners on cleanup.
-
-```tsx
-function useOnClickOutside(
-  ref: RefObject<HTMLElement>,
-  handler: (event: Event) => void,
-): void {
-  useEffect(() => {
-    const listener = (event: Event) => {
-      const el = ref.current;
-      if (!el || el.contains(event.target as Node)) return;
-      handler(event);
-    };
-    document.addEventListener('mousedown', listener);
-    document.addEventListener('touchstart', listener);
-    return () => {
-      document.removeEventListener('mousedown', listener);
-      document.removeEventListener('touchstart', listener);
-    };
-  }, [ref, handler]);
-}
-```
-
-## useIntersectionObserver
-
-Report whether the referenced element is in the viewport — the idiomatic way to drive lazy rendering and infinite scroll without scroll-event spam. The observer is created inside an effect and torn down with `observer.disconnect()` on cleanup, and the effect bails out early when the ref is not yet attached. Memoize `options` before passing it if it is constructed inline.
-
-```tsx
-function useIntersectionObserver(
-  ref: RefObject<Element>,
-  options?: IntersectionObserverInit,
-): boolean {
-  const [isIntersecting, setIsIntersecting] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsIntersecting(entry.isIntersecting),
-      options,
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [ref, options]);
-
-  return isIntersecting;
-}
-```
-
-## usePrevious
-
-Return the value a prop or state held on the previous commit, for diffing across renders. The ref is updated inside an effect — so it runs *after* render — which means the body still reads last commit's value before the effect overwrites it. Returns `undefined` on first render.
-
-```tsx
-function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T | undefined>(undefined);
-
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-
-  return ref.current;
-}
-```
-
-## useToggle
-
-Manage a boolean with a stable toggle function — the canonical idiom for open/closed and on/off UI state. The toggle is wrapped in `useCallback` with an empty dependency array and uses the functional updater, so its identity stays stable across renders and is safe to pass to memoized children.
-
-```tsx
-function useToggle(initial = false): [boolean, () => void] {
-  const [value, setValue] = useState(initial);
-  const toggle = useCallback(() => setValue((v) => !v), []);
-  return [value, toggle];
-}
-```
+Often it is cleaner to compute the comparison in the event handler that changes the value.

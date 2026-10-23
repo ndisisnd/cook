@@ -81,6 +81,7 @@ FILES=(
   standards/global/refs/architecture.md
   standards/global/refs/auth.md
   standards/global/refs/cicd.md
+  standards/global/refs/crypto.md
   standards/global/refs/debug.md
   standards/global/refs/error-handling.md
   standards/global/refs/performance.md
@@ -263,7 +264,7 @@ cook_link_codex() {
 # per-domain shelves would each show up in the picker. Disable them by name in
 # ~/.codex/config.toml inside a marker block the installer rewrites in place.
 # The shelf list is globbed at install time, so an installed tree carrying extra
-# shelves (e.g. the untracked security shelf) is covered too.
+# shelves (e.g. a local-only shelf) is covered too.
 cook_write_codex_containment() {
   [[ -n "${COOK_NO_CODEX:-}" ]] && return 0
 

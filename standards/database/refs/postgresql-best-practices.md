@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-10-18
+last_reviewed: 2026-10-23
 ---
 
 # PostgreSQL Detailed Best Practices
@@ -72,3 +72,10 @@ Use only when the deployed server version is confirmed.
   - Asynchronous I/O (`io_method`) for sequential scans, bitmap heap scans, and vacuum.
   - `NOT NULL` constraints can be added `NOT VALID`.
   - MD5 password authentication deprecated — use `scram-sha-256`.
+
+## 10. Security Hardening
+
+- Identifiers, `ORDER BY` columns, and sort directions cannot be bound as parameters. Validate against an allow-list; in PL/pgSQL build dynamic SQL with `format('%I', ...)` and pass values with `EXECUTE ... USING`.
+- Escaping is never the primary defense, and validated input is still passed as a parameter.
+- The app connects as a dedicated role: not the owner, not a superuser. Use separate roles and credentials per environment.
+- Require TLS (`sslmode=verify-full` with the CA in `sslrootcert` in clients, TLS 1.2+; the libpq default `prefer` does not stop MITM); never disable authentication for local connections.

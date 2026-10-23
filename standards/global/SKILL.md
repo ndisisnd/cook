@@ -66,6 +66,7 @@ Load only what the current task requires:
 - [error-handling](refs/error-handling.md) — error hierarchies, response envelopes, or error-boundary placement
 - [security](refs/security.md) — injection, CORS, SSRF, XSS, LLM/agent output, OWASP checklist, or running a SAST scan
 - [auth](refs/auth.md) — OAuth/PKCE flows, token storage, session, CSRF, RBAC, credential hashing, passkeys, password policy, JWT verification, MFA, service-to-service auth
+- [crypto](refs/crypto.md) — algorithms and modes, keys and rotation, randomness, encryption at rest, TLS, certificates
 - [architecture](refs/architecture.md) — auditing structural debt, detecting logic leakage, or remediating God classes
 - [performance](refs/performance.md) — profiling bottlenecks, batching queries, or fixing memory leaks
 - [debug](refs/debug.md) — troubleshooting crashes, tracing failures, or filing a structured bug report

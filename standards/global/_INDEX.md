@@ -10,7 +10,7 @@
    there is no keyword table here to scan.
 
 The concern shelf is exactly: `refs/architecture.md`, `refs/api-design.md`,
-`refs/error-handling.md`, `refs/security.md`, `refs/auth.md`,
+`refs/error-handling.md`, `refs/security.md`, `refs/auth.md`, `refs/crypto.md`,
 `refs/performance.md`, `refs/debug.md`, `refs/cicd.md`.
 
 ## Notes
