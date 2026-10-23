@@ -49,6 +49,9 @@ stripped and never treated as a standards flag.
 
 ## Record step (after a successful compile)
 
+`cook_run.py` runs this step itself, best-effort. Run it by hand only in the
+manual flow (`protocol-manual.md`).
+
 This is the final action of every fire that reached the compile step (core
 Step 6), in **all** modes. It is best-effort: `record` is a silent no-op when
 telemetry is disabled and never fails a fire, so it is always safe to call.

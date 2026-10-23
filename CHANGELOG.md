@@ -4,6 +4,23 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · a /cook run now costs one script call instead of five or six
+
+**perf(scripts): add cook_run.py single-call resolver.**
+
+- `scripts/cook_run.py` (new): one process does lookup, classify, skill derivation, compile with `--manifest`, cache write with `--payload`, and the telemetry record. Auto and explicit-flags runs take 1 call on a miss and on a hit (from 6 and 4). Prose mode is one call too and never writes the cache. A run that needs the model stops with `needs_llm` and `llm_input`; `--resume <fingerprint> --tags <list>` finishes it (2 calls, the only two-call path). Telemetry is best-effort and never changes the exit code or the envelope.
+- `scripts/cook_route.py` (new): the skill-list rules (auto routes plus `_INDEX.md` pattern and keyword matches; explicit-flag path list). `verify/routing_parity.py` now imports it, so the gate and the product share one implementation. Routing parity is unchanged (0 fixtures changed).
+- `scripts/cook_cache.py`: `cmd_lookup`, `cmd_classify` and `cmd_write` split into callable `do_lookup`, `do_classify`, `do_write` plus thin CLI wrappers. CLI flags and output are unchanged. New `CookError` for user-facing failures.
+- `scripts/cook_compile.py`: `compile_to_file()` extracted from `main()`; CLI output unchanged.
+- `scripts/cook_telemetry.py`: `record_fire()` extracted from `cmd_record`; CLI unchanged.
+- `SKILL.md`, `refs/protocol-cook.md`: Steps 1–6 replaced by "run `cook_run.py`, branch on `needs_llm`, return the envelope". Protocol text read per auto call: 11,103 B to 5,958 B.
+- `refs/protocol-manual.md` (new): the previous step-by-step text, kept for Codex and humans.
+- `refs/protocol-explicit.md`: flags go to `cook_run.py --flag`; flag grammar and path-list rules kept. Explicit call: 15,542 B to 10,243 B.
+- `refs/telemetry.md`: notes that `cook_run.py` records the fire itself.
+- `install.sh`: manifest now ships `cook_run.py`, `cook_route.py` and `protocol-manual.md`.
+
+---
+
 ## [Unreleased] — 2026-10-23 · A repeat /cook run returns the finished standards payload without recompiling
 
 **perf(cache): reuse the compiled payload on a cache hit.**

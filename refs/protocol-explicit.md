@@ -1,7 +1,7 @@
 # Cook Protocol — Explicit mode
 
-Read only when `/cook` was invoked with flags and/or prose. Replaces core
-Steps 1–5; the compile step (core Step 6) is shared. Explicit args are the
+Read only when `/cook` was invoked with flags and/or prose. The flags go to
+`cook_run.py --flag` (core protocol "Run"). Explicit args are the
 whole load surface: **no automatic P0, no auto-matching, and `fallback` is
 suppressed** — signals are still recorded on the entry for diagnostics, but
 the user's args decide what loads.
@@ -22,20 +22,22 @@ the user's args decide what loads.
 ## Resolver call
 
 ```
-python3 scripts/cook_cache.py lookup --project <dir> \
-  [--flag <name> ...] [--prose <text>]
+python3 scripts/cook_run.py --project <dir> [--flag <name> ...] [--prose <text>]
 ```
 
-- **Flags only** (`explicit-flags`): normal hit/miss lookup with the flags
-  folded into the fingerprint. On `hit` with `compile_needed: false`,
-  skip compile and `heal` and return `payload` as the envelope. On `hit` with
-  `compile_needed: true`, use `routing.skills` and compile. On `miss` or
-  `stale`, build the path list below, compile (core Step 6, with `--manifest`),
-  then persist with the core Step 5 `write` command (add `--flag <name>` per
-  flag and `--payload <compiled file>`; `--mode` defaults to `explicit-flags`).
-- **Any prose** (`explicit-prose`): the resolver returns `status: "skip"` —
-  prose is uncacheable (the LLM's ref selection has no deterministic key).
-  Build the path list, skip the cache write entirely, and compile.
+Pass each flag without its dashes. `cook_run.py` validates them, applies the
+path-list rules below, compiles and returns the envelope (see
+[`protocol-cook.md`](protocol-cook.md)).
+
+- **Flags only** (`explicit-flags`): cacheable. A `hit` returns the stored
+  payload with no compile.
+- **Any prose** (`explicit-prose`): `status: "skip"` — prose is uncacheable
+  (the ref selection has no deterministic key). Nothing is written to the cache.
+- Prose without flags: the script classifies the prose; `needs_llm` and
+  `--resume` work as in the core protocol.
+
+The multi-call flow (`lookup`, `write`, `compile`) is in
+[`protocol-manual.md`](protocol-manual.md).
 
 ## Path list
 
@@ -69,12 +71,10 @@ python3 scripts/cook_cache.py lookup --project <dir> \
   `--react --react:hooks` → `standards/react/SKILL.md`
   + `standards/react/refs/hooks.md` only — floor + that one ref, **not** the
   full shelf.
-- **Prose without flags** → run
-  `python3 scripts/cook_cache.py classify --prose <text>` first. Each
+- **Prose without flags** → the script classifies the prose. Each
   `concern:<name>` route loads `standards/global/refs/<name>.md`; each
   `domain:<name>` route loads that domain's `SKILL.md` plus the refs its
   `_INDEX.md` matches against the prose. Only when `needs_llm: true` (nothing
-  resolved): scan the domain `_INDEX.md` files yourself and load what matches.
-  Never invent paths.
+  resolved): canonicalise the tags and `--resume`. Never invent paths.
 
-Then go to core Step 6 (compile and return).
+The script applies these rules; you do not build the path list yourself.

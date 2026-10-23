@@ -200,6 +200,31 @@ def compile_skills(skills: list[str], cook_root: Path, budget: int | None = None
     }
 
 
+def compile_to_file(skills: list[str], cook_root: Path, out: str,
+                    budget: int | None = None, manifest: str | None = None) -> dict:
+    """Compile and write the payload to `out`; return the summary envelope the
+    CLI prints with --out. `manifest` is None (no manifest), "auto" (beside
+    `out` with a .json suffix) or an explicit path."""
+    result = compile_skills(skills, cook_root, budget=budget)
+    rows = result.pop("manifest")
+    out_path = Path(out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(result["content"], encoding="utf-8")
+    envelope = {
+        "path": str(out_path),
+        "bytes": len(result["content"].encode("utf-8")),
+        "sections": result["sections"],
+        "degraded": result["degraded"],
+        "metadata": result["metadata"],
+    }
+    if manifest:
+        mpath = out_path.with_suffix(".json") if manifest == "auto" else Path(manifest)
+        mpath.parent.mkdir(parents=True, exist_ok=True)
+        mpath.write_text(json.dumps(rows, indent=1), encoding="utf-8")
+        envelope["manifest_path"] = str(mpath)
+    return envelope
+
+
 def main():
     p = argparse.ArgumentParser(description="cook compiler (Phase 2)")
     p.add_argument("--skills", required=True,
@@ -223,28 +248,13 @@ def main():
     cook_root = Path(args.cook_root).resolve() if args.cook_root else COOK_ROOT_DEFAULT
     skills = [s for s in args.skills.split(",") if s.strip()]
 
-    result = compile_skills(skills, cook_root, budget=args.budget)
-    manifest = result.pop("manifest")
-
     if args.out:
-        out_path = Path(args.out)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(result["content"], encoding="utf-8")
-        envelope = {
-            "path": str(out_path),
-            "bytes": len(result["content"].encode("utf-8")),
-            "sections": result["sections"],
-            "degraded": result["degraded"],
-            "metadata": result["metadata"],
-        }
-        if args.manifest:
-            mpath = (out_path.with_suffix(".json") if args.manifest == "auto"
-                     else Path(args.manifest))
-            mpath.parent.mkdir(parents=True, exist_ok=True)
-            mpath.write_text(json.dumps(manifest, indent=1), encoding="utf-8")
-            envelope["manifest_path"] = str(mpath)
+        envelope = compile_to_file(skills, cook_root, args.out,
+                                   budget=args.budget, manifest=args.manifest)
         print(json.dumps(envelope, separators=(",", ":")))
     else:
+        result = compile_skills(skills, cook_root, budget=args.budget)
+        result.pop("manifest")
         print(json.dumps(result, separators=(",", ":")))
 
 
