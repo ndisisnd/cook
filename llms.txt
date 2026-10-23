@@ -16,7 +16,7 @@ cook holds no rules of its own. It reads a task surface (file paths, prose, git 
 - [ARCHITECTURE.md](https://raw.githubusercontent.com/ndisisnd/cook/main/ARCHITECTURE.md): how the scan → classify → route → load → compile pipeline is wired
 - [FLAG-LIST.md](https://raw.githubusercontent.com/ndisisnd/cook/main/FLAG-LIST.md): the full flag namespace (shelf, concerns, domains, sub-refs)
 - [vocab/tag-vocabulary.json](https://raw.githubusercontent.com/ndisisnd/cook/main/vocab/tag-vocabulary.json): source of truth for the flag namespace
-- [standards/global/SKILL.md](https://raw.githubusercontent.com/ndisisnd/cook/main/standards/global/SKILL.md): the always-loaded global floor (SOLID, DRY, security, and the 8 concern refs)
+- [standards/global/SKILL.md](https://raw.githubusercontent.com/ndisisnd/cook/main/standards/global/SKILL.md): the always-loaded global floor (SOLID, DRY, security, and the 9 concern refs)
 - [telemetry.md](https://raw.githubusercontent.com/ndisisnd/cook/main/refs/telemetry.md): the opt-in, local-first fire log and what each record holds
 
 ## Optional

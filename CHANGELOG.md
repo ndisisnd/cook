@@ -4,7 +4,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-23 · Next.js standards match Next.js 16.4 and stop repeating React rules
+## [v1.1.0] — 2026-10-23 · Next.js standards match Next.js 16.4 and stop repeating React rules
 
 **perf(standards): refresh and condense the nextjs shelf.**
 
@@ -21,7 +21,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-23 · React standards match React 19.3 and the React Compiler, at 39% fewer tokens
+## [v1.1.0] — 2026-10-23 · React standards match React 19.3 and the React Compiler, at 39% fewer tokens
 
 **perf(standards): refresh and condense the react shelf.**
 
@@ -38,7 +38,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-23 · Every security rule now ships with cook, in one place per topic, and encryption work gets its own standard
+## [v1.1.0] — 2026-10-23 · Every security rule now ships with cook, in one place per topic, and encryption work gets its own standard
 
 **feat(standards): fold the local security library into shipped shelves and add a `crypto` concern.**
 
@@ -56,7 +56,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-23 · Standards payloads get about a quarter smaller on 8 shelves, with no hard rule lost
+## [v1.1.0] — 2026-10-23 · Standards payloads get about a quarter smaller on 8 shelves, with no hard rule lost
 
 **perf(standards): condense low-risk refs and SKILL files on 8 shelves.**
 
@@ -72,7 +72,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-23 · iPhone and iPad apps get their own standards, and SwiftUI work stops loading Mac rules
+## [v1.1.0] — 2026-10-23 · iPhone and iPad apps get their own standards, and SwiftUI work stops loading Mac rules
 
 **feat(standards): add the ios shelf and route shared Apple vocabulary by platform.**
 
@@ -86,7 +86,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-18 · Seven standards shelves catch up with the October 2026 toolchain, and stale rules now show up on their own
+## [v1.1.0] — 2026-10-18 · Seven standards shelves catch up with the October 2026 toolchain, and stale rules now show up on their own
 
 **fix(standards): refresh typescript, nodejs, css, global, swift, macos and database to current versions.**
 

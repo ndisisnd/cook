@@ -39,11 +39,11 @@ With little to zero software engineering knowledge, expertise, and skills, you c
 
 </div>
 
-<!-- mkpub:release v1.0.0 -->
+<!-- mkpub:release v1.1.0 -->
 > [!NOTE]
-> **🚀 New in v1.0.0 · Cook now runs in the OpenAI Codex CLI**
+> **🚀 New in v1.1.0 · iPhone and iPad standards, a cryptography concern, and smaller payloads**
 >
-> One install serves both Claude Code and Codex, so there is no second copy to keep in sync. Re-run the installer to pick it up.
+> cook now covers iOS/iPadOS, ships its security rules in the public install, and refreshes the standards to October 2026 versions. Re-run the installer to pick it up.
 > Update with `curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bash` · [Release notes](RELEASES.md)
 <!-- /mkpub:release -->
 
@@ -155,21 +155,20 @@ When enabled, each successful fire appends one record — the intent, the raw pr
 
 | Standards | What's covered | 
 | --- | --- |
-| Global | Universal rules loaded on every task: architecture, API design, error handling, security, auth, performance, debugging, and CI/CD. Includes `refs/security.md` — a general-purpose security standard usable standalone |
-| Security | **Not included in the public install.** A private, granular security standards library for security-focused work: credentials, cryptography, auth/MFA, OAuth/JWT/SAML, authorization, session management, input validation, XSS, API security, transport, data storage, file handling, serialization, logging, supply chain, CI/CD, containers, Kubernetes, IaC, microservices, mobile, MCP/AI, C/C++ memory safety, and framework-specific rules (Node.js, Python, Java, PHP, Ruby, .NET). Covers 100+ OWASP cheat sheets. The shipped alternative is `refs/security.md` in Global — a general-purpose security standard that loads on every default run |
-| CSS | Deliberately lightweight, principle-driven presentation-layer standards — CSS is styles, not correctness-critical, so the SKILL favours judgment and consistency over rigid rules: six battle-tested principles (keep specificity low, scope by default, tokenize, lay out with Flexbox/Grid, use the platform, compose over override) plus a minimal accessibility/security floor. Depth lives in on-demand refs: architecture (`@layer`, methodology, `@scope`), layout (Grid/subgrid/container queries/logical properties), theming (custom properties, `oklch()`/`light-dark()`), performance (compositor animation, `content-visibility`, fonts), accessibility, tooling (Stylelint/PostCSS/Sass), security, and a **TailwindCSS** sub-standard (v4 `@theme`, `cn()`/`tailwind-merge`, `cva`). Co-loads with the framework shelves |
+| Global | Universal rules loaded on every task: architecture, API design, error handling, security, auth, cryptography, performance, debugging, and CI/CD. The security rules (injection, XSS, CSP, SSRF, uploads, MCP/LLM output, supply chain) and the `crypto` concern (AEAD, key rotation, TLS) ship in the public install, reviewed against OWASP, NIST and IETF guidance. Targets OWASP Top 10 2025 and NIST SP 800-63B-4 |
+| CSS | Deliberately lightweight, principle-driven presentation-layer standards — CSS is styles, not correctness-critical, so the SKILL favours judgment and consistency over rigid rules: six battle-tested principles (keep specificity low, scope by default, tokenize, lay out with Flexbox/Grid, use the platform, compose over override) plus a minimal accessibility/security floor. Depth lives in on-demand refs: architecture (`@layer`, methodology, `@scope`), layout (Grid/subgrid/container queries/logical properties), theming (custom properties, `oklch()`/`light-dark()`), performance (compositor animation, `content-visibility`, fonts), accessibility, tooling (Stylelint/PostCSS/Sass), security, and Baseline Widely Available features, and a **TailwindCSS** sub-standard (v4 `@theme`, `cn()`/`tailwind-merge`, `cva`). Co-loads with the framework shelves |
 | Dart | Language correctness, sealed/record/pattern matching, async, naming conventions, tooling (build_runner, dart format), and testing (mocktail, fake_async) |
-| Database | PostgreSQL schema design, expand-contract migrations, query optimisation, indexing, RLS, and Redis caching strategy (TTL, eviction, pipeline safety) |
+| Database | PostgreSQL 16-18 schema design, safe expand-contract migrations (`lock_timeout`, `NOT VALID`, `CONCURRENTLY`), query optimisation, indexing, RLS, and Redis caching strategy (TTL, eviction, pipeline safety) |
 | Flutter | Widget best practices, state management (Bloc/Riverpod/GetX), navigation (GoRouter), architecture (feature-domain), networking (Dio), error handling (Either/dartz), and DI (GetIt) |
 | GraphQL | Schema design, resolver patterns, security (depth/complexity limits), performance (DataLoader, N+1 prevention), testing, and tooling (codegen, graphql-eslint) |
 | iOS | Native iOS/iPadOS app development: SwiftUI app and scene lifecycle (iOS 27 SDK UIScene and launch-screen mandates), NavigationStack and sheets, iPad and iPhone Duo adaptivity, Dynamic Type/VoiceOver/Liquid Glass, background tasks, APNs, Live Activities and widgets, permissions/ATT/privacy manifests, Keychain, Sign in with Apple and passkeys, account deletion, signing/TestFlight/App Review, and XCUITest. iOS-only (not macOS) |
-| macOS | Native macOS app development: SwiftUI/AppKit structure, scenes/windows/menu-bar apps, App Sandbox and TCC, code-signing/notarization, distribution (Sparkle, MAS), Observation state, persistence (SwiftData/Core Data), localization, performance/accessibility, and HIG conventions. macOS-only (not iOS) |
-| Next.js | App Router and Pages Router, Server/Client Components, data fetching, rendering and caching strategies, Server Actions, security, performance, and testing |
-| Node.js | Runtime safety, event loop, streams, backpressure, worker threads, graceful shutdown, async error handling, env validation, logging, and testing |
-| React | Component patterns, hooks, state management (Zustand/Redux/TanStack), performance (Suspense, lazy), security (XSS/CSP), testing (RTL/MSW), and tooling |
+| macOS | Native macOS 26+ app development (Xcode 27): SwiftUI/AppKit structure, scenes/windows/menu-bar apps, App Sandbox and TCC, code-signing/notarization, distribution (Sparkle, MAS), Observation state, persistence (SwiftData/Core Data), localization, performance/accessibility, and HIG conventions. macOS-only (not iOS) |
+| Next.js | Next.js 16.4 App Router and Pages Router: Server/Client Components, data fetching, Cache Components and caching, `proxy.ts`, Server Actions, security, performance, and testing |
+| Node.js | Node.js 24 LTS runtime safety: event loop, streams, backpressure, graceful shutdown, async error handling, native TypeScript execution, `--env-file`, permission model, `node:` imports, and logging |
+| React | React 19.3 and React Compiler: component patterns, hooks (`useEffectEvent`), state management (Zustand/Redux/TanStack Query), performance, security (XSS/CSP), testing (RTL/MSW/Vitest), and tooling (Vite 8) |
 | Supabase | RLS policies (auth.uid/auth.jwt), anon vs service_role key boundary, Edge Functions (Deno, verify_jwt), Postgres functions (SECURITY DEFINER/INVOKER), and migration workflow |
-| Swift | Swift 6.x language correctness: optionals, error handling, strict concurrency (actors, Sendable, @MainActor), value types, protocols/generics (some/any), ARC, naming, access control, plus testing (Swift Testing), tooling (SwiftLint/swift-format/SPM), performance, and C/Obj-C interop |
-| TypeScript | Type safety, generics, unions, interfaces, ESLint configuration, jest/vitest setup, and input validation patterns |
+| Swift | Swift 6.2+ language correctness: optionals, error handling, strict concurrency (actors, Sendable, @MainActor), value types, protocols/generics (some/any), ARC, naming, access control, plus testing (Swift Testing), tooling (SwiftLint/swift-format/SPM), performance, and C/Obj-C interop |
+| TypeScript | TypeScript 6.x (7.x-compatible): type safety, narrowing, generics, modules, tsconfig and ESLint tooling, jest/vitest setup, and input validation patterns |
 
 ## How to update
 
@@ -189,7 +188,7 @@ curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bas
 
 **My task is full-stack — is there a `--full-stack` flag?** No. There are no layer modes. cook matches concerns and domains by keyword, so a task that touches both UI and server just matches shelves from both sides at once.
 
-**Where do the standards come from, and are they current?** They're a bundled library under `standards/`, curated per language. Security is covered by `refs/security.md` in the Global shelf, which loads on every default run; the separate granular security library that maps to 100+ OWASP cheat sheets is private and isn't part of the public install. The flag namespace in this README is a snapshot — `vocab/tag-vocabulary.json` is the source of truth and may grow.
+**Where do the standards come from, and are they current?** They're a bundled library under `standards/`, curated per language. Security is covered by `refs/security.md`, `refs/auth.md` and `refs/crypto.md` in the Global shelf, plus platform rules in the other shelves. All of it ships in the public install. Every standards file carries a `last_reviewed` date, and `scripts/check_freshness.py` warns when one passes 90 days. The flag namespace in this README is a snapshot — `vocab/tag-vocabulary.json` is the source of truth and may grow.
 
 ## License
 

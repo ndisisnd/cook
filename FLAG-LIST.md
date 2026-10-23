@@ -110,6 +110,7 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 | Flag | Loads |
 |---|---|
 | `--graphql` | `standards/graphql/SKILL.md` + all refs |
+| `--graphql:conventions` | `standards/graphql/refs/conventions.md` |
 | `--graphql:performance` | `standards/graphql/refs/performance.md` |
 | `--graphql:schema-design` | `standards/graphql/refs/schema-design.md` |
 | `--graphql:security` | `standards/graphql/refs/security.md` |
@@ -202,6 +203,7 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 | `--swift` | `standards/swift/SKILL.md` + all refs |
 | `--swift:concurrency` | `standards/swift/refs/concurrency.md` |
 | `--swift:interop` | `standards/swift/refs/interop.md` |
+| `--swift:language-conventions` | `standards/swift/refs/language-conventions.md` |
 | `--swift:memory-management` | `standards/swift/refs/memory-management.md` |
 | `--swift:performance` | `standards/swift/refs/performance.md` |
 | `--swift:testing` | `standards/swift/refs/testing.md` |
