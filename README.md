@@ -18,7 +18,7 @@ __Optimising the vibe in vibecoding.__
 <p>
 <a href="LICENSE.md"><img src="https://badgen.net/badge/license/MIT/blue" alt="License"></a>
 <img src="https://badgen.net/badge/domains/13/8B5CF6" alt="domains">
-<img src="https://badgen.net/badge/concerns/8/orange" alt="concerns">
+<img src="https://badgen.net/badge/concerns/9/orange" alt="concerns">
 <a href="https://github.com/ndisisnd/cook/commits/main"><img src="https://badgen.net/github/last-commit/ndisisnd/cook" alt="last commit"></a>
 </p>
 
@@ -112,9 +112,9 @@ _Refer to [FLAG_LIST.md](FLAG-LIST.md) for the full list of flags_
 
 The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow as the vocabulary grows. Treat this list as a snapshot; the vocab file is the source of truth.
 
-**Shelf (1):** `--global` — loads `standards/global/SKILL.md` + all 8 concern refs (P0 + full concern set). Use when you want the global floor without auto-detection.
+**Shelf (1):** `--global` — loads `standards/global/SKILL.md` + all 9 concern refs (P0 + full concern set). Use when you want the global floor without auto-detection.
 
-**Concerns (8):** `--security`, `--auth`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd` — each loads one ref from `standards/global/refs/`; no P0.
+**Concerns (9):** `--security`, `--auth`, `--crypto`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd` — each loads one ref from `standards/global/refs/`; no P0.
 
 **Domains (13):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--ios`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
 
@@ -125,7 +125,7 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 | Invocation | What loads |
 |---|---|
 | `/cook` | Auto-detect from git + manifests; loads global P0 + matched concerns + matched domains |
-| `/cook --global` | `standards/global/SKILL.md` + all 8 concern refs; no auto-detection |
+| `/cook --global` | `standards/global/SKILL.md` + all 9 concern refs; no auto-detection |
 | `/cook --security` | `standards/global/refs/security.md` only; no P0 |
 | `/cook --react --nextjs` | Both shelves in full; no P0 |
 | `/cook --react:hooks` | `standards/react/refs/hooks.md` only; no SKILL.md, no P0 |
@@ -199,7 +199,7 @@ curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bas
 
 cook's standards are a compression of prior art, not original research. The libraries lean on:
 
-- **[OWASP](https://owasp.org)** — the security shelf is built on the OWASP Cheat Sheet Series, the [ASVS](https://owasp.org/www-project-application-security-verification-standard/), the [Top 10](https://owasp.org/www-project-top-ten/), and CWE mappings, spanning credentials, crypto, auth, input validation, XSS, API and transport security, supply chain, and more.
+- **[OWASP](https://owasp.org)** — the security rules are built on the OWASP Cheat Sheet Series, the [ASVS](https://owasp.org/www-project-application-security-verification-standard/), the [Top 10](https://owasp.org/www-project-top-ten/), and CWE mappings, spanning credentials, crypto, auth, input validation, XSS, API and transport security, supply chain, and more.
 - **[Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript)** — a reference point for the JavaScript, TypeScript, and React conventions.
 - **Clean Code and Clean Architecture** (Robert C. Martin), and the **SOLID** and **DRY** principles they popularized — the backbone of the global engineering floor.
 - **[WCAG](https://www.w3.org/WAI/standards-guidelines/wcag/)** — the accessibility rules across the CSS and framework shelves.

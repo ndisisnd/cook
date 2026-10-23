@@ -7,7 +7,7 @@ plus untracked-but-not-ignored files — filtered to the runtime surface:
 
   SKILL.md, agents/, refs/, vocab/, scripts/, standards/
 
-Gitignored content (standards/security/, dev dirs) is excluded automatically,
+Gitignored content (local shelves, dev dirs) is excluded automatically,
 matching the shipping policy. Run after adding/removing any runtime file:
 
   python3 scripts/gen_install_files.py

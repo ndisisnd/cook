@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-10-18
+last_reviewed: 2026-10-23
 ---
 
 # Error Handling
@@ -66,3 +66,8 @@ For validation failures, populate `details[]` with per-field errors:
 - Using `500` for validation errors that should be `400`
 - Domain layer returning HTTP status codes
 - Leaking raw DB error messages to the API response
+
+## Security Logging
+
+- Strip CR/LF from untrusted input before it enters a log record (log injection).
+- Emit security events as structured fields (`event`, `level`, `source_ip`, UTC ISO 8601 `datetime`, request ID), not free text. The app identity gets append-only access to log storage, never write or delete.

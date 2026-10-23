@@ -23,7 +23,7 @@ See [`refs/telemetry.md`](refs/telemetry.md).
 
 | Flag | Loads |
 |---|---|
-| `--global` | `standards/global/SKILL.md` + all 8 concern refs (P0 + full concern set) |
+| `--global` | `standards/global/SKILL.md` + all 9 concern refs (P0 + full concern set) |
 
 ---
 
@@ -37,6 +37,7 @@ Each concern flag loads a single ref from `standards/global/refs/`. No P0 SKILL.
 | `--architecture` | `standards/global/refs/architecture.md` |
 | `--auth` | `standards/global/refs/auth.md` |
 | `--cicd` | `standards/global/refs/cicd.md` |
+| `--crypto` | `standards/global/refs/crypto.md` |
 | `--debug` | `standards/global/refs/debug.md` |
 | `--error-handling` | `standards/global/refs/error-handling.md` |
 | `--performance` | `standards/global/refs/performance.md` |

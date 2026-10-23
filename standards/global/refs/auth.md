@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-10-18
+last_reviewed: 2026-10-23
 ---
 
 # Auth
@@ -30,6 +30,12 @@ tagged `P1 (design)`.
   validates `redirect_uri` against an exact-match allowlist.** (OWASP A01:2025 / API2)
   Signal: an OAuth callback with no `state` comparison, or a `redirect_uri`/return URL
   taken from the request without an allowlist.
+- **PKCE uses `S256`, never `plain`. Reject a `code_verifier` when the auth request had
+  no `code_challenge` (downgrade). Redirect URIs are `https`; `http` only for native
+  loopback. Send `nonce` for OIDC; add `iss` checks when several auth servers exist
+  (mix-up).**
+  Signal: `code_challenge_method=plain`, or a token endpoint that accepts a verifier it
+  never bound.
 - **P1 (design):** refresh tokens are one-time-use and rotated, revocable
   server-side; minimize OAuth scopes to least privilege; sender-constrain high-value
   tokens with DPoP or mTLS. P1 because an agent often cannot confirm these from a diff.
@@ -42,7 +48,8 @@ tagged `P1 (design)`.
   secure storage.**
   Signal: `localStorage.setItem('…token…')`, `sessionStorage` holding a token, or a
   token in plain app preferences.
-- **Cookie-based auth requires CSRF defense** — a double-submit token, or
+- **Cookie-based auth requires CSRF defense** — a synchronizer token or signed
+  double-submit token (the token cookie is not `HttpOnly`; the session cookie is), or
   `SameSite` plus an `Origin` check. `SameSite=Lax` alone does not cover
   state-changing `GET`s.
   Signal: a state-changing `POST` under cookie auth with no CSRF token and no
@@ -52,22 +59,59 @@ tagged `P1 (design)`.
   Signal: a login path with no session rotation, or a logout that does not
   clear/expire the session.
 
+## Session Lifecycle
+
+- **Session IDs come from a CSPRNG with at least 64 bits of entropy (prefer 128), are
+  opaque, and carry no PII, role, or state. Accept only IDs the server issued.** Keep
+  all session data server-side.
+  Signal: a session ID built from user ID/time, or a role or user object in the cookie.
+- **Prefer the `__Host-` cookie prefix (`Secure`, `Path=/`, no `Domain`). Session cookies
+  omit `Max-Age`/`Expires`. Send `Cache-Control: no-store` on responses that carry
+  session IDs or sensitive data.**
+- **Enforce idle and absolute timeouts server-side: idle 2-5 min for high-value flows,
+  15-30 min otherwise; absolute 4-8 h.** Logout destroys the server-side session, not
+  only the cookie.
+  Signal: a timeout enforced only in client JS or cookie expiry.
+- **Theft detection fingerprints the session server-side (IP range, `User-Agent`,
+  `Accept-Language`) and compares on sensitive requests. Never act on one header change
+  alone: re-authenticate on a high-risk mismatch, step up on several, log on one.**
+  Rotate the session ID on suspected hijack.
+
 ## Brute-Force & Abuse Protection
 
 - **Rate-limit and back off repeated auth failures — login, token, OTP, and
   password-reset endpoints; lock or throttle after a threshold.** (OWASP A06:2025 / API4)
   Signal: a login/verify/reset handler with no rate-limit middleware, attempt counter,
   or backoff.
+- **Limit per IP, per account, and globally. Never lock an account permanently (it
+  becomes a denial-of-service lever) and never lock on password-reset requests; use
+  expiring throttles and alerts.** Use CAPTCHA only as a late escalation.
+- **Notify the user of a login from a new device; trigger step-up on new device,
+  impossible travel, or a breached credential.**
 
 ## Authorization (RBAC)
 
 - **RBAC is deny-by-default and additive — start from zero, grant up.**
   (OWASP A01:2025 / API5)
   Signal: a default-allow guard, or a route with no guard.
+- **Bind requests to an explicit DTO or allowlist; never bind `req.body` to a model that
+  holds `role`, `isAdmin`, `tenantId`, or `balance` (mass assignment). Use allowlists,
+  not serializer `exclude`/blocklists.**
+  Signal: `new User(req.body)`, `Model.update(req.body)`, `$request->all()`, or
+  Laravel `$guarded` as the only defense.
+- **Return the same `404` for "missing" and "not yours"; a `403` leaks existence. Never
+  let the client choose a weaker auth method. Random UUIDs are defense in depth, not
+  access control.**
 - **P1 (design):** support MFA and require step-up re-authentication for sensitive
   actions — password/email change, payment, privilege grant. Prefer passkeys
   (WebAuthn/FIDO2) — phishing-resistant — over SMS or TOTP. P1 because presence is
   rarely confirmable from a single diff.
+- **Email OTP is not an authenticator (NIST 800-63B-4); SMS/voice is restricted and
+  phishable. Do not use them, or security questions, as MFA for PII or financial data.
+  Issue single-use recovery codes at enrollment; recovery must not
+  bypass identity checks. Verify MFA state server-side on every protected endpoint.
+  No "remember this device" on highly sensitive apps.** Security questions are never
+  the sole recovery path; if kept, hash the answers like passwords.
 
 ## Service-to-Service Auth
 
@@ -89,6 +133,15 @@ tagged `P1 (design)`.
 - **Hash credentials with argon2id / bcrypt / scrypt; never MD5/SHA1/plaintext.**
   (OWASP A04:2025)
   Signal: `md5(` or `sha1(` applied to a password field.
+- **Minimum parameters: argon2id `m=19456` (19 MiB), `t=2`, `p=1`; scrypt `N=2^17`,
+  `r=8`, `p=1`; bcrypt cost >= 10 (72-byte input limit, legacy only);
+  PBKDF2-HMAC-SHA256 600,000 iterations (FIPS only).** Tune so one hash takes under
+  1 s on production hardware. Store the PHC string, so parameters travel with the hash.
+  Signal: a hash cost below these floors, or a hand-rolled salt next to a modern library.
+- **Never pre-hash for bcrypt with `bcrypt(sha512(pw))` (password shucking). Accept full
+  Unicode and null bytes; never truncate. A pepper, if used, lives in a vault or HSM,
+  never in the password database.** Upgrade legacy hashes by wrapping
+  (`argon2id(old_hash)`), then replace with a direct hash at next login.
 - **Never log tokens, passwords, or session IDs.**
   Signal: a logger call whose arguments include a token, password, or session
   field. See the PII-in-logs scan in [security.md](security.md) — referenced, not
@@ -97,10 +150,20 @@ tagged `P1 (design)`.
   invalidate active sessions on a completed reset.** (OWASP API6)
   Signal: a reset token with no expiry or `used` flag, or a reset path that leaves
   existing sessions valid.
+- **Reset tokens: 32+ bytes from a CSPRNG, stored hashed, never logged. Build the reset
+  URL from a hardcoded or allowlisted domain, never the `Host` header; serve it over
+  HTTPS with `Referrer-Policy: no-referrer`. Never auto-login after reset; enforce the
+  password policy and CSRF protection on the reset form.**
+  Signal: a reset link built from `req.headers.host`, or a session issued by the reset
+  handler.
 - **Auth responses must not reveal whether an account exists — uniform message, status,
   and timing across login, registration, and reset.**
   Signal: distinct "user not found" vs "wrong password" branches on a login or reset
   path.
+- **Approve a payment or other high-risk action against the exact data shown (amount,
+  payee): single-use, short-lived, and the flow restarts if the data changes. Verify
+  server-side.** (OWASP Transaction Authorization)
+  Signal: an approval token not bound to the transaction payload.
 - **Compare secrets, tokens, and hashes in constant time.**
   Signal: `==`/`===` on a token, signature, or reset code instead of
   `crypto.timingSafeEqual` / a constant-time compare.
@@ -110,6 +173,8 @@ tagged `P1 (design)`.
   only on evidence of compromise); check against a breached-password blocklist.**
   Signal: a `minLength` below the floor, a regex requiring character classes, or a
   password-expiry job.
+  Check breached passwords through a k-anonymity API (HaveIBeenPwned range query), not
+  by sending the full password or hash. Allow paste and password managers.
 
 ## Secure Patterns
 

@@ -4,6 +4,24 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · Every security rule now ships with cook, in one place per topic, and encryption work gets its own standard
+
+**feat(standards): fold the local security library into shipped shelves and add a `crypto` concern.**
+
+- `standards/security/` (local-only, 94 files, never installed): every source file triaged — 52 merged, 12 already covered, 26 dropped (Django, SAML, LDAP, Kubernetes, C, process docs), 2 deferred (GraphQL, Android/Flutter mobile). Shelf deleted; backup kept locally.
+- `standards/global/refs/crypto.md`: new 9th concern — AEAD choices and nonce limits, CSPRNG, envelope encryption and key rotation, TLS (incl. `X25519MLKEM768`, RFC 10024), certificate verification. Password hashing stays in `auth.md`.
+- `standards/global/refs/security.md`: injection and deserialization, XSS output encoding, CSP/HSTS/COOP/CORP, SSRF with IMDSv2, uploads, redirects, MCP transport and auth, more LLM/agent output rules, secret scanning.
+- `standards/global/refs/auth.md`: password-hash parameter floors, mass assignment, a Session Lifecycle section, transaction-approval binding, NIST SP 800-63B-4 MFA wording; owns CSRF and `__Host-` cookies.
+- `standards/global/refs/cicd.md`: package release-age cooldowns (npm `min-release-age`, pnpm `minimumReleaseAge`, Yarn `npmMinimalAgeGate`), install scripts off, trusted publishing, container hardening.
+- `standards/global/refs/error-handling.md`, `standards/nodejs/refs/runtime-safety.md`, `standards/database/refs/postgresql-best-practices.md`, `standards/ios/refs/privacy-and-permissions.md`, `standards/css/refs/security.md`: platform-specific security rules (log injection, PID 1 signals, `--disable-proto`, `sslmode=verify-full`, `NSPinnedDomains` CA-key pinning).
+- `standards/typescript/refs/security.md`, `standards/react/refs/security.md`, `standards/nextjs/refs/security.md`: generic rules removed in favour of the global owners (−18% across the three). Next.js file reviewed against Next.js 16 docs: `proxy.ts` codemod, Server Action origin checks and `allowedOrigins` format, taint caveats, nonce CSP vs Partial Prerendering, `use cache` per-user keys. TypeScript `can()` no longer throws on `__proto__`/`constructor` roles.
+- Review: two security reviewers checked every merged rule against OWASP, NIST, IETF and vendor docs; 18 factual errors fixed (e.g. MCP does not require mTLS; iOS pins CA keys, not leaves; Trusted Types is Baseline), 0 rules removed as unsafe.
+- `vocab/tag-vocabulary.json`: new `crypto` tag (29 aliases; password-hashing words stay on `auth`).
+- `refs/protocol-cook.md`, `refs/protocol-explicit.md`, `standards/global/_INDEX.md`, `standards/global/SKILL.md`, `FLAG-LIST.md`, `README.md`, `ARCHITECTURE.md`: concern count 8 → 9, `--crypto` flag; security-shelf references removed.
+- `.gitignore`, `scripts/check_freshness.py`, `scripts/gen_install_files.py`, `install.sh`: security-shelf references removed; manifest ships `crypto.md`.
+
+---
+
 ## [Unreleased] — 2026-10-23 · Standards payloads get about a quarter smaller on 8 shelves, with no hard rule lost
 
 **perf(standards): condense low-risk refs and SKILL files on 8 shelves.**

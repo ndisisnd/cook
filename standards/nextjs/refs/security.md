@@ -1,114 +1,67 @@
+---
+last_reviewed: 2026-10-23
+---
+
 # Security And Authentication
 
-Use this ref when implementing auth, cookies, middleware, RBAC, Server Action validation, CSP, CSRF, taint APIs, or data-leak prevention.
+Next.js-specific security: `proxy.ts`, session cookies, Server Action and Route Handler protection, CSRF origin checks, taint APIs, and the server/client data boundary.
 
-## Token Storage
+Generic rules: `global/refs/security.md`, `global/refs/auth.md`. Client rules (token storage, XSS/DOMPurify, URL validation, client-side permission checks): `react/refs/security.md`.
 
-Use `HttpOnly`, `Secure` cookies with `SameSite: 'Lax'` or `'Strict'` and reasonable `maxAge`. Never store access tokens in `localStorage` or `sessionStorage`; they are XSS-vulnerable and cause hydration problems in Server Component flows.
+## Session Cookies
 
-```ts
-// app/api/login/route.ts
-import { cookies } from 'next/headers';
-
-export async function POST(request: Request) {
-  const { email, password } = await request.json();
-  const token = await authenticate(email, password);
-
-  (await cookies()).set('session-token', token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    maxAge: 86400,
-    path: '/',
-  });
-
-  return Response.json({ success: true });
-}
-```
+Set session cookies only on the server, from a Server Action or Route Handler. `cookies()` is async in Next.js 16: `await` it. Cookie flag policy: `global/refs/auth.md`.
 
 ```ts
+// app/(auth)/actions.ts
 'use server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
+
+const LoginSchema = z.object({ email: z.email(), password: z.string().min(1) });
 
 export async function login(formData: FormData) {
-  const result = { accessToken: 'fake_enc_token' };
+  const parsed = LoginSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: 'Invalid credentials' };
 
-  (await cookies()).set('session', result.accessToken, {
+  const session = await createSession(parsed.data); // server-only helper
+  (await cookies()).set('session', session.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7,
     path: '/',
-    sameSite: 'lax',
   });
-
   redirect('/dashboard');
 }
-
-export async function logout() {
-  (await cookies()).delete('session');
-  redirect('/login');
-}
 ```
 
-## Reading Sessions
+Read sessions in a `server-only` helper (`lib/auth.ts`) that DAL functions call. Prefer Auth.js or Clerk for provider-heavy flows; keep custom session code only when the project already owns it.
 
-Read sessions in server-only helpers or DAL functions.
+## Proxy (`proxy.ts`)
 
-```ts
-// lib/auth.ts
-import 'server-only';
-import { cookies } from 'next/headers';
+Next.js 16 renamed `middleware.ts` to `proxy.ts` and the export to `proxy`. Proxy runs on the Node.js runtime only; the `runtime` option throws an error there. Keep an existing `middleware.ts` only when it must stay on the Edge runtime. Rename with `npx @next/codemod@canary middleware-to-proxy .`. Flags renamed too (for example `skipMiddlewareUrlNormalize` -> `skipProxyUrlNormalize`).
 
-export async function getSession() {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('session')?.value;
-  if (!session) return null;
-  return { user: 'simulated' };
-}
-```
+Use proxy for optimistic checks (cookie present -> continue, else redirect) and headers. It is not an authorization layer: re-check auth in DAL functions, Server Actions, and Route Handlers.
 
-## Auth Library Selection
-
-Prefer Auth.js (`next-auth`) or Clerk for social login, session management, and provider-heavy authentication flows. Use a custom cookie/session helper only when the project already owns that auth stack or has requirements the library cannot satisfy.
-
-## Middleware Auth And RBAC
-
-Use `middleware.ts` for edge-side redirection, role checks, and security headers. Middleware is not a substitute for auth inside DAL functions, Route Handlers, or Server Actions.
+A Server Action call is a `POST` to the route that uses it. A `matcher` that excludes that path skips proxy for the action, and moving an action to another route can drop proxy coverage unnoticed.
 
 ```ts
-// middleware.ts
-import { NextRequest, NextResponse } from 'next/server';
+// proxy.ts
+import { NextResponse, type NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('session-token')?.value;
-  if (!token) {
+export function proxy(request: NextRequest) {
+  const hasSession = request.cookies.has('session');
+  const isLogin = request.nextUrl.pathname.startsWith('/login');
+
+  if (!hasSession && !isLogin) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: ['/dashboard/:path*', '/settings/:path*'],
-};
-```
-
-```ts
-// middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export function middleware(request: NextRequest) {
-  const currentUser = request.cookies.get('session')?.value;
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login');
-
-  if (!currentUser && !isLoginPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  if (currentUser && isLoginPage) {
+  if (hasSession && isLogin) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
+  return NextResponse.next();
 }
 
 export const config = {
@@ -116,81 +69,60 @@ export const config = {
 };
 ```
 
-## Server Action Validation
+## Server Actions
 
-Validate every Server Action input, run auth inside the action, and revalidate affected cache keys. See `refs/server-actions.md` for form state and mutation workflow.
-
-```ts
-// app/actions.ts
-import { z } from 'zod';
-
-const schema = z.object({
-  email: z.string().email(),
-});
-
-export async function submit(formData: FormData) {
-  const result = schema.safeParse(Object.fromEntries(formData));
-  if (!result.success) return { error: 'Invalid' };
-  // secure logic
-}
-```
+Every exported Server Action is reachable by direct POST, even if no UI imports it. A page-level auth check does not protect the actions on that page.
 
 ```ts
 // app/posts/actions.ts
 'use server';
-import { auth } from '@/lib/auth';
+import { updateTag } from 'next/cache';
 import { z } from 'zod';
+import { auth } from '@/lib/auth';
 
 const CreatePostSchema = z.object({ title: z.string().min(1).max(200) });
 
 export async function createPost(formData: FormData) {
   const session = await auth();
-  if (!session) throw new Error('Unauthorized');
-  const { title } = CreatePostSchema.parse({ title: formData.get('title') });
-  await db.post.create({ data: { title, authorId: session.user.id } });
-  revalidateTag('posts');
+  if (!session?.user) throw new Error('Unauthorized');
+
+  const parsed = CreatePostSchema.safeParse({ title: formData.get('title') });
+  if (!parsed.success) return { errors: z.flattenError(parsed.error).fieldErrors };
+
+  await db.post.create({ data: { title: parsed.data.title, authorId: session.user.id } });
+  updateTag('posts');
+  return { success: true };
 }
 ```
 
-## Route Handlers And CSRF
+- Check ownership of the specific resource inside the action, not only login state (IDOR).
+- Return only what the UI needs; return values are serialized to the client.
+- Keep secrets out of inline action closures. Next.js encrypts closed-over values, but do not rely on that alone.
+- Multi-instance self-hosting: set `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (base64 AES key of 16, 24, or 32 bytes) so all instances share one key.
 
-- Verify `Origin` and `Referer` headers for state-changing Route Handlers and Server Actions where CSRF applies.
-- Rate limit login, signup, password reset, search, and write-heavy handlers.
-- Validate JSON body shape with Zod or equivalent.
-- Standardize errors without leaking internal details.
+## CSRF
+
+- Server Actions are POST-only. Next.js compares the `Origin` host with `Host` / `X-Forwarded-Host` and aborts a mismatch. A request with no `Origin` header is allowed with a warning.
+- When the proxy forwards its own host instead of the public one, list the public hosts in `experimental.serverActions.allowedOrigins`. Entries are `host[:port]` and `*.` wildcards; a bare `example.com` does not match its subdomains.
+- Route Handlers have no built-in check. Verify `Origin` on state-changing handlers, and authenticate, authorize, and validate every `route.ts` handler.
 
 ## Data Boundary And Tainting
 
-Return DTOs to components; never pass raw models with secret fields.
+- Pass DTOs to Client Components, never raw models.
+- Enable `experimental.taint: true` to use `experimental_taintObjectReference` and `experimental_taintUniqueValue` as an extra guard. Taint tracks the object reference or the exact value only: a copy or a derived string is untainted. It does not replace DTO filtering.
+- Only `NEXT_PUBLIC_*` variables are bundled for the client. Read secrets only in `server-only` modules (`import 'server-only'`).
+- Cache Components: a `use cache` entry is shared by every request with the same arguments. Read `cookies()`/`headers()` outside the cached scope and pass only the needed value (for example the user ID) as an argument. Never cache per-user data under a key without the user.
 
-```tsx
-// app/profile/page.tsx
-const user = await db.getUser();
+## Security Headers And CSP
 
-// Good: pass only needed fields.
-return <Profile user={{ name: user.name }} />;
-
-// Bad: leaks passwordHash and internal fields.
-return <Profile user={user} />;
-```
-
-Use experimental taint APIs such as `taintObjectReference` or `taintUniqueValue` where available to block sensitive server objects from reaching Client Components.
-
-## Security Headers And Content
-
-- Set `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, and related headers in middleware or platform config.
-- `X-XSS-Protection` is legacy source guidance; modern browsers ignore or deprecate it, so do not rely on it instead of CSP and output escaping.
-- Escape user-provided content rendered in components.
-- Never use `dangerouslySetInnerHTML` without a sanitizer such as DOMPurify.
-- Do not expose server secrets via `process.env` in client bundles; only `NEXT_PUBLIC_*` values are intentionally public.
+- Set headers in `proxy.ts` or through `headers()` in `next.config.ts`. Header values and CSP policy: `global/refs/security.md`.
+- Nonce-based CSP requires dynamic rendering and is incompatible with Partial Prerendering. Generate the nonce in `proxy.ts`, pass it in a request header (`x-nonce`) and the CSP header, and read it with `headers()` in a Server Component. Without nonces, set the CSP in `next.config.ts` `headers()`.
 
 ## Anti-Patterns
 
-- Tokens in `localStorage` or `sessionStorage`.
-- Raw tokens in Client Components.
-- Unprotected Server Actions or Route Handlers.
-- Auth checks only in shared layouts.
-- Raw model objects passed to clients.
-- `process.env` values in client bundles unless intentionally `NEXT_PUBLIC_*`.
-- Unvalidated action inputs.
-- `dangerouslySetInnerHTML` without sanitization.
+- New `middleware.ts` / `export function middleware` code on Next.js 16.
+- Treating proxy or layout checks as authorization.
+- Server Actions without `'use server'`, input validation, or an in-action auth check.
+- Server Actions that return full DB records.
+- State-changing Route Handlers without auth or an `Origin` check.
+- `process.env` secrets referenced from Client Components.

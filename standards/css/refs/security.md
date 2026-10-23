@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-10-18
+last_reviewed: 2026-10-23
 ---
 
 # Security
@@ -44,6 +44,7 @@ Descriptive, feature-named selectors leak your app's capabilities to anyone read
 
 - Prefer **structural or hashed** class names (CSS Modules `localIdentName`, build-time obfuscation) over feature-revealing names.
 - Don't ship a single global stylesheet containing selectors for **every** role — segment by role and enforce server-side access control before serving role-scoped CSS. Policy → `global/refs/security.md`.
+- Log and alert on requests for another role's stylesheet (forced browsing).
 
 ## Sanitizing user-generated styles
 

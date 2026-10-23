@@ -47,7 +47,7 @@ Branch on `status`:
 - **`miss` | `stale`** — continue to Step 2.
 - **`fallback`** — the cache file exists but is corrupt (`cache_corrupt: true`).
   Degrade to greedy routing: Step 3's P0 + every domain in
-  `signals.domain_hints` (each `SKILL.md`) + all 8 concern refs (Step 4's set),
+  `signals.domain_hints` (each `SKILL.md`) + all 9 concern refs (Step 4's set),
   then compile (Step 6). Standards still apply; only efficiency is lost. Never
   call `write` or `heal` while the cache is corrupt.
 
@@ -71,7 +71,7 @@ task; if the task does not say, load neither platform shelf.
 **Sufficiency (never empty-handed):** ≥1 `domain:*` route → proceed with the
 resolver's `confidence`. None resolved, or the resolver said `fallback: true`
 → set `confidence: low`, `fallback: true`, and load broad in Steps 4–5
-(all 8 concern refs + the `signals.domain_hints` domains). P0 loads regardless.
+(all 9 concern refs + the `signals.domain_hints` domains). P0 loads regardless.
 
 ### Step 3 — Load global P0 (always)
 
@@ -84,7 +84,7 @@ mode intentionally omits it; see `protocol-explicit.md`.)
 For each route `concern:<name>`, load `standards/global/refs/<name>.md`. The
 full concern set — also the fallback load — is exactly: `architecture.md`,
 `api-design.md`, `error-handling.md`, `security.md`, `auth.md`,
-`performance.md`, `debug.md`, `cicd.md`.
+`crypto.md`, `performance.md`, `debug.md`, `cicd.md`.
 
 Supabase key-boundary work stacks with security: secret-key / `service_role` /
 client-public-env / key-leak language also loads `security.md`; API-key

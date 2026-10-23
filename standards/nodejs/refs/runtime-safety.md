@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-10-18
+last_reviewed: 2026-10-23
 ---
 
 # Node.js Runtime Safety
@@ -87,6 +87,15 @@ app.use(express.json({ limit: '10kb' })); // size the limit to the largest legit
 
 - Set an explicit body-size limit on every body parser. Signal: `express.json()` or `express.urlencoded()` with no `limit`.
 - Collapse or reject duplicate parameters before validation. Signal: no `hpp()` (or equivalent) and handlers that read `req.query.x` as a string.
+
+## Prototype Pollution
+
+- Key rules live in `global/refs/security.md`. Node-specific hardening: run with `--disable-proto=delete` (or `throw` to surface offenders).
+
+## Docker Images
+
+- Node is not built to run as PID 1: it applies no default signal actions and does not reap zombies, and `CMD npm start` does not forward signals. Use `CMD ["node", ...]` directly, under an init (`docker run --init`, `tini`, or `dumb-init`), so the shutdown handler fires.
+- `USER node` with `COPY --chown=node:node`; `.dockerignore` lists `node_modules`, `.git`, `.npmrc`; `npm ci --omit=dev` in a multi-stage build.
 
 ## Anti-Patterns
 
