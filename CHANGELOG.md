@@ -4,6 +4,23 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · Next.js standards match Next.js 16.4 and stop repeating React rules
+
+**perf(standards): refresh and condense the nextjs shelf.**
+
+- Scope: 14 files, 14,917 → 11,731 tokens (−21%); every ref stamped `last_reviewed: 2026-10-23`. `refs/security.md` was finished in the security merge. The 2026-10-18 edits were reviewed against nextjs.org and kept, with fixes on top.
+- `standards/nextjs/SKILL.md`: Node 24 LTS recommended (Next's own minimum is 20.9, which is end of life); export rule allows the default exports Next.js file conventions require (`route.ts` and `proxy.ts` use named exports); generic React rules replaced by pointers to `standards/react/`.
+- `standards/nextjs/refs/app-router.md`: `proxy.ts` (Node-only), `forbidden()`/`unauthorized()` still behind `experimental.authInterrupts`, `after()` stable with request APIs read before the callback.
+- `standards/nextjs/refs/rendering-and-caching.md`, `data-fetching.md`, `server-components.md`, `server-actions.md`: Cache Components, `updateTag` vs `revalidateTag(tag, 'max')`, `connection()` inside `<Suspense>` for `new Date()`/`Math.random()` during prerender; walkthroughs reduced to rules; Server Action security points to `refs/security.md`.
+- `standards/nextjs/refs/architecture.md`: Feature-Sliced Design reduced to decision rules; `next analyze` (16.1+); Edge runtime deprecated, Cache Components needs Node.
+- `standards/nextjs/refs/styling-and-optimization.md`: Next.js 16 image defaults (`qualities: [75]`, 4-hour `minimumCacheTTL`, `remotePatterns` over `domains`, `preload` over `priority`).
+- `standards/nextjs/refs/testing.md`: Playwright for async Server Components; MSW 3; generic React testing points to `standards/react/refs/testing.md`.
+- `standards/nextjs/refs/i18n.md`: `next/root-params` stable from 16.3; on 16.0–16.2 it needs `experimental.rootParams`; next-intl 4 in `proxy.ts`.
+- `standards/nextjs/refs/pages-router.md`: legacy detail cut by 47%.
+- `standards/nextjs/_INDEX.md`, `vocab/tag-vocabulary.json`: keywords `proxy.ts`, `forbidden()`, `unauthorized()`, `after()` (specific forms, so a task that says "after" does not load Next.js).
+
+---
+
 ## [Unreleased] — 2026-10-23 · React standards match React 19.3 and the React Compiler, at 39% fewer tokens
 
 **perf(standards): refresh and condense the react shelf.**

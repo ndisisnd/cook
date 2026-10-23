@@ -1,119 +1,84 @@
+---
+last_reviewed: 2026-10-23
+---
+
 # Tooling And Upgrades
 
-Use this ref when configuring Next.js build tooling, Turbopack, Docker standalone output, bundle analysis, environment validation, lint/CI, telemetry, or major-version upgrades.
+Use this ref when configuring Next.js build tooling, Turbopack, linting, Docker standalone output, bundle analysis, environment validation, CI, or version upgrades.
 
 ## Build And Dev
 
-- Use Turbopack (`next dev --turbo`) for faster incremental development builds when supported.
-- Use Webpack where legacy config or package compatibility requires it.
-- Run `next build` as the production correctness gate.
-- Mandate TypeScript checking and Next.js-aware ESLint in CI.
+- Turbopack is the default bundler for `next dev` and `next build` in Next.js 16 (filesystem cache on by default). Do not add `--turbo` / `--turbopack` flags.
+- Opt out with `--webpack` only when a custom `webpack` config or plugin cannot move to Turbopack. `next build` fails if a `webpack` config exists and you did not choose.
+- Turbopack options live under the top-level `turbopack` key (not `experimental.turbo`).
+- `next dev` writes to `.next/dev`, so `next dev` and `next build` can run concurrently.
+- Next.js requires Node.js 20.9+ (EOL since 2026-04-30) and TypeScript 5.1+. Run Node.js 24 LTS in CI, Docker, and production.
 
 ```json
 // package.json
 "scripts": {
-  "dev": "next dev --turbo",
-  "lint": "next lint",
-  "build": "next build"
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "eslint .",
+  "typecheck": "next typegen && tsc --noEmit"
 }
 ```
 
-## Docker And Standalone Output
+## Linting
 
-Use standalone output for self-contained Docker deployment.
+`next lint` and the `eslint` key in `next.config` are removed in Next.js 16, and `next build` no longer lints. Run the ESLint CLI with a flat config. Migrate with `npx @next/codemod@canary next-lint-to-eslint-cli .`.
 
 ```js
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'standalone',
-  experimental: {
-    turbo: {},
-  },
-};
+// eslint.config.mjs
+import { defineConfig } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+import nextTs from 'eslint-config-next/typescript';
 
-module.exports = nextConfig;
+export default defineConfig([...nextVitals, ...nextTs]);
 ```
 
-```dockerfile
-# Dockerfile snippet
-FROM node:18-alpine AS base
-# ... install and build
-CMD ["node", "server.js"]
-```
+`eslint-config-next@16` requires ESLint 9+ (ESLint 10 from `eslint-config-next@16.4.0`). It already bundles `eslint-plugin-react-hooks`; do not register it twice (`react/refs/tooling.md`).
 
-For complete self-hosting cache and asset-copy notes, see `refs/app-router.md`.
+## Docker And Standalone Output
+
+Set `output: 'standalone'` in `next.config.ts`. Turbopack options go under the top-level `turbopack` key.
+
+Base image: `node:24-alpine`; run `node server.js` from `.next/standalone` with `.next/static` and `public` copied in.
+
+Self-hosting cache and asset notes: `refs/app-router.md`.
 
 ## Environment Variables
 
-- Server-only vars are read at runtime on the server.
-- `NEXT_PUBLIC_*` vars are exposed to the browser and baked into the JS bundle.
-- Validate environment at startup with Zod or equivalent.
-
-```ts
-// lib/env.ts
-import { z } from 'zod';
-
-const envSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  NEXT_PUBLIC_API_URL: z.string().url(),
-});
-
-export const env = envSchema.parse(process.env);
-```
+- Validate env at startup with Zod or equivalent in a `server-only` module. `NEXT_PUBLIC_*` inlining: `refs/app-router.md`.
+- `serverRuntimeConfig` / `publicRuntimeConfig` are removed; use env vars.
 
 ## Bundle Analysis
 
-- Inspect with `@next/bundle-analyzer` or the built-in analyzer in supported Next.js versions.
-- Remove unused dependencies and avoid accidental runtime CSS-in-JS/client-only packages in Server Components.
-- For Next.js 16.1+, use `next experimental-analyze`.
+- `next analyze` (Turbopack) opens an interactive analyzer of client and server bundles; `next analyze --output` writes results to `.next/diagnostics/analyze` without serving.
+- `next build` no longer prints `First Load JS` sizes; measure with the analyzer and Core Web Vitals.
 
 ## CI/CD
 
-Pipeline shape — fail-fast gating order, required checks before merge, per-job
-timeouts and run cancellation — is vendor-neutral; see `global/refs/cicd.md`.
-Next.js specifics:
-
-- Run `next build` as the production correctness gate, alongside lint, typecheck, and test.
-- Cache `.next/cache` for faster builds.
-- Keep telemetry policy explicit; opt out with `next telemetry disable` if privacy requires it.
-- Use structured loggers such as Pino or Winston for production; do not ship raw `console.log`.
+Pipeline shape: `global/refs/cicd.md`. Next.js specifics: run `eslint`, typecheck, tests, and `next build` as separate gates (build no longer lints); cache `.next/cache`; set telemetry policy explicitly (`next telemetry --disable`).
 
 ## Upgrade Protocol
 
-Use this when migrating Next.js to a new major version.
+1. Read current `next`, `react`, `react-dom`, and `@types/react` versions.
+2. Run `npx next upgrade` (Next.js 16.1+) or `npx @next/codemod@canary upgrade latest` from older versions.
+3. The upgrade codemod migrates `turbopack` config, `next lint` -> ESLint CLI, `middleware` -> `proxy`, and `unstable_` prefixes. Run `npx @next/codemod@canary next-async-request-api .` separately if sync request APIs remain.
+4. Review breaking changes the codemod does not fix: `revalidateTag` second argument, parallel route `default.tsx`, `next/image` defaults, removed AMP and runtime config.
+5. Do not enable `cacheComponents` or `reactCompiler` merely to finish an upgrade; adopt them as separate changes.
+6. Run `next dev`, `next build`, lint, and tests after each step; report codemod failures and manual fixes.
 
-1. Check current `next`, `react`, and `react-dom` versions in `package.json`.
-2. Plan an incremental path; do not skip majors, such as v13 -> v14 -> v15.
-3. Run official codemods first: `npx @next/codemod@latest <transform> <path>`.
-4. Update dependencies.
-5. Verify async APIs: `params`, `searchParams`, `cookies()`, and `headers()` are awaited in Next.js 15+.
-6. Audit `fetch` caching; v15 defaults changed, so add `force-cache` where static behavior is required.
-7. Run `next dev` and `next build` after each incremental step.
-8. Report codemod failures and manual fixes.
+## Debugging
 
-```bash
-npm install next@latest react@latest react-dom@latest
-npm install --save-dev @types/react@latest @types/react-dom@latest
-```
-
-Breaking-change notes:
-
-- `next-async-request-api` codemod addresses async request APIs, but manual fixes may remain.
-- React and React DOM versions must match Next.js peer requirements, such as React 19 for Next.js 15.
-- Hydration and Turbopack errors must be fixed before completing the migration.
-
-## Debugging Cross-Reference
-
-Route-specific build debugging and Next.js MCP details live in `refs/architecture.md`.
+- `next build --debug-build-paths="app/blog/[slug]/page.tsx"` builds only matching routes (globs and `!` exclusions allowed).
+- `next build --debug-prerender` gives readable prerender stack traces. Never deploy its output.
+- The Next.js 16 dev server exposes an MCP endpoint at `/_next/mcp` (on by default). Connect agents through the `next-devtools-mcp` package; disable with `experimental.mcpServer: false`.
 
 ## Anti-Patterns
 
-- `npm run start` for development instead of `next dev`.
-- Uninspected bundle growth.
-- Custom ESLint rules replacing `eslint-plugin-next` for Next.js-specific checks.
-- Raw `console.log` in production.
-- Major-version skipping.
-- Manual breaking-change fixes before official codemods.
-- Assumed caching behavior after upgrades.
-- Async default page functions in Pages Router.
+- `next dev --turbo`, `next lint`, or `experimental.turbo` on Next.js 16.
+- Node.js 18 or 20 base images.
+- Skipping official codemods before manual fixes.
