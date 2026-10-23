@@ -1,224 +1,48 @@
+---
+last_reviewed: 2026-10-23
+---
 # React Performance
+
+Verified 2026-10: React 19.x, React Compiler 1.0 (`babel-plugin-react-compiler`), https://react.dev/learn/react-compiler/introduction
 
 ## Eliminate Data Waterfalls (P0)
 
-Fetch independent data in parallel. Sequential `await` chains are the most common cause of slow initial loads.
-
-```tsx
-// Bad — sequential, each waits for the previous
-const user = await getUser();
-const products = await getProducts();
-
-// Good — parallel
-const [user, products] = await Promise.all([getUser(), getProducts()]);
-```
-
-Start fetches before render using route loaders or event handlers:
-
-```tsx
-// React Router v6 loader
-export async function loader() {
-  return Promise.all([getUser(), getProducts()]);
-}
-```
-
-Prefer framework data APIs, route loaders, TanStack Query, or SWR over raw fetch effects when available. If a component-owned effect is unavoidable, use `AbortController` for cancellable fetches and stale-response guards for non-abortable work.
-
-Use Suspense boundaries to stream partial content so the page is not blank while slow data loads:
-
-```tsx
-function App() {
-  return (
-    <Suspense fallback={<PageSkeleton />}>
-      <Dashboard />
-    </Suspense>
-  );
-}
-```
+- Fetch independent data in parallel: `await Promise.all([getUser(), getProducts()])`. Sequential `await` is the top cause of slow loads.
+- Start fetches before render: route loaders or event handlers, not effects after mount.
+- Prefer framework data APIs, route loaders, TanStack Query, or SWR over fetch effects. If an effect is unavoidable, use `AbortController` or a stale-response guard.
+- Wrap slow subtrees in `<Suspense fallback={...}>` so the rest of the page renders first.
 
 ## Reduce Bundle Size (P0)
 
-Lazy-load heavy components so they are not included in the initial bundle:
+- Lazy-load heavy, non-initial components: `const Chart = lazy(() => import('./Chart'))` inside `<Suspense>`.
+- Off-screen images: `loading="lazy" decoding="async"`. Next.js projects use `next/image` (see the nextjs shelf).
+- Avoid `export *` barrels over large folders. Curated or type-only barrels are fine if bundle analysis shows tree-shaking works.
+- Replace heavy libraries before shipping (`moment` → `dayjs`, `lodash` → native).
+- Analyse the bundle before each significant release (`vite-bundle-visualizer`, `webpack-bundle-analyzer`).
 
-```tsx
-const Chart = React.lazy(() => import('./Chart'));
-const RichEditor = React.lazy(() => import('./RichEditor'));
+## Memoization and Re-renders (P1)
 
-function Page() {
-  return (
-    <Suspense fallback={<Skeleton />}>
-      <Chart />
-    </Suspense>
-  );
-}
-```
+- Move state down to its consumer. An update re-renders the owner and all descendants.
+- With React Compiler enabled: write no manual `useMemo`, `useCallback`, or `memo` in new code; the compiler memoizes by analysis. Leave existing memoization in place (removing it can change output) unless tests cover the change.
+- Keep manual `useMemo`/`useCallback` when a value is an effect dependency and must not re-fire the effect, or when you need exact control. Keep `memo` when profiling proves a win the compiler does not give.
+- Without the Compiler: do not memoize by default. Remove needless effects, hoist constants, and measure first. Then memoize expensive items or stable callbacks passed to `memo` children.
+- The Compiler skips components that break the Rules of React (mutating props or state, reading `ref.current` in render). Fix the violation instead of adding memoization. Check with `eslint-plugin-react-hooks` compiler rules.
+- Virtualize lists of roughly 500+ rows (`@tanstack/react-virtual`).
+- `startTransition` marks non-urgent state updates (results) so urgent input stays responsive. `useDeferredValue(query)` lets an expensive child lag behind input.
+- CSS `content-visibility: auto` with `contain-intrinsic-size` skips layout and paint for large off-screen sections.
 
-### Native Image Lazy-Loading
+## Heavy Computation (P1)
 
-Defer off-screen images with native browser attributes — no library required:
-
-```tsx
-<img src={src} alt={alt} loading="lazy" decoding="async" />
-```
-
-For Next.js projects, prefer `next/image` (automatic sizing, format negotiation, and
-lazy-loading) — see the nextjs domain. In plain React, the native attributes above are
-the baseline.
-
-Avoid broad runtime barrels, especially `export *` from large component or utility folders. Explicit curated barrels and type-only barrels are acceptable when bundle analysis proves tree-shaking still works.
-
-Replace heavy libraries with lighter alternatives before shipping: `moment` → `dayjs`, `lodash` → native or `radash`.
-
-Analyse the bundle before each significant release:
-
-```bash
-# Vite
-npx vite-bundle-visualizer
-
-# webpack
-npx webpack-bundle-analyzer stats.json
-```
-
-## Minimize Re-renders (P1)
-
-Move state as close to its consumer as possible. A state update re-renders the owner and all its descendants.
-
-Memoize list items when the list is long and items are expensive to render:
-
-```tsx
-const Row = React.memo(function Row({ item }: { item: Item }) {
-  return <tr><td>{item.name}</td></tr>;
-});
-```
-
-Do not add `useMemo`, `useCallback`, or `React.memo` by default. First remove unnecessary effects, move object/function creation closer to where it is used, hoist constants, and measure. React Compiler can remove some manual memoization needs; keep manual memoization where identity is observable or profiling proves value.
-
-Virtualize lists with 500+ items:
-
-```tsx
-import { useVirtualizer } from '@tanstack/react-virtual';
-
-function VirtualList({ items }: { items: Item[] }) {
-  const parentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({ count: items.length, getScrollElement: () => parentRef.current, estimateSize: () => 40 });
-
-  return (
-    <div ref={parentRef} style={{ height: 600, overflow: 'auto' }}>
-      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-        {virtualizer.getVirtualItems().map((vItem) => (
-          <div
-            key={vItem.key}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              transform: `translateY(${vItem.start}px)`,
-            }}
-          >
-            {items[vItem.index].name}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-```
-
-Split Context into State and Dispatch to prevent consumers of dispatch-only from re-rendering on state changes (see state-management ref).
-
-Use `startTransition` to mark non-urgent state updates so React can interrupt them for higher-priority input events:
-
-```tsx
-import { startTransition } from 'react';
-
-function Search() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setQuery(e.target.value); // urgent — update input immediately
-    startTransition(() => setResults(search(e.target.value))); // non-urgent
-  }
-
-  return <input value={query} onChange={handleChange} />;
-}
-```
-
-Use `useDeferredValue` when an expensive child can lag behind an urgent input value without blocking typing:
-
-```tsx
-function SearchPage() {
-  const [query, setQuery] = useState('');
-  const deferredQuery = useDeferredValue(query);
-
-  return (
-    <>
-      <input value={query} onChange={(event) => setQuery(event.target.value)} />
-      <Results query={deferredQuery} />
-    </>
-  );
-}
-```
-
-Use CSS `content-visibility: auto` for large off-screen sections so the browser can skip layout and paint until needed:
-
-```css
-.feed-section {
-  content-visibility: auto;
-  contain-intrinsic-size: 800px;
-}
-```
-
-## Move Heavy Computation Off the Main Thread (P1)
-
-Use a Web Worker for encryption, image processing, or sorting large datasets:
-
-```tsx
-// worker.ts
-self.addEventListener('message', (e: MessageEvent) => {
-  self.postMessage(heavySort(e.data));
-});
-
-// component
-function SortedTable({ data }: { data: Row[] }) {
-  const [sorted, setSorted] = useState<Row[]>([]);
-
-  useEffect(() => {
-    const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-    worker.postMessage(data);
-    worker.onmessage = (e) => setSorted(e.data);
-    return () => worker.terminate();
-  }, [data]);
-
-  return <Table rows={sorted} />;
-}
-```
+Move encryption, image processing, and large sorts into a Web Worker (`new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })`). Terminate it in the effect cleanup.
 
 ## React Server Components (P1)
 
-When the framework supports React Server Components, keep server-only data fetching and heavy dependencies in Server Components. Pass only serializable, minimal props to Client Components; prefer IDs, primitives, and small DTOs over large object graphs.
+Applies when the framework supports RSC. Next.js-specific caching lives in the nextjs shelf.
 
-Use `cache` for request-scoped deduplication of repeated server reads:
-
-```tsx
-import { cache } from 'react';
-
-export const getUser = cache(async (id: string) => db.user.findUnique({ where: { id } }));
-```
+- Keep server-only data fetching and heavy dependencies in Server Components.
+- Pass minimal serializable props to Client Components: IDs, primitives, small DTOs.
+- Dedupe repeated reads in one request with `cache(fn)` from `react`.
 
 ## Profiling
 
-Use the React DevTools Profiler to find which component commits are slow before optimising:
-
-```tsx
-import { Profiler } from 'react';
-
-function onRender(id: string, phase: string, actualDuration: number) {
-  if (actualDuration > 16) console.warn(`${id} (${phase}): ${actualDuration}ms`);
-}
-
-<Profiler id="Dashboard" onRender={onRender}>
-  <Dashboard />
-</Profiler>
-```
+Use the React DevTools Profiler before optimising. `<Profiler id onRender>` suits programmatic thresholds only.

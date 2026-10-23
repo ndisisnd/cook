@@ -1,172 +1,37 @@
+---
+last_reviewed: 2026-10-23
+---
 # React Component Patterns
 
-## Composition — Slot Pattern
+Targets React 19.x. The patterns below are known; only decision rules and React 19 changes are kept.
 
-Avoid prop drilling by accepting `ReactNode` slots. Callers control what renders inside each slot.
+## React 19 Changes
+
+- `ref` is a regular prop on function components. Do not use `forwardRef` in new code.
+- Render `<Context value={x}>` directly. Do not use `<Context.Provider>` in new code.
+- Ref callbacks may return a cleanup function. Do not mutate DOM from an implicit-return arrow that returns a value.
 
 ```tsx
-function Layout({ children, aside }: { children: ReactNode; aside: ReactNode }) {
-  return (
-    <div className="grid">
-      <aside>{aside}</aside>
-      <main>{children}</main>
-    </div>
-  );
+function Input({ ref, ...props }: React.ComponentProps<'input'>) {
+  return <input ref={ref} {...props} />;
 }
 ```
 
-## Compound Components
+## Choosing a Pattern
 
-Share implicit state between tightly related components without exposing it to callers.
+| Need | Use |
+|---|---|
+| Caller controls what renders in fixed regions | Slots: `ReactNode` props, not drilled data |
+| Related parts share hidden state (tabs, accordion, menu) | Compound components over one context |
+| Caller decides how each item renders | Render prop (`renderItem`) with a `getKey` prop |
+| Reusable logic | Custom hook. HOCs only to wrap a tree or interop with classes |
+| Caller changes the element | Polymorphic `as` prop typed with `React.ElementType` and `ComponentPropsWithoutRef<T>` |
 
-```tsx
-type AccordionContextValue = {
-  activeIndex: number | null;
-  setActiveIndex: (index: number | null) => void;
-};
+## Rules
 
-const AccordionContext = createContext<AccordionContextValue | null>(null);
-
-function useAccordionContext() {
-  const ctx = useContext(AccordionContext);
-  if (!ctx) throw new Error('Accordion components must be used inside <Accordion>');
-  return ctx;
-}
-
-function Accordion({ children }: { children: ReactNode }) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const value = useMemo(() => ({ activeIndex, setActiveIndex }), [activeIndex]);
-
-  return (
-    <AccordionContext.Provider value={value}>
-      <div>{children}</div>
-    </AccordionContext.Provider>
-  );
-}
-
-Accordion.Item = function Item({ index, children }: { index: number; children: ReactNode }) {
-  return <section data-open={useAccordionContext().activeIndex === index}>{children}</section>;
-};
-
-Accordion.Header = function Header({ index, children }: { index: number; children: ReactNode }) {
-  const { activeIndex, setActiveIndex } = useAccordionContext();
-  const isOpen = activeIndex === index;
-  return (
-    <button
-      aria-controls={`accordion-panel-${index}`}
-      aria-expanded={isOpen}
-      onClick={() => setActiveIndex(isOpen ? null : index)}
-    >
-      {children}
-    </button>
-  );
-};
-
-Accordion.Body = function Body({ index, children }: { index: number; children: ReactNode }) {
-  const isOpen = useAccordionContext().activeIndex === index;
-  return isOpen ? <div id={`accordion-panel-${index}`} role="region">{children}</div> : null;
-};
-
-// Usage
-<Accordion>
-  <Accordion.Item index={0}>
-    <Accordion.Header index={0}>Shipping</Accordion.Header>
-    <Accordion.Body index={0}>Ships in 2-3 days.</Accordion.Body>
-  </Accordion.Item>
-</Accordion>
-```
-
-Provider values that are objects, arrays, or functions must be memoized or split into separate contexts. Otherwise every consumer re-renders on every provider render even when the meaningful data is unchanged.
-
-Custom compound widgets must meet the platform accessibility contract. Accordions need expanded state and labelled regions; dialogs need focus trap, escape dismissal, labelled title, and focus return; menus and tabs need roving keyboard navigation and correct ARIA roles. Prefer proven accessible primitives when you cannot fully implement the keyboard and focus behavior.
-
-## Render Props
-
-Invert control of rendering so callers decide how items are displayed.
-
-```tsx
-function List<T>({
-  items,
-  getKey,
-  renderItem,
-}: {
-  items: T[];
-  getKey: (item: T) => string | number;
-  renderItem: (item: T) => ReactNode;
-}) {
-  return <ul>{items.map((item) => <li key={getKey(item)}>{renderItem(item)}</li>)}</ul>;
-}
-
-// Usage
-<List items={users} getKey={(u) => u.id} renderItem={(u) => <UserCard user={u} />} />
-```
-
-## Higher-Order Components (HOC)
-
-Use for cross-cutting concerns (auth guard, analytics, feature flags). Prefer hooks for new code — HOCs suit cases where you need to wrap a component tree or interop with class-based APIs.
-
-```tsx
-function withAuth<P extends object>(Component: React.ComponentType<P>) {
-  return function AuthGuard(props: P) {
-    const { user, loading } = useAuth();
-    if (loading) return <Spinner />;
-    if (!user) return <Navigate to="/login" />;
-    return <Component {...props} />;
-  };
-}
-
-const ProtectedDashboard = withAuth(Dashboard);
-```
-
-## Controlled vs Uncontrolled
-
-Controlled — state lives in the parent, component is a pure view of that state:
-
-```tsx
-function ControlledInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return <input value={value} onChange={(e) => onChange(e.target.value)} />;
-}
-```
-
-Uncontrolled — component owns its state; parent reads it imperatively via ref:
-
-```tsx
-function UncontrolledInput({ onSubmit }: { onSubmit: (v: string) => void }) {
-  const ref = useRef<HTMLInputElement>(null);
-  return (
-    <form onSubmit={(event) => { event.preventDefault(); onSubmit(ref.current?.value ?? ''); }}>
-      <input ref={ref} />
-    </form>
-  );
-}
-```
-
-Prefer controlled for forms that need validation, disabled states, or reset behaviour. Uncontrolled is appropriate for file inputs and cases where you only need the value at submit time.
-
-## Boolean Props and Conditional Rendering
-
-Boolean props should read clearly at the call site and use shorthand for `true`:
-
-```tsx
-<Modal isOpen />
-```
-
-Avoid multiple boolean flags that can create impossible states. Prefer a single `variant` prop or a discriminated union. Prefer ternaries or explicit `null` over `&&` when the left side might be `0`, because React renders `0`.
-
-## Polymorphic `as` Prop
-
-Lets callers change the rendered element without breaking the component's prop contract.
-
-```tsx
-type BoxProps<T extends React.ElementType = 'div'> = {
-  as?: T;
-} & React.ComponentPropsWithoutRef<T>;
-
-function Box<T extends React.ElementType = 'div'>({ as, ...props }: BoxProps<T>) {
-  const Component = as ?? 'div';
-  return <Component {...props} />;
-}
-
-// <Box as="section" className="wrapper" />
-// <Box as="button" onClick={handler} />
-```
+- Compound components: throw from the context hook when used outside the parent; compose with `Object.assign` or named exports.
+- Context `value` that is an object, array, or function must be stable: memoize it or split contexts. With React Compiler enabled it memoizes inline values; without, wrap manually.
+- Custom widgets must meet the accessibility contract: expanded state and labelled regions for accordions; focus trap, `Escape`, title label, and focus return for dialogs; roving keyboard navigation and ARIA roles for menus and tabs. Prefer proven accessible primitives over hand-rolled ones.
+- Prefer controlled inputs for forms that need validation, disabled states, or reset. Use uncontrolled (`ref`/`FormData`) for file inputs and submit-time-only values.
+- Boolean props use shorthand for `true` (`<Modal isOpen />`). Replace several booleans that allow impossible states with one `variant` prop or a discriminated union.
+- Use a ternary or explicit `null` instead of `cond && <X />` when `cond` can be `0`, because React renders `0`.

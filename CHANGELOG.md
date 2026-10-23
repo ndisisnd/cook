@@ -4,6 +4,23 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · React standards match React 19.3 and the React Compiler, at 39% fewer tokens
+
+**perf(standards): refresh and condense the react shelf.**
+
+- Scope: 8 files, 10,695 → 6,520 tokens (−39%); every ref stamped `last_reviewed: 2026-10-23`. `refs/security.md` was finished in the security merge.
+- `standards/react/SKILL.md`: targets React 19.3; `useEffectEvent` (stable since 19.2) call-site limits; restated anti-patterns removed; the 2026-10-18 edits reviewed and kept, with the accessible-dialog and Compiler-first wording restored.
+- `standards/react/refs/hooks.md`: generic recipes (`useDebounce`, `useLocalStorage`, `useOnClickOutside`, `useInView`, `useWindowSize`) replaced by the rules they existed for — SSR-safe storage, cleanup, stable callbacks via `useEffectEvent`.
+- `standards/react/refs/tooling.md`: Vite 8 with `@vitejs/plugin-react` 6 (Rolldown) and the Compiler preset; `eslint-plugin-react-hooks` 7 flat configs and Compiler rules.
+- `standards/react/refs/performance.md`: memoization guidance follows React Compiler 1.0 — rely on the compiler in new code, keep existing `useMemo`/`useCallback`; Next-specific RSC notes left to the nextjs shelf.
+- `standards/react/refs/component-patterns.md`: decision rules only; React 19 `ref` as a prop and `<Context value>`.
+- `standards/react/refs/state-management.md`: Zustand 5 `useShallow`, TanStack Query 5 (no `cacheTime`, no query `onSuccess`, throw on `!res.ok`), Redux Toolkit 2.
+- `standards/react/refs/testing.md`: MSW 3 (`onUnhandledFrame`, ESM-only, Node 22+, advance fake timers yourself), Vitest 5, Testing Library 16, `vitest-axe`.
+- `standards/react/_INDEX.md`: `usePrevious` keyword.
+- `CHANGELOG.md`: the condensation entry now says `verify/rule_inventory.py` is a local tool.
+
+---
+
 ## [Unreleased] — 2026-10-23 · Every security rule now ships with cook, in one place per topic, and encryption work gets its own standard
 
 **feat(standards): fold the local security library into shipped shelves and add a `crypto` concern.**
@@ -34,7 +51,7 @@ All notable changes to this project are documented here, newest first.
 - `standards/nodejs/_INDEX.md`: tooling ref row gains keywords `node:fs`, `--env-file`, `permission model`, `require(esm)`, `pino`, `winston`, so moved text stays findable.
 - `standards/css/_INDEX.md`: layout ref row gains keywords `@supports` and `css baseline`.
 - `vocab/tag-vocabulary.json`: new aliases on `nodejs` (`node:fs`, `--env-file`, `permission model`, `require(esm)`) and `css` (`@supports`, `css baseline`). Bare `baseline`, `ESM` and `logging` are not added because they would route unrelated work.
-- `verify/rule_inventory.py`: new guard rail. It snapshots every hard rule (never/must/always/…) per file and diffs before and after. It fails on any lost P0 rule or on a version string gone from a SKILL.md. Phase 1 result: 0 lost P0 rules, 0 lost SKILL versions. Non-P0 removals were reviewed and approved.
+- `verify/rule_inventory.py` (local dev tool; `verify/` is gitignored, so it does not ship): new guard rail. It snapshots every hard rule (never/must/always/…) per file and diffs before and after. It fails on any lost P0 rule or on a version string gone from a SKILL.md. Phase 1 result: 0 lost P0 rules, 0 lost SKILL versions. Non-P0 removals were reviewed and approved.
 
 ---
 
