@@ -36,15 +36,22 @@ python3 scripts/cook_cache.py lookup [--path <file> ...] [--project <dir>]
 The resolver derives the file surface (explicit paths → git → manifest),
 builds a fingerprint from raw observable signals only, and checks the cache.
 Stdout is JSON: `status`, `fingerprint`, `signals` (`files`, `extensions`,
-`frameworks`, `domain_hints`, `source`), `confidence`, `fallback`, `routing`.
+`frameworks`, `domain_hints`, `source`), `confidence`, `fallback`, `routing`, `compile_needed`. A `hit` that stores a
+finished payload also carries `payload` (`path`, `bytes`, `sections`,
+`degraded`, `metadata`). A `stale` result carries `stale_reason`.
 Non-zero exit or unparseable stdout → treat as `miss` with `confidence: low`
 and empty signals; never reuse output from a failed run.
 
 Branch on `status`:
 
-- **`hit`** — routing is cached and fresh. Use `routing.skills` directly; skip
-  to Step 6. No classification, no re-match.
-- **`miss` | `stale`** — continue to Step 2.
+- **`hit`** — routing is cached and fresh. No classification, no re-match.
+  - `compile_needed: false` — the finished payload is verified on disk. Skip
+    compile and `heal`. Return `payload` (`path`, `sections`, `degraded`) as the
+    envelope. Run only the telemetry `record` from Step 6, if telemetry is on.
+  - `compile_needed: true` — an older entry with no stored payload. Use
+    `routing.skills` and go to Step 6 (compile, then `write --payload`).
+- **`miss` | `stale`** — continue to Step 2. A stale payload (source standard
+  edited, payload file gone) is rebuilt by the same path.
 - **`fallback`** — the cache file exists but is corrupt (`cache_corrupt: true`).
   Degrade to greedy routing: Step 3's P0 + every domain in
   `signals.domain_hints` (each `SKILL.md`) + all 9 concern refs (Step 4's set),
@@ -98,7 +105,8 @@ domain's `_INDEX.md` to pick which `refs/*.md` match the task. Multiple
 domains may match (e.g. Next.js UI + Postgres schema → both shelves).
 
 Persist the decision (miss path only — skip on hit and on the corrupt-cache
-fallback):
+fallback). Run it **after** Step 6's compile, so the payload file exists, and
+add `--payload` (see Step 6):
 
 ```
 python3 scripts/cook_cache.py write --fingerprint <fp> \
@@ -114,8 +122,11 @@ failure is not a routing failure; Step 6's `heal` reconciles it.
 
 ```
 python3 scripts/cook_compile.py --skills <comma-separated paths> \
-  --out .agent-skills/payload-<fingerprint>.md
+  --out .agent-skills/payload-<fingerprint>.md --manifest
 ```
+
+`--manifest` also writes `payload-<fingerprint>.json` beside the payload (one
+`{header, rel, bucket, byte_start, byte_end}` row per section).
 
 (Use `payload-prose.md` on the explicit-prose path, which has no fingerprint.)
 The compiler deduplicates, buckets (Universal → Domain → Concern), strips
@@ -124,6 +135,12 @@ envelope: `path`, `bytes`, `sections`, `degraded`, `metadata`. If the invoker
 supplied a payload cap, pass `--budget <bytes>` — over-budget sections drop
 lowest-priority first (domain refs → domain SKILLs → concerns; never
 Universal) and are listed in `metadata.dropped_for_budget`.
+
+On a cache miss or stale result, order is: compile, then `write` with the
+payload. Add `--payload .agent-skills/payload-<fingerprint>.md` (and
+`--payload-budget <bytes>` when `--budget` was used) to the Step 5 `write`
+command. Later hits then return `compile_needed: false`. Pass the same
+`--budget` to `lookup` when the invoker supplies a cap.
 
 Then reconcile the `degraded` flag (skip on the corrupt-cache fallback path):
 

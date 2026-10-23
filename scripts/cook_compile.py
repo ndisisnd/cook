@@ -14,6 +14,14 @@ Usage
   --out        Write the assembled markdown to FILE instead of inlining it in
                stdout. The consumer reads the file; the payload never transits
                the model's context as an envelope field.
+  --manifest   With --out: also write a section manifest, a JSON list of
+               {header, rel, bucket, byte_start, byte_end} in payload order.
+               Offsets are UTF-8 byte positions in the payload file; the slice
+               [byte_start:byte_end] is one section including its header line.
+               Sections are joined by "\\n\\n---\\n\\n". `--manifest PATH`
+               writes PATH; a bare `--manifest` writes beside --out with a .json
+               suffix (payload-<fp>.md -> payload-<fp>.json). The envelope gains
+               manifest_path. cook_cache.py write reads that sibling file.
 
 Output
 ------
@@ -171,8 +179,17 @@ def compile_skills(skills: list[str], cook_root: Path, budget: int | None = None
             entries.remove(victim)
             dropped.append(victim["rel"])
 
-    content = "\n\n---\n\n".join(e["text"] for e in entries)
+    sep = "\n\n---\n\n"
+    content = sep.join(e["text"] for e in entries)
+    manifest: list[dict] = []
+    offset = 0
+    for e in entries:
+        size = len(e["text"].encode("utf-8"))
+        manifest.append({"header": e["header"], "rel": e["rel"], "bucket": e["cat"],
+                         "byte_start": offset, "byte_end": offset + size})
+        offset += size + len(sep.encode("utf-8"))
     return {
+        "manifest": manifest,
         "content": content,
         "sections": [e["header"] for e in entries],
         "degraded": degraded,
@@ -198,12 +215,16 @@ def main():
                         "priority first (domain refs, domain SKILLs, concerns; "
                         "Universal never drops), recorded in "
                         "metadata.dropped_for_budget")
+    p.add_argument("--manifest", nargs="?", const="auto", default=None,
+                   help="write the section manifest (needs --out); bare flag = "
+                        "beside --out with a .json suffix")
     args = p.parse_args()
 
     cook_root = Path(args.cook_root).resolve() if args.cook_root else COOK_ROOT_DEFAULT
     skills = [s for s in args.skills.split(",") if s.strip()]
 
     result = compile_skills(skills, cook_root, budget=args.budget)
+    manifest = result.pop("manifest")
 
     if args.out:
         out_path = Path(args.out)
@@ -216,6 +237,12 @@ def main():
             "degraded": result["degraded"],
             "metadata": result["metadata"],
         }
+        if args.manifest:
+            mpath = (out_path.with_suffix(".json") if args.manifest == "auto"
+                     else Path(args.manifest))
+            mpath.parent.mkdir(parents=True, exist_ok=True)
+            mpath.write_text(json.dumps(manifest, indent=1), encoding="utf-8")
+            envelope["manifest_path"] = str(mpath)
         print(json.dumps(envelope, separators=(",", ":")))
     else:
         print(json.dumps(result, separators=(",", ":")))

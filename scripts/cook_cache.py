@@ -12,7 +12,13 @@ Subcommands
       observable signals (NO intent label), and check the cache. Prints a JSON
       blob to stdout: status (hit|miss|stale|skip), mode (auto|explicit-flags|
       explicit-prose), fingerprint, signals, confidence, fallback, and on a hit
-      the cached routing.
+      the cached routing. A hit carries compile_needed: false plus payload
+      {path, bytes, sections, degraded, metadata} when the entry stores a
+      finished payload that still verifies (file present under .agent-skills/,
+      sha256 equal, every source checksum equal, compiler unchanged, budget
+      equal). Any mismatch gives status "stale" with stale_reason. A legacy
+      entry without payload fields is a hit with compile_needed: true.
+      --budget BYTES must equal the budget the payload was compiled with.
 
       --flag NAME   Pin a specific concern, domain, or global shelf (repeatable).
                     Simple flags (--security, --react, --global) are validated
@@ -26,8 +32,15 @@ Subcommands
   write --fingerprint F --intent I --skills S[,S...] [--tags T,...]
         [--confidence high|medium|low] [--fallback] [--degraded P,...]
         [--index IDX,...] [--flag NAME ...] [--mode MODE]
+        [--payload FILE [--payload-budget BYTES]]
       Atomically upsert a cache entry (tmp + os.replace) with a tag-vocabulary
       checksum and per-index checksums. Records flags and mode on the entry.
+      --payload FILE (Phase 2) also stores the finished payload: payload_path
+      (absolute), payload_sha256, payload_bytes, payload_sections (headers read
+      from the sibling manifest `<payload stem>.json` that cook_compile.py
+      --manifest writes; [] when absent), source_checksums {skill path: sha256}
+      for every skill, and compiler_checksum. Run compile first so FILE exists.
+      Without --payload the entry is a legacy entry (routing only).
 
   classify [--prose TEXT] [--path P ...] [--project DIR]
       Mechanical canonicalization (miss path). Matches prose + gathered signals
@@ -91,6 +104,75 @@ def sha256_file(path: Path) -> str | None:
         return sha256_text(path.read_text())
     except OSError:
         return None
+
+
+def sha256_bytes_file(path: Path) -> str | None:
+    """Hash raw bytes (payloads are compared byte for byte)."""
+    try:
+        return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+COMPILER_FILE = COOK_ROOT / "scripts" / "cook_compile.py"
+
+
+def source_checksum(rel: str) -> str | None:
+    """sha256 of one skill file. A path that leaves the cook root is never
+    read (same bound the compiler applies); it records None like a missing file."""
+    path = (COOK_ROOT / rel).resolve()
+    if not path.is_relative_to(COOK_ROOT.resolve()):
+        return None
+    return sha256_file(path)
+
+
+def payload_path_ok(raw: str) -> Path | None:
+    """The stored payload path is only ever hashed, and only when it is an
+    absolute path whose real parent directory is named `.agent-skills`."""
+    try:
+        p = Path(raw)
+        if not p.is_absolute():
+            return None
+        real = p.resolve()
+    except (OSError, RuntimeError):
+        return None
+    return real if real.parent.name == STATE_DIR.name else None
+
+
+def payload_verdict(entry: dict, budget: int | None) -> tuple[str, object]:
+    """Decide whether an entry's stored payload can be served.
+
+    Returns ("legacy", None) for an entry without payload fields,
+    ("ok", payload_dict) when everything still matches, else
+    ("stale", reason)."""
+    if "payload_path" not in entry:
+        return "legacy", None
+    real = payload_path_ok(entry["payload_path"])
+    if real is None:
+        return "stale", "payload-path-outside-agent-skills"
+    if not real.is_file():
+        return "stale", "payload-missing"
+    if sha256_bytes_file(real) != entry.get("payload_sha256"):
+        return "stale", "payload-changed"
+    for rel, recorded in (entry.get("source_checksums") or {}).items():
+        if source_checksum(rel) != recorded:
+            return "stale", f"source-changed:{rel}"
+    if entry.get("compiler_checksum") != sha256_file(COMPILER_FILE):
+        return "stale", "compiler-changed"
+    if entry.get("payload_budget") != budget:
+        return "stale", "budget-changed"
+    skills = entry.get("skills", [])
+    degraded = entry.get("degraded", [])
+    return "ok", {
+        "path": str(real),
+        "bytes": entry.get("payload_bytes"),
+        "sections": entry.get("payload_sections", []),
+        "degraded": degraded,
+        "metadata": {
+            "resolutions_applied": [],
+            "dropped_for_budget": entry.get("payload_dropped", []),
+        },
+    }
 
 
 # --------------------------------------------------------- gather (T1/T2/T4/T5)
@@ -512,12 +594,22 @@ def cmd_lookup(args):
 
     entry = routing["entries"].get(fp)
 
+    stale_reason = None
+    compile_needed = True
+    payload_env = None
     if entry is None:
         status, payload = "miss", None
-    elif entry_is_fresh(entry):
-        status, payload = "hit", entry
-    else:
+    elif not entry_is_fresh(entry):
         status, payload = "stale", None
+        stale_reason = "vocab-or-index-changed"
+    else:
+        verdict, detail = payload_verdict(entry, args.budget)
+        if verdict == "stale":
+            status, payload, stale_reason = "stale", None, detail
+        else:
+            status, payload = "hit", entry
+            if verdict == "ok":
+                compile_needed, payload_env = False, detail
 
     # Explicit-flags mode forces fallback: false — the user's flags are the load
     # surface regardless of what gather() could observe on the signal surface.
@@ -532,7 +624,12 @@ def cmd_lookup(args):
         "confidence": signals["confidence"],
         "fallback": effective_fallback,
         "routing": payload,
+        "compile_needed": compile_needed,
     }
+    if stale_reason:
+        result["stale_reason"] = stale_reason
+    if payload_env is not None:
+        result["payload"] = payload_env
     if flags:
         result["flags"] = sorted(flags)
     print(json.dumps(result, indent=2))
@@ -617,6 +714,38 @@ def cmd_write(args):
     }
     if flags:
         entry["flags"] = sorted(flags)
+    if args.payload:
+        pay = Path(args.payload).resolve()
+        digest = sha256_bytes_file(pay)
+        if digest is None:
+            print(f"Error: --payload file unreadable: {args.payload}", file=sys.stderr)
+            sys.exit(1)
+        if pay.parent.name != STATE_DIR.name:
+            print("Error: --payload must live in an .agent-skills/ directory",
+                  file=sys.stderr)
+            sys.exit(1)
+        headers, rels = [], []
+        mf = pay.with_suffix(".json")
+        try:
+            rows = json.loads(mf.read_text())
+            headers = [r["header"] for r in rows]
+            rels = [r["rel"] for r in rows]
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        dropped = []
+        if rels:
+            dropped = [s for s in dict.fromkeys(skills)
+                       if s not in rels and s not in entry["degraded"]]
+        entry.update({
+            "payload_path": str(pay),
+            "payload_sha256": digest,
+            "payload_bytes": pay.stat().st_size,
+            "payload_sections": headers,
+            "payload_dropped": dropped,
+            "payload_budget": args.payload_budget,
+            "source_checksums": {s: source_checksum(s) for s in skills},
+            "compiler_checksum": sha256_file(COMPILER_FILE),
+        })
     routing["entries"][args.fingerprint] = entry
     atomic_write(routing)
     print(json.dumps({"status": "written", "fingerprint": args.fingerprint}))
@@ -670,6 +799,9 @@ def main():
                     help="pin a concern or domain flag (repeatable); validated against vocab")
     lk.add_argument("--prose", metavar="TEXT",
                     help="prose argument; any non-empty value skips the cache (status: skip)")
+    lk.add_argument("--budget", type=int, default=None, metavar="BYTES",
+                    help="payload cap the caller will compile with; a stored payload "
+                         "built with a different cap is stale")
     lk.set_defaults(func=cmd_lookup)
 
     cl = sub.add_parser("classify")
@@ -692,6 +824,11 @@ def main():
                     help="flags used for this lookup (repeatable; recorded on entry)")
     wr.add_argument("--mode", choices=["auto", "explicit-flags"],
                     help="mode recorded on entry (default: explicit-flags if --flag, else auto)")
+    wr.add_argument("--payload", metavar="FILE",
+                    help="finished payload file (compile first); stores its hash and "
+                         "source checksums so a hit can skip the compile")
+    wr.add_argument("--payload-budget", type=int, default=None, metavar="BYTES",
+                    help="--budget the payload was compiled with (omit if none)")
     # accepted for CLI symmetry with lookup/classify, then ignored: the routing
     # cache is per-install and keyed by fingerprint alone, never per-project.
     wr.add_argument("--project", help=argparse.SUPPRESS)

@@ -58,7 +58,7 @@ selected at Step 1:
 
 Run `cook_cache.py lookup` to build a fingerprint from raw observable signals (files, frameworks, domain hints, concern hints) and check the cache. Extensions are emitted as signals for classification but are not part of the fingerprint.
 
-- **`hit`** — routing is cached and fresh. Skip to Step 2 then Step 6. No LLM.
+- **`hit`** — routing is cached and fresh. Skip to Step 2 then Step 6. No LLM. When the entry stores a finished payload (`compile_needed: false`), compile and `heal` are skipped too. A changed source standard, a missing payload file or a changed compiler makes the entry `stale`.
 - **`miss` | `stale`** — continue to classification (Step 1c).
 - **`fallback`** — cache corrupt. Use `signals.domain_hints` for greedy broad routing. Skip `write`/`heal`.
 

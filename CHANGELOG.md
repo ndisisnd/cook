@@ -4,6 +4,18 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · A repeat /cook run returns the finished standards payload without recompiling
+
+**perf(cache): reuse the compiled payload on a cache hit.**
+
+- `scripts/cook_cache.py`: `write --payload <file>` stores `payload_path`, `payload_sha256`, `payload_bytes`, `payload_sections`, per-skill `source_checksums` and a `compiler_checksum`. `lookup` returns `status: "hit"` with `compile_needed: false` and a `payload` object when every checksum still matches. A missing payload file, an edited source standard, a changed compiler, a different `--budget` or a payload path outside `.agent-skills/` returns `stale` with a `stale_reason`. Entries written before this change stay valid and return `compile_needed: true`. The fingerprint basis is unchanged.
+- `scripts/cook_compile.py`: `--manifest [PATH]` writes `payload-<fp>.json` beside the payload, one `{header, rel, bucket, byte_start, byte_end}` row per section. The envelope gains `manifest_path` and keeps all existing fields.
+- `refs/protocol-cook.md`, `refs/protocol-explicit.md`: on `compile_needed: false`, skip compile and `heal` and return the stored envelope. On a miss, compile first, then `write --payload`.
+- `ARCHITECTURE.md`: cache-hit line notes the skipped compile and the stale triggers.
+- Round trips on the `node-api` hit path: 4 → 2 (lookup, optional telemetry record). Miss path unchanged at 6.
+
+---
+
 ## [v1.1.0] — 2026-10-23 · Next.js standards match Next.js 16.4 and stop repeating React rules
 
 **perf(standards): refresh and condense the nextjs shelf.**

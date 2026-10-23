@@ -27,10 +27,12 @@ python3 scripts/cook_cache.py lookup --project <dir> \
 ```
 
 - **Flags only** (`explicit-flags`): normal hit/miss lookup with the flags
-  folded into the fingerprint. On `hit`, use `routing.skills` and go to
-  compile. On `miss`, build the path list below, then persist with the core
-  Step 5 `write` command (add `--flag <name>` per flag; `--mode` defaults to
-  `explicit-flags`), then compile.
+  folded into the fingerprint. On `hit` with `compile_needed: false`,
+  skip compile and `heal` and return `payload` as the envelope. On `hit` with
+  `compile_needed: true`, use `routing.skills` and compile. On `miss` or
+  `stale`, build the path list below, compile (core Step 6, with `--manifest`),
+  then persist with the core Step 5 `write` command (add `--flag <name>` per
+  flag and `--payload <compiled file>`; `--mode` defaults to `explicit-flags`).
 - **Any prose** (`explicit-prose`): the resolver returns `status: "skip"` —
   prose is uncacheable (the LLM's ref selection has no deterministic key).
   Build the path list, skip the cache write entirely, and compile.
