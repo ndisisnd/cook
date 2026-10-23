@@ -11,6 +11,7 @@ Usage
 -----
   cook_run.py [--project DIR] [--path P ...] [--flag NAME ...] [--prose TEXT]
               [--task TEXT] [--budget BYTES] [--intent LABEL] [--show-skills]
+              [--explain] [--args RAW]
   cook_run.py --resume FINGERPRINT --tags t1,t2
 
   --flag NAME   a flag without its leading dashes (react, security, react:hooks).
@@ -20,7 +21,16 @@ Usage
   --task TEXT   auto mode only: the task summary. Used to match _INDEX.md
                 keywords and to classify; it is NOT part of the fingerprint.
   --intent      diagnostic label for the cache entry and telemetry.
+  --args RAW    the raw text after `/cook`, unchanged. The script splits it into
+                flags and prose, so the caller needs no flag grammar. A token that
+                starts with `--` is a flag until a bare `--`; every other token is
+                prose (joined with single spaces). `--args -` reads stdin. Flags
+                merge with any --flag; prose joins any --prose. An invalid flag
+                fails exactly as --flag does (exit 1, valid list on stderr).
   --show-skills adds the skill list to the envelope (debugging, tests).
+  --explain     adds an `explain` object: per loaded skill file why it loaded
+                (route tag + matched alias, file pattern, keyword, or flag), and
+                per dropped sibling why not. No other envelope field changes.
   --resume/--tags
                 finish a run that stopped with needs_llm. --tags are canonical
                 tags from vocab/tag-vocabulary.json; they are added to the
@@ -31,7 +41,8 @@ Output: one compact JSON envelope on stdout:
   mode, status (hit|miss|stale|skip|needs_llm), fingerprint,
   payload {path, bytes, sections}, manifest_path, degraded,
   dropped_for_budget, needs_llm, platform_ambiguous,
-  stale_reason (when stale), llm_input (only when needs_llm).
+  stale_reason (when stale), llm_input (only when needs_llm),
+  explain (only with --explain).
 
 Exit codes: 0 ok, 1 invalid flag (message on stderr), 2 usage or internal error.
 Telemetry is best-effort: a failure there never changes the exit code or envelope.
@@ -50,6 +61,37 @@ import cook_cache  # noqa: E402
 import cook_compile  # noqa: E402
 import cook_route  # noqa: E402
 import cook_telemetry  # noqa: E402
+
+
+def parse_raw_args(raw: str) -> tuple[list[str], str]:
+    """Split the text after `/cook` into (flags, prose). Flags keep no dashes.
+    `--x` tokens are flags until a bare `--`; everything else is prose."""
+    flags: list[str] = []
+    prose: list[str] = []
+    rest = False
+    for tok in raw.split():
+        if rest:
+            prose.append(tok)
+        elif tok == "--":
+            rest = True
+        elif tok.startswith("--") and tok.strip("-"):
+            flags.append(tok.lstrip("-"))
+        else:
+            prose.append(tok)
+    return flags, " ".join(prose)
+
+
+def build_explain(ctx: dict, skills, fallback: bool) -> dict:
+    """Why-loaded report for `skills`; mirrors how the list was derived."""
+    flags = ctx["flags"]
+    sig = ctx["signals"]
+    text = ctx["prose"] if flags else (ctx["prose"] or ctx["task"])
+    matched = {}
+    if not flags:
+        matched = cook_cache.do_classify(text, sig, ctx.get("resume_tags"))["matched"]
+    paths = [] if flags else sig["files"]
+    return cook_route.explain(list(skills), flags=flags, text=text, paths=paths,
+                              matched=matched, fallback=fallback)
 
 
 def pending_file(fp: str) -> Path:
@@ -138,6 +180,8 @@ def finish(ctx: dict, *, status, fp, skills, tags, confidence, fallback,
                    skills=skills if ctx["show_skills"] else None)
     if cache_error:
         env["cache_error"] = cache_error
+    if ctx.get("explain"):
+        env["explain"] = build_explain(ctx, skills, fallback)
     return env
 
 
@@ -147,6 +191,7 @@ def needs_llm_envelope(ctx, fp, cl, signals):
         "project": str(ctx["project"]), "paths": ctx["paths"], "flags": ctx["flags"],
         "prose": ctx["prose"], "task": ctx["task"], "budget": ctx["budget"],
         "intent": ctx["intent"], "show_skills": ctx["show_skills"],
+        "explain": ctx.get("explain", False),
     }), encoding="utf-8")
     env = envelope(mode=ctx["mode"], status="needs_llm", fp=fp, payload=None,
                    manifest=None, degraded=[], dropped=[],
@@ -172,6 +217,8 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
     flags = ctx["flags"]
     prose = ctx["prose"]
     signals = cook_cache.gather(ctx["paths"], project)
+    ctx["signals"] = signals
+    ctx["resume_tags"] = resume_tags
     ctx["mode"] = ("explicit-prose" if prose else
                    "explicit-flags" if flags else "auto")
 
@@ -227,6 +274,9 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
                        skills=lk["routing"]["skills"] if ctx["show_skills"] else None)
         record_telemetry(project, ctx["intent"], ctx["prompt"],
                          lk["routing"]["skills"], ctx["mode"])
+        if ctx.get("explain"):
+            env["explain"] = build_explain(ctx, lk["routing"]["skills"],
+                                           lk["routing"].get("fallback", False))
         return env
 
     if status == "fallback":                      # corrupt cache: greedy, no write
@@ -275,8 +325,15 @@ def main(argv=None) -> int:
     ap.add_argument("--budget", type=int, default=None)
     ap.add_argument("--intent", default="unspecified")
     ap.add_argument("--show-skills", action="store_true")
+    ap.add_argument("--explain", action="store_true")
+    ap.add_argument("--args", dest="raw_args", default=None, metavar="RAW")
     ap.add_argument("--resume", metavar="FINGERPRINT")
     ap.add_argument("--tags", default="")
+    argv = list(sys.argv[1:] if argv is None else argv)
+    for i, a in enumerate(argv):                 # `--args --react x` would parse as a flag
+        if a == "--args" and i + 1 < len(argv):
+            argv[i:i + 2] = [f"--args={argv[i + 1]}"]
+            break
     args = ap.parse_args(argv)
 
     try:
@@ -295,15 +352,22 @@ def main(argv=None) -> int:
                    "flags": pend["flags"], "prose": pend["prose"],
                    "task": pend["task"], "budget": pend["budget"],
                    "intent": pend["intent"],
-                   "show_skills": pend["show_skills"] or args.show_skills}
+                   "show_skills": pend["show_skills"] or args.show_skills,
+                   "explain": pend.get("explain", False) or args.explain}
         else:
+            raw_flags, raw_prose = [], ""
+            if args.raw_args is not None:
+                raw = sys.stdin.read() if args.raw_args == "-" else args.raw_args
+                raw_flags, raw_prose = parse_raw_args(raw)
             ctx = {
                 "project": Path(args.project).resolve() if args.project else Path.cwd(),
                 "paths": args.path,
-                "flags": sorted({f.lstrip("-") for f in args.flag if f.strip("-")}),
-                "prose": args.prose.strip(), "task": args.task.strip(),
+                "flags": sorted({f.lstrip("-") for f in args.flag + raw_flags
+                                 if f.strip("-")}),
+                "prose": " ".join(x for x in (args.prose.strip(), raw_prose) if x),
+                "task": args.task.strip(),
                 "budget": args.budget, "intent": args.intent,
-                "show_skills": args.show_skills,
+                "show_skills": args.show_skills, "explain": args.explain,
             }
             if ctx["flags"]:
                 cook_cache.check_flags(ctx["flags"])

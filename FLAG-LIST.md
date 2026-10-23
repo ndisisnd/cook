@@ -4,6 +4,22 @@ Complete list of every valid `/cook` flag. Generated from `vocab/tag-vocabulary.
 
 ---
 
+## Passing flags to the script
+
+An agent does not need the flag grammar. It passes the raw text after `/cook` unchanged:
+
+```
+python3 scripts/cook_run.py --project <dir> --args '--react --react:hooks fix re-renders'
+```
+
+- `--args` splits the text: a token that starts with `--` is a flag until a bare `--`; every other token is prose. `--args -` reads the text from stdin.
+- `--flag <name>` (no dashes) and `--prose <text>` still work and merge with `--args`.
+- An unknown flag exits 1 with `Error: unknown flag '<x>'` and the valid flag list on stderr.
+- `--explain` adds an `explain` object to the envelope: why each file loaded, and why sibling files did not.
+- Grammar for parsing by hand: [`refs/protocol-explicit.md`](refs/protocol-explicit.md). Path-list rules for building the list by hand: [`refs/protocol-manual.md`](refs/protocol-manual.md).
+
+---
+
 ## Management
 
 These flags do not load standards — they manage the optional telemetry log and

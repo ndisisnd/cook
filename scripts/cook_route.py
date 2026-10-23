@@ -226,3 +226,111 @@ def _dedupe(items: list[str]) -> list[str]:
             seen.add(i)
             out.append(i)
     return out
+
+
+# -------------------------------------------------------------------- explain
+
+def _split_skill(path: str):
+    """standards/<d>/SKILL.md -> (d, None); standards/<d>/refs/<r>.md -> (d, r)."""
+    parts = path.split("/")
+    if len(parts) == 3:
+        return parts[1], None
+    return parts[1], Path(parts[-1]).stem
+
+
+def index_reasons(domain: str, ref: str, paths: list[str], prose: str) -> list[str]:
+    """Why a domain _INDEX.md row selects `ref`: the file pattern + file, or keyword."""
+    out: list[str] = []
+    for row in index_rows(domain):
+        if ref not in row["refs"]:
+            continue
+        for pat in row["patterns"]:
+            if pattern_matches(pat, paths):
+                rx = glob_to_regex(pat)
+                hit = next((p for p in paths if rx.match(p)
+                            or ("/" not in pat and rx.match(p.rsplit("/", 1)[-1]))), "")
+                out.append(f"file pattern `{pat}` matches {hit}")
+        for kw in row["keywords"]:
+            if keyword_matches(kw, prose):
+                out.append(f"keyword '{kw}' in the task text")
+    return out
+
+
+def _tags_for(matched: dict, route: str) -> list[str]:
+    return [f"tag {t} (matched on '{m['matched_on']}')"
+            for t, m in sorted(matched.items()) if route in m["routes_to"]]
+
+
+def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
+            matched: dict, fallback: bool = False) -> dict:
+    """Why each skill file loaded and why sibling candidates did not.
+
+    Read-only: it never changes the skill list. `paths` and `text` must be the
+    ones the skill list was derived from (explicit flags use no paths). `matched`
+    is do_classify()["matched"] (empty for explicit flags). Returns
+    {"loaded": [{path, why: [..]}], "dropped": [{path, why}]}.
+    """
+    names = [f.lstrip("-") for f in flags]
+    subs: dict[str, set] = {}
+    for f in names:
+        if ":" in f:
+            d, r = f.split(":", 1)
+            subs.setdefault(d, set()).add(r)
+    loaded, domains = [], []
+    for s in skills:
+        d, ref = _split_skill(s)
+        if d not in domains:
+            domains.append(d)
+        why: list[str] = []
+        if names:                                   # explicit flags
+            if d == "global" and "global" in names:
+                why.append("flag --global (whole global shelf)")
+            elif d == "global":
+                why.append(f"flag --{ref} (concern ref)")
+            elif ref is None:
+                why.append(f"flag --{d} (shelf floor)")
+            else:
+                if ref in subs.get(d, ()):
+                    why.append(f"flag --{d}:{ref}")
+                if d in names and not subs.get(d) and not text:
+                    why.append(f"flag --{d} alone (full shelf)")
+                if d in names and text:
+                    why += index_reasons(d, ref, paths, text)
+        else:                                       # routed (auto or prose)
+            if d == "global" and ref is None:
+                why.append("P0: global SKILL.md loads on every auto run")
+            elif d == "global":
+                why += _tags_for(matched, f"concern:{ref}")
+                if not why and fallback:
+                    why.append("broad fallback: no domain resolved, every concern loads")
+            elif ref is None:
+                why += _tags_for(matched, f"domain:{d}")
+                if not why and fallback:
+                    why.append("broad fallback: domain named by a signal hint")
+            else:
+                why += index_reasons(d, ref, paths, text)
+        if not why:
+            why.append("kept from the cached routing entry (not re-derived)")
+        loaded.append({"path": s, "why": why})
+    have = set(skills)
+    dropped = []
+    for d in domains:
+        for r in refs_of(d):
+            p = rel(d, r)
+            if p in have:
+                continue
+            if names:
+                if subs.get(d):
+                    why = f"shelf suppressed: only the named --{d}:<ref> flags load"
+                elif d in names and text:
+                    why = "no _INDEX.md keyword matched the prose"
+                else:
+                    why = "no flag names it"
+            elif d == "global":
+                why = f"no concern:{r} route"
+            else:
+                why = ("no _INDEX.md file pattern or keyword matched"
+                       if any(r in row["refs"] for row in index_rows(d))
+                       else "no _INDEX.md row names this ref")
+            dropped.append({"path": p, "why": why})
+    return {"loaded": loaded, "dropped": dropped}

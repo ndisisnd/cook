@@ -23,12 +23,12 @@ gitignored and never shipped by the installer — purely local, runtime artifact
 The mechanical work lives in `scripts/cook_telemetry.py`; this ref is the
 protocol contract around it.
 
-## Management flags (intercept before Steps 1–6)
+## Management flags (intercept before the run)
 
 When a `/cook` invocation carries **only** one of the flags below — no other
 flags, no prose to compile — treat it as a management command: run the matching
-script call, print its stdout to the user, and **terminate**. Do not run the
-resolver, classifier, or compiler.
+script call, print its stdout to the user, and **terminate**. Do not run
+`cook_run.py`.
 
 | Flag | Action |
 |---|---|

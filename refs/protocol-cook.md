@@ -1,79 +1,38 @@
 # Cook Protocol
 
-Operational protocol for the `cook` orchestrator. `SKILL.md` is the thin entry
-point; follow this file exactly. Handle Step 0 (telemetry management flags)
-first. Then run `scripts/cook_run.py` once. It does the lookup, classify,
-skill derivation, compile, cache write and telemetry record in one process.
-The old step-by-step flow is in [`protocol-manual.md`](protocol-manual.md)
-(Codex fallback, humans).
+Read this file when `/cook` carries args or a telemetry flag. `SKILL.md` covers the plain run.
 
-### Step 0 — Telemetry management flags (intercept first)
+## Step 0: telemetry flags
 
-If the invocation carries a telemetry management flag — `--init`,
-`--enable-telemetry`, `--disable-telemetry`, or `--status` — read
-[`telemetry.md`](telemetry.md) and follow it. When such a flag is the whole
-invocation, run the matching command, print its output, and terminate (do not
-run `cook_run.py`). Otherwise strip the flag, run its command, then continue
-below with the remaining args. Telemetry is opt-in and off by default; `cook_run.py` records the fire itself.
+If the invocation carries `--init`, `--enable-telemetry`, `--disable-telemetry` or `--status`, read [`telemetry.md`](telemetry.md) and run its command with `--project <dir>`. If the flag is the whole invocation, print the output and stop. Otherwise strip the flag and continue with the remaining args. Telemetry is opt-in and off by default. `cook_run.py` records the fire itself.
 
-`--init` initialises a **local** telemetry store for the current repository so
-its cook calls record there instead of the global install store. Always pass the
-project directory (`--project <dir>`, the same one used for the resolver) to
-every telemetry call so local/global scope resolves correctly.
-
-| Mode | Condition | P0 loaded? | Cache? | Path |
-|---|---|---|---|---|
-| `auto` | no args | yes (unconditional) | yes | `cook_run.py` (no args) |
-| `explicit-flags` | flags only | no | yes | `protocol-explicit.md` → `cook_run.py --flag` |
-| `explicit-prose` | any prose (± flags) | no | no | `protocol-explicit.md` → `cook_run.py --flag` |
-
-### Run
+## Run
 
 ```
-python3 scripts/cook_run.py --project <dir> [--path <file> ...] [--task <task summary>] \
-  [--flag <name> ...] [--prose <text>] [--budget <bytes>] [--intent <label>]
+python3 scripts/cook_run.py --project <dir> [--path <file> ...] [--task "<summary>"] \
+  [--args '<text after /cook>'] [--budget <bytes>] [--intent <label>] [--explain]
 ```
 
-- No args: auto mode. Pass `--task` with the task summary so `_INDEX.md`
-  keywords can match.
-- Flags only: `--flag react --flag security` (names without the dashes). Read
-  [`protocol-explicit.md`](protocol-explicit.md) only to parse `/cook` args.
-- Any prose: `--prose <text>` (uncacheable).
+- No args: auto mode. Pass `--task`. Global P0 loads and the result is cached.
+- Any args: pass the text after `/cook`, unchanged, as `--args`. The script splits flags from prose, validates the flags and picks the files. Do not build a path list. If the text holds a single quote, use `--args -` and pipe the text on stdin.
+- Flags only: cached, no P0. Any prose: never cached (`status: skip`), no P0. Explicit args load exactly what they name.
+- An unknown flag exits 1 and prints the valid flags on stderr. Report that message; do not guess a flag.
+- `--explain` adds an `explain` object that says why each file loaded. Use it only when asked why.
 
-Stdout is one JSON envelope: `mode`, `status` (`hit|miss|stale|skip|needs_llm`),
-`fingerprint`, `payload` (`path`, `bytes`, `sections`), `manifest_path`,
-`degraded`, `dropped_for_budget`, `needs_llm`, `platform_ambiguous`.
+Stdout is one JSON envelope: `mode`, `status` (`hit|miss|stale|skip|needs_llm`), `fingerprint`, `payload` (`path`, `bytes`, `sections`), `manifest_path`, `degraded`, `dropped_for_budget`, `needs_llm`, `platform_ambiguous`.
 
-### Branch on `needs_llm`
+## needs_llm
 
-- `false` — done. Return the envelope.
-- `true` — no domain resolved, or Apple platform unclear. Read `llm_input`
-  (`vocab` path, raw signals, `matched_tags`). Pick canonical tags from the
-  vocab; never invent a tag. For `platform_ambiguous`, pick `ios` or `macos`
-  from the task; if the task does not say, pass no platform tag. Then run:
+`needs_llm: true` means no domain resolved, or the Apple platform is unclear. Read `llm_input` (`vocab` path, raw signals, `matched_tags`). Pick canonical tags from the vocab. Never invent a tag. For `platform_ambiguous`, pick `ios` or `macos` from the task. If the task does not say, pass no platform tag. Then run:
 
 ```
 python3 scripts/cook_run.py --resume <fingerprint> --tags <tag,tag,...>
 ```
 
-This is the only two-call path. The tags are added to the mechanical matches.
+This is the only two-call path.
 
-### Return
+## Return
 
-**Return the envelope — `payload`, `degraded`, `dropped_for_budget` — to the
-invoking agent. Never inline or restate the payload content**; the invoker
-reads the payload file itself. A non-empty `degraded` is a partial load: the
-surviving sections are on disk, P0 always loaded, and flagged files retry on
-the next invocation.
+Return the envelope (`payload`, `degraded`, `dropped_for_budget`) to the invoking agent. Never inline or restate the payload. A non-empty `degraded` is a partial load: the surviving sections are on disk and P0 always loads.
 
-A corrupt cache (`cache_corrupt: true` in the envelope) is handled by the
-script: it loads broad and skips the cache write. Standards still apply; only
-efficiency is lost.
-
-## Notes
-
-- Cook owns detection and composition only; rules live under `standards/`.
-- The fingerprint is built from raw observable signals only; the intent label
-  and task text are never in the key.
-- When in doubt about the change surface, trust git-derived `signals.files`
-  before widening the match.
+`cache_corrupt: true` in the envelope means the script loaded broad and skipped the cache write. Standards still apply; only efficiency is lost.

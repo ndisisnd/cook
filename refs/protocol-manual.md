@@ -6,7 +6,8 @@ Steps 1–6 below. Use this file when the model cannot run `cook_run.py` or when
 you want to run, check or debug each stage by hand. Every subcommand used
 below still works on its own. The skill list that `cook_run.py` derives follows
 the same rules as Steps 3–5 and the explicit path list; it lives in
-`scripts/cook_route.py`.
+`scripts/cook_route.py`. To see why a file loaded without running the stages
+by hand, add `--explain` to `cook_run.py`.
 
 Operational protocol for the `cook` orchestrator. `SKILL.md` is the thin entry
 point; follow this file exactly. Handle Step 0 (telemetry management flags)
@@ -193,8 +194,8 @@ fails CI when an `_INDEX.md` route targets a missing file.
 ## Explicit mode — manual resolver call
 
 For flags and/or prose the multi-step flow replaces core Steps 1–5 with the
-following; the path-list rules are in [`protocol-explicit.md`](protocol-explicit.md).
-Step 6 above is shared.
+following; the flag grammar is in [`protocol-explicit.md`](protocol-explicit.md)
+and the path-list rules are in the next section. Step 6 above is shared.
 
 ```
 python3 scripts/cook_cache.py lookup --project <dir> \
@@ -211,3 +212,47 @@ python3 scripts/cook_cache.py lookup --project <dir> \
 - **Any prose** (`explicit-prose`): the resolver returns `status: "skip"` —
   prose is uncacheable (the LLM's ref selection has no deterministic key).
   Build the path list, skip the cache write entirely, and compile.
+
+## Explicit mode — path list
+
+Moved here from `protocol-explicit.md` (v1.2.0). `cook_run.py` applies these
+rules itself (`scripts/cook_route.py`); build the list by hand only in the
+manual flow. The text below is verbatim.
+
+- `--global` → `standards/global/SKILL.md` + every `standards/global/refs/*.md`
+  — the complete global shelf, and the only explicit-mode opt-in to P0.
+- **Concern flag** (`--security`, `--auth`, `--crypto`, `--performance`, `--architecture`,
+  `--api-design`, `--error-handling`, `--debug`, `--cicd`) →
+  `standards/global/refs/<concern>.md` only (no P0 SKILL.md).
+- **Bare domain flag** (`--<domain>`) → `standards/<domain>/SKILL.md` **always**
+  loads; which refs load beside it depends on what else names that same domain:
+  - **Alone** — no prose and no `--<domain>:<ref>` for it → every
+    `standards/<domain>/refs/*.md` (the **full shelf**).
+  - **+ one or more `--<domain>:<ref>` for the SAME domain** → the SKILL.md floor
+    **plus only the named refs**; the full shelf is **suppressed** (the other
+    `refs/*.md` do NOT load). The sub-ref flags select a subset on top of the
+    floor. Worked example:
+    `--macos --macos:architecture-and-state --macos:distribution` →
+    `standards/macos/SKILL.md`
+    + `standards/macos/refs/architecture-and-state.md`
+    + `standards/macos/refs/distribution.md`, and **nothing else** — none of the
+    other `standards/macos/refs/*.md` load.
+  - **+ prose** (and no sub-ref for it) → the SKILL.md floor plus the refs the
+    domain's `_INDEX.md` keyword table matches against the prose. Zero matched
+    refs still loads the SKILL.md — the flag guarantees the shelf entry. (If
+    both prose and `--<domain>:<ref>` name the same domain, load the SKILL.md
+    plus the **union** of the named refs and the prose-matched refs — both are
+    explicit selections, and the full shelf stays suppressed.)
+- **Sub-ref flag alone** (`--react:hooks` with NO bare `--react` present) →
+  `standards/<domain>/refs/<ref>.md` only; the domain SKILL.md does **NOT** load.
+  Pair it with the bare domain flag to add the SKILL.md floor:
+  `--react --react:hooks` → `standards/react/SKILL.md`
+  + `standards/react/refs/hooks.md` only — floor + that one ref, **not** the
+  full shelf.
+- **Prose without flags** → the script classifies the prose. Each
+  `concern:<name>` route loads `standards/global/refs/<name>.md`; each
+  `domain:<name>` route loads that domain's `SKILL.md` plus the refs its
+  `_INDEX.md` matches against the prose. Only when `needs_llm: true` (nothing
+  resolved): canonicalise the tags and `--resume`. Never invent paths.
+
+The script applies these rules; you do not build the path list yourself.

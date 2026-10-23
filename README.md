@@ -93,14 +93,18 @@ flowchart TD
     cache -->|miss| classify --> route --> load --> compile
 ```
 
+Your coding agent runs **one script call**, `scripts/cook_run.py`. The script does every stage below in a single process, so the agent reads a short protocol and makes one tool call instead of five or six.
+
 1. **Ask your coding agent to invoke `/cook`:** `cook` will check file paths, prose descriptions, git context.
-2. **Build a fingerprint:** the raw signals are hashed and checked against the cache. A match skips classification entirely — straight to compile.
-3. **Classify intent:** if it's a miss, `cook` classifies the intent (e.g. "add a feature" vs. "fix a bug"), then routes to the relevant domain and concern standards.
+2. **Build a fingerprint:** the raw signals are hashed and checked against the cache. A match skips classification entirely — straight to the stored payload.
+3. **Classify intent:** if it's a miss, `cook` matches the signals against the tag vocabulary, then routes to the relevant domain and concern standards. Only when nothing resolves does the script stop with `needs_llm: true`; the agent then picks canonical tags and calls `cook_run.py --resume <fingerprint> --tags <list>` (the only two-call path).
 4. **Load global rules**: Global rules are always loaded first (e.g. SOLID principles, DRY, security) — no exceptions, regardless of cache state.
 5. **Load concern rules**: Concern rules are cross-cutting rules like security, error handling, performance, and API design. 
 6. **Load domain rules**: Domain rules for your programming language are loaded. Multiple domains can match at once.
-7. **Cache the result**: Routing decisions are written to cache so the next identical surface hits instantly. 
-8. **Compile and output**: A Python compiler stitches all the loaded rule files into one markdown blob for your agent to ingest. `cook` ends here!
+7. **Cache the result**: The routing decision and the finished payload are written to cache so the next identical surface hits instantly. 
+8. **Compile and output**: A Python compiler stitches all the loaded rule files into one markdown blob for your agent to ingest. The agent receives a small JSON envelope with the payload path. `cook` ends here!
+
+The agent's protocol text is small: `SKILL.md` (about 1 KB of instructions) plus `refs/protocol-cook.md` when `/cook` carries args. The old step-by-step flow stays in [`refs/protocol-manual.md`](refs/protocol-manual.md) for Codex and for humans who want to run each stage by hand.
 
 ### Usage
 
@@ -119,6 +123,16 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 **Domains (13):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--ios`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
 
 **Sub-ref flags:** `--<domain>:<ref>` loads a single ref from a domain shelf without loading the domain SKILL.md. The `ref` is a file stem under `standards/<domain>/refs/`. Pair it with the bare domain flag to add the SKILL.md floor + only the named ref (the full shelf is suppressed): `--react --react:hooks` → `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only. Name several sub-refs to pick a wider subset: `--react --react:hooks --react:state-management`.
+
+Your agent does not parse these flags. It passes the text after `/cook` to `cook_run.py --args '<text>'`, and the script splits flags from prose, rejects unknown flags, and picks the files. [`refs/protocol-explicit.md`](refs/protocol-explicit.md) holds the grammar for anyone parsing by hand.
+
+#### Why did that file load?
+
+Add `--explain` to `cook_run.py` to see the reason for every file. The envelope gains an `explain` object: for each loaded file, the route tag and matched alias, the `_INDEX.md` file pattern or keyword, or the flag that loaded it; for each file in the same shelf that did not load, why not. Nothing else in the envelope changes.
+
+```bash
+python3 scripts/cook_run.py --project . --task "add a POST /orders route" --explain
+```
 
 #### Examples
 

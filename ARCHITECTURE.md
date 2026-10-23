@@ -5,14 +5,19 @@
 Cook is a keyword-driven standards orchestrator with a cache-first control flow. Cook resolves observable signals, checks a fingerprint cache before any classification, and compiles a single standards payload from the matching rule libraries under `standards/`. The compiled output is deterministic and model-free on cache hits.
 
 ```
-SKILL.md (cook)               thin entry point: identity + pointer
+SKILL.md (cook)               thin entry point: the one command + the needs_llm branch
 ├── refs/
-│   └── protocol-cook.md      full operational protocol (mode table, Steps 0–6)
+│   ├── protocol-cook.md      run command, telemetry flags, needs_llm rule (read when /cook has args)
+│   ├── protocol-explicit.md  flag/prose grammar (for parsing by hand; the script does it)
+│   ├── protocol-manual.md    step-by-step flow + explicit path-list rules (Codex, humans)
+│   └── telemetry.md          opt-in fire log contract
 ├── vocab/
 │   ├── intent-vocabulary.json   intent label constraints
 │   └── tag-vocabulary.json      canonical tag set + routes_to mappings
 ├── scripts/
-│   ├── cook_cache.py            resolver: fingerprint, lookup, write, heal
+│   ├── cook_run.py              single-call entry point: the whole pipeline in one process
+│   ├── cook_route.py            skill-list rules (auto routes, explicit flags) + --explain reasons
+│   ├── cook_cache.py            resolver: fingerprint, lookup, classify, write, heal
 │   ├── cook_compile.py          compiler: dedup, bucket, concatenate
 │   └── check_index_routes.py    CI validator: _INDEX.md route integrity
 └── standards/
@@ -43,50 +48,39 @@ disk, two agents, no drift.
 
 ## Protocol
 
-Step 0 intercepts the telemetry management flags (`--enable-telemetry`,
-`--disable-telemetry`, `--status`) before any routing — see
-[Telemetry](#telemetry). Otherwise cook operates in three control-flow paths,
-selected at Step 1:
+The model runs one command, `scripts/cook_run.py`, and reads one JSON envelope. The script does the resolve, classify, route, compile, cache-write and telemetry work in a single process, importing `cook_cache`, `cook_compile`, `cook_route` and `cook_telemetry` as modules. Every old subcommand still works on its own for Codex and debugging; the step-by-step text is in `refs/protocol-manual.md`.
+
+The only model-side branching is Step 0 (the telemetry management flags `--init`, `--enable-telemetry`, `--disable-telemetry`, `--status`, intercepted before routing; see [Telemetry](#telemetry)) and the `needs_llm` branch below.
 
 | Path | Condition | LLM? | Cache write? |
 |---|---|---|---|
 | **Cache hit** | fingerprint present and fresh | No | No |
-| **Miss** | no cache entry or stale | Yes (classify only) | Yes |
+| **Miss** | no cache entry or stale | Only if nothing resolves (`needs_llm`) | Yes |
 | **Fallback** | cache file corrupt | No | No |
 
-### Step 1 — Resolve and branch
+### What `cook_run.py` does
 
-Run `cook_cache.py lookup` to build a fingerprint from raw observable signals (files, frameworks, domain hints, concern hints) and check the cache. Extensions are emitted as signals for classification but are not part of the fingerprint.
+1. **Resolve.** Builds a fingerprint from raw observable signals (files, frameworks, domain hints, concern hints) and checks the cache. Extensions are emitted as signals for classification but are not part of the fingerprint.
+2. **Hit.** The routing is cached and fresh, and the entry stores a finished payload: the script returns that payload with no classification, no compile and no `heal`. A changed source standard, a missing payload file or a changed compiler makes the entry `stale`.
+3. **Miss or stale.** Matches the signals against the aliases in `vocab/tag-vocabulary.json`. The resulting canonical tags route to `concern:*` and `domain:*` targets.
+4. **Skill list.** `cook_route.py` derives it: global `SKILL.md` (P0, auto mode only), each routed concern ref, each routed domain `SKILL.md` plus the refs its `_INDEX.md` selects by file pattern or keyword. Explicit flags use the path-list rules in `cook_route.py` instead.
+5. **Compile.** `cook_compile.py` deduplicates, buckets by layer (Universal → Domain → Concern), strips YAML frontmatter, concatenates with terse section headers, and writes the markdown and a section manifest. The payload content never transits the model's context.
+6. **Persist.** Writes the routing entry with the payload path (miss path only; never on a corrupt cache or for prose). Read failures are not routing failures and do not suppress the write; the compiler's `degraded` list is stamped onto the entry.
+7. **Record.** Best-effort telemetry; a failure never changes the exit code or the envelope.
 
-- **`hit`** — routing is cached and fresh. Skip to Step 2 then Step 6. No LLM. When the entry stores a finished payload (`compile_needed: false`), compile and `heal` are skipped too. A changed source standard, a missing payload file or a changed compiler makes the entry `stale`.
-- **`miss` | `stale`** — continue to classification (Step 1c).
-- **`fallback`** — cache corrupt. Use `signals.domain_hints` for greedy broad routing. Skip `write`/`heal`.
+On a corrupt cache (`cache_corrupt: true`) the script routes greedily: P0, every domain in `signals.domain_hints`, and all concern refs. It skips the cache write.
 
-On a **miss**, classify the intent against `vocab/intent-vocabulary.json` and canonicalize signals onto tags from `vocab/tag-vocabulary.json`. These `canonical_tags` are the only input to Steps 3–4. Tags not in the vocabulary are dropped.
+### The `needs_llm` branch
 
-### Step 2 — Load global P0 (always)
+When no `domain:*` route resolves, or shared Apple vocabulary is ambiguous between iOS and macOS, the script stops after classify and returns `needs_llm: true` with `llm_input` (vocab path, raw signals, matched tags). The model picks canonical tags (never invents one) and runs `cook_run.py --resume <fingerprint> --tags <list>`. This is the only two-call path.
 
-Load `standards/global/SKILL.md`. Unconditional — applies on every path including fallback and weak classification.
+### The envelope
 
-### Step 3 — Match global concerns
+`mode`, `status` (`hit|miss|stale|skip|needs_llm`), `fingerprint`, `payload` (`path`, `bytes`, `sections`), `manifest_path`, `degraded`, `dropped_for_budget`, `needs_llm`, `platform_ambiguous`. Optional: `stale_reason`, `llm_input`, `cache_corrupt`, `ignored_tags`, `skills` (`--show-skills`) and `explain` (`--explain`).
 
-For each `canonical_tag` routing to a `concern:*` target, load the matched ref under `standards/global/refs/`. On `fallback: true`, load the full concern set.
+`--explain` adds one object: `loaded` (per file, why it loaded: route tag and matched alias, `_INDEX.md` file pattern or keyword, flag, P0, or "kept from the cached routing entry") and `dropped` (per sibling file in the loaded shelves, why not). It changes no other envelope field and not the payload.
 
-### Step 4 — Match domains
-
-For each `canonical_tag` routing to a `domain:*` target, load that domain's `SKILL.md` plus matched `refs/*.md`. Multiple domains may match simultaneously. On `fallback: true`, load all domains in `signals.domain_hints`.
-
-### Step 5 — Write cache (miss path only)
-
-Run `cook_cache.py write` with the full skills path list, canonical tags, intent, confidence, and per-index checksums. The entry records the complete routing; read failures are not routing failures and do not suppress the write.
-
-### Step 6 — Compile and self-heal
-
-Run `cook_compile.py --out <file>` with the path list from Steps 2–4 (or `routing.skills` on a hit). The compiler deduplicates, buckets by layer (Universal → Domain → Concern), strips YAML frontmatter, concatenates with terse section headers, and writes the assembled markdown to the `--out` file. Stdout is a compact JSON summary envelope: `path`, `bytes`, `sections`, `degraded`, `metadata` — the payload content never transits the model's context inline.
-
-After compiling, run `cook_cache.py heal` to stamp the compiler's `degraded` list onto the cache entry, except on the corrupt-cache fallback path where no trusted entry exists. On a cache hit this clears previously-flagged files that now read and sets newly missing ones — keeping the entry current without re-classification.
-
-Return the summary envelope (path + sections + degraded) to the invoking agent — never the payload content itself; the invoker reads the payload file. A non-empty `degraded` is a partial load; surviving sections are still delivered and P0 always loads.
+The model returns the envelope (`payload`, `degraded`, `dropped_for_budget`) to the invoking agent, never the payload content. A non-empty `degraded` is a partial load; surviving sections are still delivered and P0 always loads.
 
 ---
 
@@ -102,6 +96,8 @@ Cook supports three invocation modes, selected by the presence of flags and/or p
 
 **"Any explicit args"** (flags, prose, or both) is the single break-point for
 P0 and auto-detection. The contract is "load exactly what I named."
+
+The model does not parse these args. It passes the text after `/cook` to `cook_run.py --args '<text>'`; the script splits flags from prose (a token that starts with `--` is a flag until a bare `--`) and applies the rules below. `refs/protocol-explicit.md` holds the grammar for parsing by hand.
 
 **Simple flags** are validated against `valid_flags()`, which strips any
 `concern:` / `domain:` / `shelf:` prefix from every `routes_to` target in
@@ -157,7 +153,7 @@ defeats the cache's core guarantee that a hit never wakes the model).
 | File | Role |
 |---|---|
 | `vocab/intent-vocabulary.json` | Exhaustive list of valid intent labels. Classification is constrained to this set. |
-| `vocab/tag-vocabulary.json` | Canonical tag set. Each tag carries a `routes_to` field (`concern:*` or `domain:*`) that drives Steps 3–4. Tags not in this file are dropped at canonicalization. |
+| `vocab/tag-vocabulary.json` | Canonical tag set. Each tag carries a `routes_to` field (`concern:*` or `domain:*`) that drives routing. Tags not in this file are dropped at canonicalization. |
 
 ---
 
@@ -165,6 +161,8 @@ defeats the cache's core guarantee that a hit never wakes the model).
 
 | Script | Role |
 |---|---|
+| `scripts/cook_run.py` | Single-call entry point. Runs lookup, classify, route, compile, cache write and telemetry in one process; owns `--args` parsing, `--resume`, `--show-skills` and `--explain`. |
+| `scripts/cook_route.py` | Skill-list rules (auto routes with `_INDEX.md` pattern and keyword matching; explicit-flag path list) and the `explain` reasons. Shared with `verify/routing_parity.py`. |
 | `scripts/cook_cache.py` | Implements the resolver (file-derivation cascade, fingerprint, lookup), cache writer (atomic tmp+rename, checksum stamps), and `heal` sub-command (degraded-flag reconciliation). |
 | `scripts/cook_compile.py` | Deterministic compiler: dedup, layer bucketing, frontmatter stripping, concatenation, degraded tracking. No LLM involvement. |
 | `scripts/check_index_routes.py` | CI / pre-commit validator. Fails the build if any `_INDEX.md` route target points at a missing file — upstream prevention for broken routing. |
@@ -187,11 +185,11 @@ protocol contract; `scripts/cook_telemetry.py` does the mechanical work.
   and its cook calls record there; every other repo falls back to the global
   store. Every telemetry call takes `--project <dir>` for resolution; `--global`
   forces the install store. This mirrors the local-vs-global pref pattern.
-- **Management flags** (Step 0) — `--init`, `--enable-telemetry`,
+- **Management flags** (Step 0, `refs/protocol-cook.md`) — `--init`, `--enable-telemetry`,
   `--disable-telemetry`, `--status` are intercepted before routing. Alone they
   run and terminate; combined with load args they run first, then the remaining
   args load normally. `--init` creates + enables the local store (idempotent).
-- **Record step** (end of Step 6) — best-effort `record` appends one entry per
+- **Record step** (end of every run; `cook_run.py` does it itself) — best-effort `record` appends one entry per
   successful fire: `ts`, `intent` (a `vocab/intent-vocabulary.json` label),
   `prompt` (the raw task summary), `mode`, and `standards` (folder → the
   standards loaded within it, `SKILL` or `refs/<name>`). A no-op when disabled.

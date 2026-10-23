@@ -4,6 +4,22 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-23 · The model reads about 3 KB of protocol per /cook call instead of 6–10 KB
+
+**perf(protocol): move routing steps into cook_run, slim the protocol docs.**
+
+- `SKILL.md`: body cut to the essentials: what cook is, the one command, the `needs_llm` / `platform_ambiguous` branch, the return rule. It points to `refs/protocol-cook.md` only when `/cook` carries args or a telemetry flag. Frontmatter is byte-identical.
+- `refs/protocol-cook.md`: 3,673 B to 2,411 B. Keeps Step 0 (telemetry flags), the run command, the `needs_llm` canonicalisation rule and the corrupt-cache note.
+- `refs/protocol-explicit.md`: 4,285 B to 1,593 B. Keeps only the flag grammar. The path-list rules moved verbatim to a new "Explicit mode — path list" section of `refs/protocol-manual.md`, because `cook_route.py` already applies them.
+- `refs/protocol-manual.md`: gains the moved path-list section; notes `--explain`.
+- `scripts/cook_run.py`: new `--args "<raw text after /cook>"` (or `--args -` for stdin). The script splits flags from prose with the grammar the protocol used to teach (`--x` is a flag until a bare `--`), so the model never reads the grammar. Invalid flags fail with the same exit code and message as `--flag`. `--flag` and `--prose` still work and merge.
+- `scripts/cook_run.py`: new `--explain` adds an `explain` object to the envelope (`loaded`: why each file loaded; `dropped`: why sibling files did not). No other envelope field and no payload byte changes.
+- `scripts/cook_route.py`: new `explain()` and `index_reasons()` give the reasons: route tag with the matched alias, `_INDEX.md` file pattern or keyword, flag, P0.
+- `README.md`, `ARCHITECTURE.md`, `FLAG-LIST.md`, `llms.txt`, `refs/telemetry.md`: describe the single call, `--args`, `--explain` and `protocol-manual.md`; step-by-step lookup/classify/write/compile/heal text aimed at the model removed.
+- Protocol bytes read per call (SKILL body + protocol-cook): auto 5,958 B and flags 10,243 B before, 3,285 B for both now. Routing parity unchanged (0 fixtures changed); payloads byte-identical.
+
+---
+
 ## [Unreleased] — 2026-10-23 · a /cook run now costs one script call instead of five or six
 
 **perf(scripts): add cook_run.py single-call resolver.**
