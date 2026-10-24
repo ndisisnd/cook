@@ -52,6 +52,20 @@ metadata:
 
 # Cook Orchestrator
 
-Cook is the single entry point for standards. It does not hold rules of its own — it detects what a task touches and composes a payload from the rule libraries under `standards/`. There are no mode flags (`--frontend` / `--backend` / `--full-stack`); layer concerns are matched by keyword, so a task that touches both UI and server simply matches concerns and domains from both sides.
+Cook turns a code task into one standards payload. It holds no rules itself. It detects what the task touches and compiles rules from `standards/`.
 
-**Before doing anything, read [`refs/protocol-cook.md`](refs/protocol-cook.md) and follow it exactly.** It holds the mode branch table and the default (auto) protocol; when the invocation carries flags or prose it will direct you to [`refs/protocol-explicit.md`](refs/protocol-explicit.md). Do not act on this skill without it; the protocol is mandatory, not a reference aside.
+Run one command:
+
+```
+python3 scripts/cook_run.py --project <dir> --task "<task summary>"
+```
+
+Read the JSON envelope it prints:
+
+- `needs_llm: true`: pick tags from the `llm_input.vocab` file, never invent one. Run `cook_run.py --resume <fingerprint> --tags a,b`. If `platform_ambiguous` is true, add `ios` or `macos` only when the task says which.
+- Otherwise the run is done.
+
+Return the envelope. Never inline the payload; the invoker reads the payload file.
+
+`/cook` args or a telemetry flag (`--init`, `--status`...): read [`refs/protocol-cook.md`](refs/protocol-cook.md) first.
+The step-by-step flow for a model that cannot run the script is [`refs/protocol-manual.md`](refs/protocol-manual.md).

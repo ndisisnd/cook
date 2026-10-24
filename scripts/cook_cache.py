@@ -12,7 +12,13 @@ Subcommands
       observable signals (NO intent label), and check the cache. Prints a JSON
       blob to stdout: status (hit|miss|stale|skip), mode (auto|explicit-flags|
       explicit-prose), fingerprint, signals, confidence, fallback, and on a hit
-      the cached routing.
+      the cached routing. A hit carries compile_needed: false plus payload
+      {path, bytes, sections, degraded, metadata} when the entry stores a
+      finished payload that still verifies (file present under .agent-skills/,
+      sha256 equal, every source checksum equal, compiler unchanged, budget
+      equal). Any mismatch gives status "stale" with stale_reason. A legacy
+      entry without payload fields is a hit with compile_needed: true.
+      --budget BYTES must equal the budget the payload was compiled with.
 
       --flag NAME   Pin a specific concern, domain, or global shelf (repeatable).
                     Simple flags (--security, --react, --global) are validated
@@ -26,8 +32,15 @@ Subcommands
   write --fingerprint F --intent I --skills S[,S...] [--tags T,...]
         [--confidence high|medium|low] [--fallback] [--degraded P,...]
         [--index IDX,...] [--flag NAME ...] [--mode MODE]
+        [--payload FILE [--payload-budget BYTES]]
       Atomically upsert a cache entry (tmp + os.replace) with a tag-vocabulary
       checksum and per-index checksums. Records flags and mode on the entry.
+      --payload FILE (Phase 2) also stores the finished payload: payload_path
+      (absolute), payload_sha256, payload_bytes, payload_sections (headers read
+      from the sibling manifest `<payload stem>.json` that cook_compile.py
+      --manifest writes; [] when absent), source_checksums {skill path: sha256}
+      for every skill, and compiler_checksum. Run compile first so FILE exists.
+      Without --payload the entry is a legacy entry (routing only).
 
   classify [--prose TEXT] [--path P ...] [--project DIR]
       Mechanical canonicalization (miss path). Matches prose + gathered signals
@@ -62,6 +75,9 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cook_route  # noqa: E402
+
 COOK_ROOT = Path(__file__).resolve().parent.parent
 VOCAB_FILE = COOK_ROOT / "vocab" / "tag-vocabulary.json"
 STATE_DIR = COOK_ROOT / ".agent-skills"
@@ -91,6 +107,75 @@ def sha256_file(path: Path) -> str | None:
         return sha256_text(path.read_text())
     except OSError:
         return None
+
+
+def sha256_bytes_file(path: Path) -> str | None:
+    """Hash raw bytes (payloads are compared byte for byte)."""
+    try:
+        return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+COMPILER_FILE = COOK_ROOT / "scripts" / "cook_compile.py"
+
+
+def source_checksum(rel: str) -> str | None:
+    """sha256 of one skill file. A path that leaves the cook root is never
+    read (same bound the compiler applies); it records None like a missing file."""
+    path = (COOK_ROOT / rel).resolve()
+    if not path.is_relative_to(COOK_ROOT.resolve()):
+        return None
+    return sha256_file(path)
+
+
+def payload_path_ok(raw: str) -> Path | None:
+    """The stored payload path is only ever hashed, and only when it is an
+    absolute path whose real parent directory is named `.agent-skills`."""
+    try:
+        p = Path(raw)
+        if not p.is_absolute():
+            return None
+        real = p.resolve()
+    except (OSError, RuntimeError):
+        return None
+    return real if real.parent.name == STATE_DIR.name else None
+
+
+def payload_verdict(entry: dict, budget: int | None) -> tuple[str, object]:
+    """Decide whether an entry's stored payload can be served.
+
+    Returns ("legacy", None) for an entry without payload fields,
+    ("ok", payload_dict) when everything still matches, else
+    ("stale", reason)."""
+    if "payload_path" not in entry:
+        return "legacy", None
+    real = payload_path_ok(entry["payload_path"])
+    if real is None:
+        return "stale", "payload-path-outside-agent-skills"
+    if not real.is_file():
+        return "stale", "payload-missing"
+    if sha256_bytes_file(real) != entry.get("payload_sha256"):
+        return "stale", "payload-changed"
+    for rel, recorded in (entry.get("source_checksums") or {}).items():
+        if source_checksum(rel) != recorded:
+            return "stale", f"source-changed:{rel}"
+    if entry.get("compiler_checksum") != sha256_file(COMPILER_FILE):
+        return "stale", "compiler-changed"
+    if entry.get("payload_budget") != budget:
+        return "stale", "budget-changed"
+    skills = entry.get("skills", [])
+    degraded = entry.get("degraded", [])
+    return "ok", {
+        "path": str(real),
+        "bytes": entry.get("payload_bytes"),
+        "sections": entry.get("payload_sections", []),
+        "degraded": degraded,
+        "metadata": {
+            "resolutions_applied": [],
+            "dropped_for_budget": entry.get("payload_dropped", []),
+        },
+    }
 
 
 # --------------------------------------------------------- gather (T1/T2/T4/T5)
@@ -338,6 +423,7 @@ def gather(explicit_paths: list[str], project: Path) -> dict:
     return {
         "source": source,
         "files": files,
+        "content_hits": cook_route.scan_contents(project, files),
         "extensions": extensions(files),
         "frameworks": frameworks,
         "domain_hints": domain_hints,
@@ -397,8 +483,16 @@ def fingerprint(signals: dict, flags=None) -> str:
         "domain_hints": signals["domain_hints"],
         "concern_hints": signals["concern_hints"],
     }
+    if signals.get("content_hits"):
+        # v1.2.0 P5b: a file's content can select a ref (an inline test), so the
+        # key must change with it. Absent when nothing matched: old keys stay valid.
+        basis["content_hits"] = signals["content_hits"]
     if flags:
         basis["flags"] = sorted(flags)
+        # v1.2.0 P5: a bare domain flag now selects refs from `files`; entries
+        # built under the old full-shelf rule must not be served. Explicit-flags
+        # keys only; auto-mode keys stay byte-identical.
+        basis["flag_rules"] = 2
     return hashlib.sha256(json.dumps(basis, sort_keys=True).encode("utf-8")).hexdigest()[:16]
 
 
@@ -439,46 +533,62 @@ def entry_is_fresh(entry: dict) -> bool:
 
 # ----------------------------------------------------------------- commands
 
-def cmd_lookup(args):
-    project = Path(args.project).resolve() if args.project else Path.cwd()
-    signals = gather(args.path or [], project)
-    flags = args.flag or []
-    prose = (args.prose or "").strip()
+class CookError(Exception):
+    """A user-facing failure. `lines` are printed to stderr as-is by the CLI
+    wrapper, which then exits with `code`."""
 
-    # Validate flags: simple flags against vocab, compound domain:ref flags against disk.
-    if flags:
-        all_valid = valid_flags()
-        all_domains = valid_domain_flags()
-        errors = []
-        for f in flags:
-            if ":" in f:
-                domain_part, ref_part = f.split(":", 1)
-                if domain_part not in all_domains:
+    def __init__(self, lines, code=1):
+        super().__init__("; ".join(lines))
+        self.lines = list(lines)
+        self.code = code
+
+
+def check_flags(flags):
+    """Validate flags: simple ones against vocab, compound domain:ref ones
+    against disk. Raises CookError (CLI text preserved) on any failure."""
+    all_valid = valid_flags()
+    all_domains = valid_domain_flags()
+    errors = []
+    for f in flags:
+        if ":" in f:
+            domain_part, ref_part = f.split(":", 1)
+            if domain_part not in all_domains:
+                errors.append(
+                    f"'{f}': sub-ref syntax requires a domain left of ':', "
+                    f"'{domain_part}' is not a domain flag"
+                )
+            else:
+                valid_refs = valid_sub_flags(domain_part) | {"all"}
+                if ref_part not in valid_refs:
                     errors.append(
-                        f"'{f}': sub-ref syntax requires a domain left of ':', "
-                        f"'{domain_part}' is not a domain flag"
+                        f"'{f}': '{ref_part}' not found in {domain_part}/refs/ "
+                        f"(valid: {', '.join(sorted(valid_refs))})"
                     )
-                else:
-                    valid_refs = valid_sub_flags(domain_part)
-                    if ref_part not in valid_refs:
-                        errors.append(
-                            f"'{f}': '{ref_part}' not found in {domain_part}/refs/ "
-                            f"(valid: {', '.join(sorted(valid_refs))})"
-                        )
-            elif f not in all_valid:
-                errors.append(f"unknown flag '{f}'")
-        if errors:
-            for e in errors:
-                print(f"Error: {e}", file=sys.stderr)
-            print(f"Valid simple flags: {', '.join(sorted(all_valid))}", file=sys.stderr)
-            sys.exit(1)
+        elif f not in all_valid:
+            errors.append(f"unknown flag '{f}'")
+    if errors:
+        raise CookError([f"Error: {e}" for e in errors]
+                        + [f"Valid simple flags: {', '.join(sorted(all_valid))}"])
+
+
+def do_lookup(path, project, flags, prose, budget, signals=None) -> dict:
+    """Callable core of `lookup`. Returns the result dict the CLI prints.
+    `signals` may be passed in to avoid gathering twice in one process."""
+    project = Path(project).resolve() if project else Path.cwd()
+    if signals is None:
+        signals = gather(path or [], project)
+    flags = flags or []
+    prose = (prose or "").strip()
+
+    if flags:
+        check_flags(flags)
 
     # Explicit-prose path: skip cache entirely.
     # LLM must interpret prose; no deterministic key is possible without either
     # requiring verbatim string equality (useless) or normalising with an LLM
     # (defeats the cache's guarantee that a hit never wakes the model).
     if prose:
-        print(json.dumps({
+        return {
             "status": "skip",
             "mode": "explicit-prose",
             "flags": sorted(flags),
@@ -487,8 +597,7 @@ def cmd_lookup(args):
             "confidence": signals["confidence"],
             "fallback": False,   # explicit args override the broad-load safety net
             "routing": None,
-        }, indent=2))
-        return
+        }
 
     # Auto or explicit-flags path
     fp = fingerprint(signals, flags or None)
@@ -499,7 +608,7 @@ def cmd_lookup(args):
         # signals were gathered mechanically and are still trustworthy. Degrade
         # to greedy routing: the agent loads the P0 floor + every domain the
         # signals point at, broadly. Only the efficiency gain is lost.
-        print(json.dumps({
+        return {
             "status": "fallback",
             "fingerprint": fp,
             "signals": signals,
@@ -507,17 +616,26 @@ def cmd_lookup(args):
             "fallback": True,
             "cache_corrupt": True,
             "routing": None,
-        }, indent=2))
-        return
+        }
 
     entry = routing["entries"].get(fp)
 
+    stale_reason = None
+    compile_needed = True
+    payload_env = None
     if entry is None:
         status, payload = "miss", None
-    elif entry_is_fresh(entry):
-        status, payload = "hit", entry
-    else:
+    elif not entry_is_fresh(entry):
         status, payload = "stale", None
+        stale_reason = "vocab-or-index-changed"
+    else:
+        verdict, detail = payload_verdict(entry, budget)
+        if verdict == "stale":
+            status, payload, stale_reason = "stale", None, detail
+        else:
+            status, payload = "hit", entry
+            if verdict == "ok":
+                compile_needed, payload_env = False, detail
 
     # Explicit-flags mode forces fallback: false — the user's flags are the load
     # surface regardless of what gather() could observe on the signal surface.
@@ -532,38 +650,62 @@ def cmd_lookup(args):
         "confidence": signals["confidence"],
         "fallback": effective_fallback,
         "routing": payload,
+        "compile_needed": compile_needed,
     }
+    if stale_reason:
+        result["stale_reason"] = stale_reason
+    if payload_env is not None:
+        result["payload"] = payload_env
     if flags:
         result["flags"] = sorted(flags)
+    return result
+
+
+def cmd_lookup(args):
+    try:
+        result = do_lookup(args.path, args.project, args.flag, args.prose,
+                           args.budget)
+    except CookError as exc:
+        for line in exc.lines:
+            print(line, file=sys.stderr)
+        sys.exit(exc.code)
     print(json.dumps(result, indent=2))
 
 
-def cmd_classify(args):
+def do_classify(prose, signals, extra_tags=None) -> dict:
     """Mechanical alias matching: prose + signals -> canonical tags -> routes.
 
     Replaces the LLM's vocab read on the common miss path. The model is only
     needed when this returns needs_llm: true (no domain resolved), which keeps
     classification deterministic and vocab-file reads out of the context.
-    """
-    project = Path(args.project).resolve() if args.project else Path.cwd()
-    signals = gather(args.path or [], project)
-    prose = (args.prose or "").strip()
 
-    hay = " ".join(
-        [prose]
-        + signals["files"]
-        + signals["extensions"]
-        + signals["frameworks"]
-    ).lower()
+    `extra_tags` (resume path of cook_run.py) are canonical tags the model
+    supplied; known ones are folded in like any matched tag, unknown ones are
+    reported under `ignored_tags` (the key appears only when extra_tags is given).
+    """
+    prose = (prose or "").strip()
+
+    # Aliases match prose, extensions, frameworks and whole path segments. A path
+    # segment is one `/`-separated part of a touched path, compared in full
+    # (`package.json`, `layout.tsx`, `Dockerfile`). An alias never matches inside a
+    # file name, so `index.html` is not `index` and `layout.scss` is not `Layout`.
+    # Aliases that start with `.` also match the end of a file name (`.d.ts`).
+    files = signals["files"]
+    hay = " ".join([prose] + signals["extensions"] + signals["frameworks"]).lower()
+    segments = {seg.lower() for f in files for seg in f.split("/") if seg}
+    names = [f.rsplit("/", 1)[-1].lower() for f in files]
 
     tags = json.loads(VOCAB_FILE.read_text())["tags"]
     matched: dict[str, dict] = {}
     for tag, data in tags.items():
-        for needle in [tag] + data.get("aliases", []):
+        needles = ([tag] if data.get("match_name", True) else []) + data.get("aliases", [])
+        for needle in needles:
             n = needle.lower()
             if len(n) < 2:
                 continue  # single-char aliases ('!') match everything — noise
-            if re.search(r"(?<![a-z0-9])" + re.escape(n) + r"(?![a-z0-9])", hay):
+            if (re.search(r"(?<![a-z0-9])" + re.escape(n) + r"(?![a-z0-9])", hay)
+                    or n in segments
+                    or (n.startswith(".") and any(x.endswith(n) for x in names))):
                 matched[tag] = {"routes_to": data["routes_to"], "matched_on": needle}
                 break
 
@@ -574,6 +716,14 @@ def cmd_classify(args):
             if h in tags and h not in matched:
                 matched[h] = {"routes_to": tags[h]["routes_to"],
                               "matched_on": f"signal:{kind}:{h}"}
+
+    ignored = []
+    for t in extra_tags or []:
+        if t in tags:
+            matched.setdefault(t, {"routes_to": tags[t]["routes_to"],
+                                   "matched_on": "llm"})
+        else:
+            ignored.append(t)
 
     # Shared Apple vocabulary (SwiftUI, SwiftData, Keychain, ...) is valid on both
     # iOS and macOS. Narrow it to the platform the task already shows — a matched
@@ -587,29 +737,43 @@ def cmd_classify(args):
         platform_ambiguous = not known
 
     routes = sorted({r for m in matched.values() for r in m["routes_to"]})
-    print(json.dumps({
+    result = {
         "canonical_tags": sorted(matched),
         "routes": routes,
         "matched": matched,
         "signals": signals,
         "platform_ambiguous": platform_ambiguous,
         "needs_llm": platform_ambiguous or not any(r.startswith("domain:") for r in routes),
-    }, separators=(",", ":")))
+    }
+    if extra_tags is not None:
+        result["ignored_tags"] = ignored
+    return result
 
 
-def cmd_write(args):
+def cmd_classify(args):
+    project = Path(args.project).resolve() if args.project else Path.cwd()
+    signals = gather(args.path or [], project)
+    result = do_classify(args.prose, signals)
+    print(json.dumps(result, separators=(",", ":")))
+
+
+def do_write(*, fingerprint, skills, intent="unspecified", tags="",
+             confidence="high", fallback=False, degraded="", index="",
+             flags=None, mode=None, payload=None, payload_budget=None) -> dict:
+    """Callable core of `write`. `skills`, `tags`, `degraded`, `index` are the
+    comma-separated strings the CLI takes. Raises CookError on a bad --payload."""
     routing, _ = load_routing()           # a corrupt cache is overwritten fresh
-    skills = [s for s in args.skills.split(",") if s]
-    indexes = [i for i in (args.index or "").split(",") if i]
-    flags = args.flag or []
-    mode = args.mode if args.mode else ("explicit-flags" if flags else "auto")
+    skills = [s for s in skills.split(",") if s]
+    indexes = [i for i in (index or "").split(",") if i]
+    flags = flags or []
+    mode = mode if mode else ("explicit-flags" if flags else "auto")
     entry = {
-        "intent": args.intent,
+        "intent": intent,
         "skills": skills,
-        "canonical_tags": [t for t in (args.tags or "").split(",") if t],
-        "confidence": args.confidence,
-        "fallback": args.fallback,
-        "degraded": [d for d in (args.degraded or "").split(",") if d],
+        "canonical_tags": [t for t in (tags or "").split(",") if t],
+        "confidence": confidence,
+        "fallback": fallback,
+        "degraded": [d for d in (degraded or "").split(",") if d],
         "vocab_checksum": sha256_file(VOCAB_FILE),
         "index_checksums": {i: sha256_file(COOK_ROOT / i) for i in indexes},
         "decided_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -617,9 +781,53 @@ def cmd_write(args):
     }
     if flags:
         entry["flags"] = sorted(flags)
-    routing["entries"][args.fingerprint] = entry
+    if payload:
+        pay = Path(payload).resolve()
+        digest = sha256_bytes_file(pay)
+        if digest is None:
+            raise CookError([f"Error: --payload file unreadable: {payload}"])
+        if pay.parent.name != STATE_DIR.name:
+            raise CookError(["Error: --payload must live in an .agent-skills/ directory"])
+        headers, rels = [], []
+        mf = pay.with_suffix(".json")
+        try:
+            rows = json.loads(mf.read_text())
+            headers = [r["header"] for r in rows]
+            rels = [r["rel"] for r in rows]
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        dropped = []
+        if rels:
+            dropped = [s for s in dict.fromkeys(skills)
+                       if s not in rels and s not in entry["degraded"]]
+        entry.update({
+            "payload_path": str(pay),
+            "payload_sha256": digest,
+            "payload_bytes": pay.stat().st_size,
+            "payload_sections": headers,
+            "payload_dropped": dropped,
+            "payload_budget": payload_budget,
+            "source_checksums": {s: source_checksum(s) for s in skills},
+            "compiler_checksum": sha256_file(COMPILER_FILE),
+        })
+    routing["entries"][fingerprint] = entry
     atomic_write(routing)
-    print(json.dumps({"status": "written", "fingerprint": args.fingerprint}))
+    return {"status": "written", "fingerprint": fingerprint}
+
+
+def cmd_write(args):
+    try:
+        result = do_write(fingerprint=args.fingerprint, skills=args.skills,
+                          intent=args.intent, tags=args.tags,
+                          confidence=args.confidence, fallback=args.fallback,
+                          degraded=args.degraded, index=args.index,
+                          flags=args.flag, mode=args.mode, payload=args.payload,
+                          payload_budget=args.payload_budget)
+    except CookError as exc:
+        for line in exc.lines:
+            print(line, file=sys.stderr)
+        sys.exit(exc.code)
+    print(json.dumps(result))
 
 
 def cmd_heal(args):
@@ -670,6 +878,9 @@ def main():
                     help="pin a concern or domain flag (repeatable); validated against vocab")
     lk.add_argument("--prose", metavar="TEXT",
                     help="prose argument; any non-empty value skips the cache (status: skip)")
+    lk.add_argument("--budget", type=int, default=None, metavar="BYTES",
+                    help="payload cap the caller will compile with; a stored payload "
+                         "built with a different cap is stale")
     lk.set_defaults(func=cmd_lookup)
 
     cl = sub.add_parser("classify")
@@ -692,6 +903,11 @@ def main():
                     help="flags used for this lookup (repeatable; recorded on entry)")
     wr.add_argument("--mode", choices=["auto", "explicit-flags"],
                     help="mode recorded on entry (default: explicit-flags if --flag, else auto)")
+    wr.add_argument("--payload", metavar="FILE",
+                    help="finished payload file (compile first); stores its hash and "
+                         "source checksums so a hit can skip the compile")
+    wr.add_argument("--payload-budget", type=int, default=None, metavar="BYTES",
+                    help="--budget the payload was compiled with (omit if none)")
     # accepted for CLI symmetry with lookup/classify, then ignored: the routing
     # cache is per-install and keyed by fingerprint alone, never per-project.
     wr.add_argument("--project", help=argparse.SUPPRESS)

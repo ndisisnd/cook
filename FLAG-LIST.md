@@ -4,6 +4,24 @@ Complete list of every valid `/cook` flag. Generated from `vocab/tag-vocabulary.
 
 ---
 
+## Passing flags to the script
+
+An agent does not need the flag grammar. It passes the raw text after `/cook` unchanged:
+
+```
+python3 scripts/cook_run.py --project <dir> --args '--react --react:hooks fix re-renders'
+```
+
+- `--args` splits the text: a token that starts with `--` is a flag until a bare `--`; every other token is prose. `--args -` reads the text from stdin.
+- `--flag <name>` (no dashes) and `--prose <text>` still work and merge with `--args`.
+- An unknown flag exits 1 with `Error: unknown flag '<x>'` and the valid flag list on stderr.
+- `--explain` adds an `explain` object to the envelope: why each file loaded, and why sibling files did not.
+- `--consumer <label>` on `cook_run.py` names who the payload is for. It is stored on the telemetry record, and `--status` shows a "By consumer" block. It is not a `/cook` flag: callers pass it to the script.
+- `python3 scripts/cook_compile.py slice --payload <file> --section <header|rel>` prints only the named sections of a compiled payload (see `refs/payload-reuse.md`).
+- Grammar for parsing by hand: [`refs/protocol-explicit.md`](refs/protocol-explicit.md). Path-list rules for building the list by hand: [`refs/protocol-manual.md`](refs/protocol-manual.md).
+
+---
+
 ## Management
 
 These flags do not load standards — they manage the optional telemetry log and
@@ -47,7 +65,11 @@ Each concern flag loads a single ref from `standards/global/refs/`. No P0 SKILL.
 
 ## Domains
 
-A bare domain flag **alone** loads the full shelf: `standards/<domain>/SKILL.md` + all refs.  
+A bare domain flag **alone** loads `standards/<domain>/SKILL.md` + every ref that has no file pattern in the domain `_INDEX.md` (these always load) + every ref whose file pattern matches the files the task touches (`--path`, else the git diff) or whose `content:` signal occurs in a touched source file (for example `@testing-library` in a normal `.tsx` file loads `react/testing`).  
+A ref with file patterns or content signals and no match is skipped. Structural refs (tooling, testing) carry patterns; concept refs (hooks, security, state) do not and always load.  
+With no file signals it falls back to the full shelf and the envelope carries `fallback_reason: "no_file_signals"`.  
+With prose, the refs matched by the prose keywords are added.  
+`--<domain>:all` loads the full shelf: `standards/<domain>/SKILL.md` + all refs. Use it when you want every ref regardless of the files.  
 A sub-ref flag (`--<domain>:<ref>`) **alone** loads only that one ref — no SKILL.md.  
 Pairing a bare domain flag with one or more of its **own** sub-ref flags loads the SKILL.md floor + **only** the named refs (the full shelf is suppressed): `--react --react:hooks` → `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only.
 
@@ -55,7 +77,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--css` | `standards/css/SKILL.md` + all refs |
+| `--css` | `standards/css/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--css:all` | `standards/css/SKILL.md` + all refs |
 | `--css:accessibility` | `standards/css/refs/accessibility.md` |
 | `--css:architecture` | `standards/css/refs/architecture.md` |
 | `--css:layout` | `standards/css/refs/layout.md` |
@@ -69,7 +92,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--dart` | `standards/dart/SKILL.md` + all refs |
+| `--dart` | `standards/dart/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--dart:all` | `standards/dart/SKILL.md` + all refs |
 | `--dart:testing` | `standards/dart/refs/testing.md` |
 | `--dart:tooling` | `standards/dart/refs/tooling.md` |
 
@@ -77,7 +101,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--database` | `standards/database/SKILL.md` + all refs |
+| `--database` | `standards/database/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--database:all` | `standards/database/SKILL.md` + all refs |
 | `--database:postgresql-anti-patterns` | `standards/database/refs/postgresql-anti-patterns.md` |
 | `--database:postgresql-best-practices` | `standards/database/refs/postgresql-best-practices.md` |
 | `--database:postgresql-checklist` | `standards/database/refs/postgresql-checklist.md` |
@@ -90,7 +115,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--flutter` | `standards/flutter/SKILL.md` + all refs |
+| `--flutter` | `standards/flutter/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--flutter:all` | `standards/flutter/SKILL.md` + all refs |
 | `--flutter:architecture` | `standards/flutter/refs/architecture.md` |
 | `--flutter:cicd` | `standards/flutter/refs/cicd.md` |
 | `--flutter:concurrency` | `standards/flutter/refs/concurrency.md` |
@@ -109,7 +135,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--graphql` | `standards/graphql/SKILL.md` + all refs |
+| `--graphql` | `standards/graphql/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--graphql:all` | `standards/graphql/SKILL.md` + all refs |
 | `--graphql:conventions` | `standards/graphql/refs/conventions.md` |
 | `--graphql:performance` | `standards/graphql/refs/performance.md` |
 | `--graphql:schema-design` | `standards/graphql/refs/schema-design.md` |
@@ -121,7 +148,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--ios` | `standards/ios/SKILL.md` + all refs |
+| `--ios` | `standards/ios/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--ios:all` | `standards/ios/SKILL.md` + all refs |
 | `--ios:app-lifecycle-and-navigation` | `standards/ios/refs/app-lifecycle-and-navigation.md` |
 | `--ios:background-and-notifications` | `standards/ios/refs/background-and-notifications.md` |
 | `--ios:distribution` | `standards/ios/refs/distribution.md` |
@@ -133,7 +161,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--macos` | `standards/macos/SKILL.md` + all refs |
+| `--macos` | `standards/macos/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--macos:all` | `standards/macos/SKILL.md` + all refs |
 | `--macos:architecture-and-state` | `standards/macos/refs/architecture-and-state.md` |
 | `--macos:distribution` | `standards/macos/refs/distribution.md` |
 | `--macos:hig-conventions` | `standards/macos/refs/hig-conventions.md` |
@@ -146,7 +175,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--nextjs` | `standards/nextjs/SKILL.md` + all refs |
+| `--nextjs` | `standards/nextjs/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--nextjs:all` | `standards/nextjs/SKILL.md` + all refs |
 | `--nextjs:app-router` | `standards/nextjs/refs/app-router.md` |
 | `--nextjs:architecture` | `standards/nextjs/refs/architecture.md` |
 | `--nextjs:data-fetching` | `standards/nextjs/refs/data-fetching.md` |
@@ -165,7 +195,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--nodejs` | `standards/nodejs/SKILL.md` + all refs |
+| `--nodejs` | `standards/nodejs/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--nodejs:all` | `standards/nodejs/SKILL.md` + all refs |
 | `--nodejs:async-errors` | `standards/nodejs/refs/async-errors.md` |
 | `--nodejs:runtime-safety` | `standards/nodejs/refs/runtime-safety.md` |
 | `--nodejs:testing` | `standards/nodejs/refs/testing.md` |
@@ -175,7 +206,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--react` | `standards/react/SKILL.md` + all refs |
+| `--react` | `standards/react/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--react:all` | `standards/react/SKILL.md` + all refs |
 | `--react:component-patterns` | `standards/react/refs/component-patterns.md` |
 | `--react:hooks` | `standards/react/refs/hooks.md` |
 | `--react:performance` | `standards/react/refs/performance.md` |
@@ -188,7 +220,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--supabase` | `standards/supabase/SKILL.md` + all refs |
+| `--supabase` | `standards/supabase/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--supabase:all` | `standards/supabase/SKILL.md` + all refs |
 | `--supabase:checklist` | `standards/supabase/refs/checklist.md` |
 | `--supabase:database-functions` | `standards/supabase/refs/database-functions.md` |
 | `--supabase:edge-functions` | `standards/supabase/refs/edge-functions.md` |
@@ -200,7 +233,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--swift` | `standards/swift/SKILL.md` + all refs |
+| `--swift` | `standards/swift/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--swift:all` | `standards/swift/SKILL.md` + all refs |
 | `--swift:concurrency` | `standards/swift/refs/concurrency.md` |
 | `--swift:interop` | `standards/swift/refs/interop.md` |
 | `--swift:language-conventions` | `standards/swift/refs/language-conventions.md` |
@@ -213,7 +247,8 @@ Pairing a bare domain flag with one or more of its **own** sub-ref flags loads t
 
 | Flag | Loads |
 |---|---|
-| `--typescript` | `standards/typescript/SKILL.md` + all refs |
+| `--typescript` | `standards/typescript/SKILL.md` + refs without file patterns + refs matched by the touched files (full shelf if there are no file signals) |
+| `--typescript:all` | `standards/typescript/SKILL.md` + all refs |
 | `--typescript:security` | `standards/typescript/refs/security.md` |
 | `--typescript:testing` | `standards/typescript/refs/testing.md` |
 | `--typescript:tooling` | `standards/typescript/refs/tooling.md` |

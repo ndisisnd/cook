@@ -5,14 +5,14 @@
 
 | Skill | File pattern | Keywords |
 | ----- | ------------ | -------- |
-| **css** | `**/*.css`, `**/*.scss`, `**/*.sass`, `**/*.less`, `**/*.pcss`, `**/*.postcss`, `**/*.module.css`, `**/*.module.scss` | stylesheet, cascade, specificity, @layer, flexbox, grid, container query, media query, custom property, css variable, design token, dark mode, clamp, logical property, z-index, keyframes, transition, focus-visible, prefers-reduced-motion, tailwind, @apply, utility class, sass, scss, postcss |
+| **css** | `**/*.css`, `**/*.scss`, `**/*.sass`, `**/*.less`, `**/*.pcss`, `**/*.postcss`, `**/*.module.css`, `**/*.module.scss` | stylesheet, cascade, specificity, @layer, flexbox, grid, container query, media query, custom property, css variable, design token, dark mode, clamp(), logical property, z-index, keyframes, transition, focus-visible, prefers-reduced-motion, tailwind, @apply, utility class, sass, scss, postcss |
 | css → architecture ref | — | @layer, cascade layer, BEM, ITCSS, CSS Modules, @scope, specificity, methodology, naming |
-| css → layout ref | — | flexbox, grid, subgrid, container query, logical property, clamp, aspect-ratio, intrinsic, breakpoint, gap, @supports, css baseline |
+| css → layout ref | — | flexbox, grid, subgrid, container query, logical property, clamp(), aspect-ratio, intrinsic, breakpoint, gap, @supports, css baseline |
 | css → theming ref | — | custom property, design token, dark mode, color-scheme, light-dark, oklch, @property, theming, color-mix |
 | css → performance ref | — | performance, contain, content-visibility, will-change, critical css, font-display, reflow, repaint, compositor |
 | css → accessibility ref | — | focus-visible, prefers-reduced-motion, forced-colors, contrast, sr-only, target size, accessibility, a11y |
 | css → tailwind ref | `tailwind.config.*` | tailwind, tailwindcss, @apply, @theme, utility class, cn, tailwind-merge, cva, arbitrary value, tailwind.config |
-| css → tooling ref | — | stylelint, postcss, autoprefixer, lightningcss, sass, scss, @use, @forward, nesting, browserslist |
+| css → tooling ref | `.stylelintrc*`, `stylelint.config.*`, `postcss.config.*`, `.browserslistrc`, `lightningcss.config.*` | stylelint, postcss, autoprefixer, lightningcss, sass, scss, @use, @forward, nesting, browserslist |
 | css → security ref | — | css injection, exfiltration, third-party css, @import, clickjacking, sanitize styles, expression |
 
 > Load `<SKILLS>/css/SKILL.md` for any `.css`, `.scss`, `.sass`, `.less`, or PostCSS file — a small set of battle-tested principles (keep specificity low, scope by default, tokenize, lay out with Flexbox/Grid, use the platform, compose over override) plus a minimal accessibility/security floor. It's the whole standard for most styling work; pull a ref only for depth.

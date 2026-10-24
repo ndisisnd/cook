@@ -39,11 +39,11 @@ With little to zero software engineering knowledge, expertise, and skills, you c
 
 </div>
 
-<!-- mkpub:release v1.1.0 -->
+<!-- mkpub:release v1.2.0 -->
 > [!NOTE]
-> **🚀 New in v1.1.0 · iPhone and iPad standards, a cryptography concern, and smaller payloads**
+> **🚀 New in v1.2.0 · One script call per task, smaller payloads, and slices for subagents**
 >
-> cook now covers iOS/iPadOS, ships its security rules in the public install, and refreshes the standards to October 2026 versions. Re-run the installer to pick it up.
+> cook now runs in one script call, reads about 3 KB of protocol per call, and loads only the rules your files touch. A bare `--<domain>` flag no longer loads the full shelf; use `--<domain>:all` for that. Re-run the installer to pick it up.
 > Update with `curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bash` · [Release notes](RELEASES.md)
 <!-- /mkpub:release -->
 
@@ -93,14 +93,18 @@ flowchart TD
     cache -->|miss| classify --> route --> load --> compile
 ```
 
+Your coding agent runs **one script call**, `scripts/cook_run.py`. The script does every stage below in a single process, so the agent reads a short protocol and makes one tool call instead of five or six.
+
 1. **Ask your coding agent to invoke `/cook`:** `cook` will check file paths, prose descriptions, git context.
-2. **Build a fingerprint:** the raw signals are hashed and checked against the cache. A match skips classification entirely — straight to compile.
-3. **Classify intent:** if it's a miss, `cook` classifies the intent (e.g. "add a feature" vs. "fix a bug"), then routes to the relevant domain and concern standards.
+2. **Build a fingerprint:** the raw signals are hashed and checked against the cache. A match skips classification entirely — straight to the stored payload.
+3. **Classify intent:** if it's a miss, `cook` matches the signals against the tag vocabulary, then routes to the relevant domain and concern standards. Only when nothing resolves does the script stop with `needs_llm: true`; the agent then picks canonical tags and calls `cook_run.py --resume <fingerprint> --tags <list>` (the only two-call path).
 4. **Load global rules**: Global rules are always loaded first (e.g. SOLID principles, DRY, security) — no exceptions, regardless of cache state.
 5. **Load concern rules**: Concern rules are cross-cutting rules like security, error handling, performance, and API design. 
 6. **Load domain rules**: Domain rules for your programming language are loaded. Multiple domains can match at once.
-7. **Cache the result**: Routing decisions are written to cache so the next identical surface hits instantly. 
-8. **Compile and output**: A Python compiler stitches all the loaded rule files into one markdown blob for your agent to ingest. `cook` ends here!
+7. **Cache the result**: The routing decision and the finished payload are written to cache so the next identical surface hits instantly. 
+8. **Compile and output**: A Python compiler stitches all the loaded rule files into one markdown blob for your agent to ingest. The agent receives a small JSON envelope with the payload path. `cook` ends here!
+
+The agent's protocol text is small: `SKILL.md` (about 1 KB of instructions) plus `refs/protocol-cook.md` when `/cook` carries args. The old step-by-step flow stays in [`refs/protocol-manual.md`](refs/protocol-manual.md) for Codex and for humans who want to run each stage by hand.
 
 ### Usage
 
@@ -116,9 +120,25 @@ The `--flag` namespace is derived from `vocab/tag-vocabulary.json` and may grow 
 
 **Concerns (9):** `--security`, `--auth`, `--crypto`, `--performance`, `--architecture`, `--api-design`, `--error-handling`, `--debug`, `--cicd` — each loads one ref from `standards/global/refs/`; no P0.
 
-**Domains (13):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--ios`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the full domain shelf (SKILL.md + all refs).
+**Domains (13):** `--react`, `--nextjs`, `--css`, `--flutter`, `--dart`, `--swift`, `--ios`, `--macos`, `--typescript`, `--nodejs`, `--database`, `--supabase`, `--graphql` — loads the domain `SKILL.md` plus every ref with no file pattern in its `_INDEX.md` (always loads) and the refs whose file pattern matches the files the task touches (`--path`, else the git diff). With no file signals it loads the full shelf and the envelope says `fallback_reason: "no_file_signals"`. With prose, keyword matches are added.
 
-**Sub-ref flags:** `--<domain>:<ref>` loads a single ref from a domain shelf without loading the domain SKILL.md. The `ref` is a file stem under `standards/<domain>/refs/`. Pair it with the bare domain flag to add the SKILL.md floor + only the named ref (the full shelf is suppressed): `--react --react:hooks` → `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only. Name several sub-refs to pick a wider subset: `--react --react:hooks --react:state-management`.
+**Full shelf:** `--<domain>:all` (for example `--react:all`) loads the `SKILL.md` and every ref of that domain, whatever the files.
+
+**Sub-ref flags:** `--<domain>:<ref>` (`all` is reserved for the full shelf) loads a single ref from a domain shelf without loading the domain SKILL.md. The `ref` is a file stem under `standards/<domain>/refs/`. Pair it with the bare domain flag to add the SKILL.md floor + only the named ref (the full shelf is suppressed): `--react --react:hooks` → `standards/react/SKILL.md` + `standards/react/refs/hooks.md` only. Name several sub-refs to pick a wider subset: `--react --react:hooks --react:state-management`.
+
+Your agent does not parse these flags. It passes the text after `/cook` to `cook_run.py --args '<text>'`, and the script splits flags from prose, rejects unknown flags, and picks the files. [`refs/protocol-explicit.md`](refs/protocol-explicit.md) holds the grammar for anyone parsing by hand.
+
+#### Why did that file load?
+
+Add `--explain` to `cook_run.py` to see the reason for every file. The envelope gains an `explain` object: for each loaded file, the route tag and matched alias, the `_INDEX.md` file pattern or keyword, or the flag that loaded it; for each file in the same shelf that did not load, why not. Nothing else in the envelope changes.
+
+In auto mode a shelf can name core refs in its `_INDEX.md` (`Core refs (auto mode): ...`). They load whenever the domain routes, with no keyword needed: react loads hooks, performance and security; typescript loads `global/error-handling`.
+
+A pipeline compiles one payload and hands subagents its path. A subagent reads only the sections it needs with `python3 scripts/cook_compile.py slice --payload <path> --section "<header|rel>"`; the envelope `sections` list gives the names and sizes. See `refs/payload-reuse.md`.
+
+```bash
+python3 scripts/cook_run.py --project . --task "add a POST /orders route" --explain
+```
 
 #### Examples
 

@@ -5,10 +5,12 @@
 
 | Skill | File pattern | Keywords |
 | ----- | ------------ | -------- |
-| **typescript** | `**/*.ts`, `**/*.tsx`, `tsconfig.json`, `eslint.config.*`, `jest.config.*`, `vitest.config.*` | type, interface, generic, enum, union, readonly, async, import, export, validate, sanitize, auth, token, secret, eslint, jest, vitest |
+| **typescript** | `**/*.ts`, `**/*.tsx`, `tsconfig.json`, `eslint.config.*`, `jest.config.*`, `vitest.config.*` | type, interface, generics, ts enum, union, readonly, async, import, export, validate, sanitize, auth, token, secret, eslint, jest, vitest |
 | typescript → tooling ref | `tsconfig.json`, `eslint.config.*`, `vitest.config.*`, `jest.config.*` | tsconfig, eslint, vitest, jest |
-| typescript → testing ref | — | test, tests, vitest, jest |
+| typescript → testing ref | `**/*.test.{ts,tsx}`, `**/*.spec.{ts,tsx}`, `**/__tests__/**`, `content:vitest`, `content:jest`, `content:describe(` | test, tests, vitest, jest |
 | typescript → security ref | — | validate, validation, sanitize, auth, token, jwt, secret, cookie, rbac |
+
+Core refs (auto mode): global/error-handling
 
 > Load matched skills: `<SKILLS>/typescript/SKILL.md`.
 > Load `<SKILLS>/typescript/refs/tooling.md` for tsconfig, ESLint, Vitest/Jest config, build tools, or CI.

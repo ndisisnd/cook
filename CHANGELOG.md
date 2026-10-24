@@ -4,6 +4,91 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [v1.2.0] — 2026-10-24 · Subagents read slices of one payload; a React or TypeScript review always sees its core rules
+
+**feat(compile): payload manifest and slice command for per-subagent reads; core concept refs in auto mode.**
+
+- `scripts/cook_compile.py`: new `slice --payload <file> --section <header|rel> [...]` prints only the named sections of a compiled payload, read through its manifest. Output is byte-identical to the section in the payload. No LLM, no recompile. Exit 1 for an unknown or ambiguous section (the list is on stderr), exit 2 for a missing, corrupt or stale manifest. `--list` prints the sections.
+- `scripts/cook_run.py`: the envelope gains a top-level `sections` list of `{header, rel, bytes}` beside `manifest_path`. A cache hit carries the same list. New `--consumer <label>`.
+- `scripts/cook_telemetry.py`: `record --consumer <label>` stores the label. `--status` gains a "By consumer" breakdown, so reuse and reinjection are visible.
+- `refs/payload-reuse.md` (new): the caller contract. Pass the payload path. A subagent runs `slice` for its sections. Inject the full payload only when the caller sets `inject: full`.
+- `standards/react/_INDEX.md`, `standards/typescript/_INDEX.md`: new `Core refs (auto mode):` line. react loads `hooks`, `performance`, `security`; typescript loads `global/error-handling`, whenever the domain routes in auto mode. No rule text changed.
+- `scripts/cook_route.py`: `skill_list_auto` reads the core line. Explicit flags ignore it. `--explain` names the core line as the reason.
+- `scripts/check_index_routes.py`: every name on a `Core refs` line must resolve to a ref file.
+- `refs/telemetry.md`, `refs/protocol-cook.md`, `refs/protocol-manual.md`, `ARCHITECTURE.md`, `README.md`: describe `sections`, `slice`, `--consumer` and the core line. `install.sh`: manifest gains `refs/payload-reuse.md`.
+- Why: in the Phase 5b blind test, a plain task summary loaded none of the concept refs, so 5 findings (R8, R9, R10, R11, T10) were caught only by generic rules. With the core set all 5 cite their own rule. Strict blind score: 35/36 on the first pass. The one miss (N5, nextjs) was a line attribution, not a missed rule. 36/36 on the rerun of that one reviewer. Both numbers are in `eval-6.md`.
+- Effect: 3 slices (global, react, nextjs SKILLs) read 15,359 of 43,571 B (35.3%) on `layout-tsx`. Auto routing only adds files: react auto +15,177 B, typescript and nextjs auto +2,492 B. Size cost: 6 original fixtures go from 252,370 B to 257,354 B, +4,984 B (+2.0%) vs 5b. Total is still 18.4% below Phase 0 (315,536 B), down from 20.0% after 5b. Rule inventory diff: 0 lost.
+
+## [v1.2.0] — 2026-10-24 · Short everyday words no longer load whole shelves; test code inside a normal file still loads the testing rules
+
+**fix(routing): precise vocab aliases; file names no longer trigger shelves.**
+
+- `vocab/tag-vocabulary.json`: 210 loose aliases replaced or removed (85 replaced by specific forms, 125 removed). Examples: `index` to `create index`, `db index`, `btree`; `Layout` to `layout.tsx`, `root layout`; `error` to `error handling`, `try/catch`, `error boundary`; `profile` to `profiling`, `profiler`; `validate` to `input validation`, `validate input`; `package.json` removed. The tag name `database` no longer matches on its own (`match_name: false`). Real signals stay (`.ts`, `tsx`, `sql`, `Package.swift`). Decisions are listed in `improve/perf-v1.2.0/alias-audit.md`.
+- `scripts/cook_cache.py`: `classify` matches aliases against prose, extensions, frameworks and whole path segments, never a part of a file name. `index.html` is not `index` and `layout.scss` is not `Layout`. An alias that starts with a dot (`.d.ts`) also matches the end of a file name.
+- `standards/{react,nodejs,typescript,css}/_INDEX.md`: file patterns on structural refs only, so a bare `--<domain>` can filter them. react `tooling`: `vite.config.*`, `eslint.config.*`, `.eslintrc*`, `webpack.config.*`, `babel.config.*`, `.babelrc*`. nodejs gains rows for `tooling` (`package.json`, `.nvmrc`, `.node-version`, `.npmrc`, `.env.example`) and `testing` (`*.test.*`, `*.spec.*`, `__tests__`). typescript `testing`: `*.test.*`, `*.spec.*`, `__tests__`. css `tooling`: `.stylelintrc*`, `stylelint.config.*`, `postcss.config.*`, `.browserslistrc`, `lightningcss.config.*`. Concept refs (hooks, security, state, performance, component patterns, async-errors, runtime-safety) stay pattern-free and always load under a bare flag.
+- `scripts/cook_route.py`: new `content:<token>` signals in the file-pattern column. `scan_contents()` reads the first 256 KB of each touched source file (ts, tsx, js, jsx, mjs, cjs, mts, cts) once per run; a ref loads when its token is found. Manifests are never scanned. Test code in a normal file (`@testing-library`, `msw`, `vitest`, `jest`, `describe(`, `renderHook`) now loads `react/testing` under a bare `--react`. The cache key gains the hit list only when a hit exists.
+- `scripts/cook_route.py`: `--explain` gives the right reason for a ref a bare flag left out. With task text: no file pattern matched and no keyword occurs in the task text. Without task text: no file pattern matched and no keyword was checked. A content signal is named when the ref has one.
+- `standards/*/_INDEX.md` keywords: `index`, `explain`, `Layout`, `slices`, `render`, `screen`, `act`, `store`, `profile`, `dialog`, `tabs`, `menu` tightened. `verify/done/check-vocab-parity.py` gains `IN_SHELF_ONLY`: loose words that stay as ref selectors inside an already-routed shelf.
+- `standards/database/_INDEX.md`: new row `database -> sql-gotchas ref` with file pattern `**/*.sql` and keywords `timestamptz`, `ilike`, `jsonb`, `pg_trgm` (added as database aliases). The ref had no row before, so it never loaded in auto mode.
+- `refs/protocol-manual.md`, `ARCHITECTURE.md`, `FLAG-LIST.md`: describe path-segment matching and content signals.
+- Effect on the 6 fixtures: `css-only` 38,807 B to 20,396 B (no database or nextjs file), `node-api` 43,595 B to 29,636 B, `flutter-screen` 56,969 B to 52,023 B, `react-nextjs` 79,996 B to 52,532 B, `supabase-migration` 58,660 B to 60,274 B (gains `sql-gotchas`), `swift-macos` unchanged. Total 315,536 B to 252,370 B (20.0% cut). 4 new true-positive fixtures route as before. Rule inventory diff: 0 lost. Blind eval: 36/36 in auto mode and with bare flags.
+
+## [v1.2.0] — 2026-10-24 · A bare domain flag loads only the refs the touched files match; `--<domain>:all` keeps the full shelf
+
+**feat(routing): bare domain flags match refs from touched files; --<domain>:all keeps the full shelf.**
+
+- `scripts/cook_route.py`: a bare `--<domain>` with no prose and no sub-ref now loads `SKILL.md`, every ref with no file pattern in `_INDEX.md` (always loads), and the refs whose file pattern matches the touched files (`--path`, else git). A patterned ref with no match is skipped. (Option C, 2026-10-24: the first build loaded only SKILL.md for react.) With zero file signals it loads the full shelf, as before. With prose, keyword matches are unioned with the file-pattern matches. `--<domain> --<domain>:<ref>` and `--global` are unchanged. New `refs_by_files()` and `explicit_fallbacks()`; `skill_list_explicit()` takes the touched files.
+- New flag `--<domain>:all`: the full shelf (`SKILL.md` + every ref), the old bare behaviour. `all` validates like any sub-ref and no shelf has a ref named `all`.
+- `scripts/cook_run.py`: the envelope carries `fallback_reason: "no_file_signals"` when a bare flag fell back to the full shelf. `--explain` names the file pattern and the matching file for each ref a bare flag loads.
+- `scripts/cook_cache.py`: explicit-flags fingerprints carry a rule version (`flag_rules: 2`), so entries built under the old full-shelf rule are not served. The key already included the file list. Auto-mode keys are byte-identical.
+- `refs/protocol-explicit.md`, `refs/protocol-manual.md`, `FLAG-LIST.md`, `README.md`: describe bare-flag matching, the fallback and `:all`.
+- Effect on `react-nextjs` with `--react --nextjs`: 79,996 B (`:all`) to 55,157 B, 69% of the full shelves (31% cut). Auto-mode fixtures: 0 skill lists changed, payloads byte-identical.
+
+## [v1.2.0] — 2026-10-23 · The model reads about 3 KB of protocol per /cook call instead of 6–10 KB
+
+**perf(protocol): move routing steps into cook_run, slim the protocol docs.**
+
+- `SKILL.md`: body cut to the essentials: what cook is, the one command, the `needs_llm` / `platform_ambiguous` branch, the return rule. It points to `refs/protocol-cook.md` only when `/cook` carries args or a telemetry flag. Frontmatter is byte-identical.
+- `refs/protocol-cook.md`: 3,673 B to 2,411 B. Keeps Step 0 (telemetry flags), the run command, the `needs_llm` canonicalisation rule and the corrupt-cache note.
+- `refs/protocol-explicit.md`: 4,285 B to 1,593 B. Keeps only the flag grammar. The path-list rules moved verbatim to a new "Explicit mode — path list" section of `refs/protocol-manual.md`, because `cook_route.py` already applies them.
+- `refs/protocol-manual.md`: gains the moved path-list section; notes `--explain`.
+- `scripts/cook_run.py`: new `--args "<raw text after /cook>"` (or `--args -` for stdin). The script splits flags from prose with the grammar the protocol used to teach (`--x` is a flag until a bare `--`), so the model never reads the grammar. Invalid flags fail with the same exit code and message as `--flag`. `--flag` and `--prose` still work and merge.
+- `scripts/cook_run.py`: new `--explain` adds an `explain` object to the envelope (`loaded`: why each file loaded; `dropped`: why sibling files did not). No other envelope field and no payload byte changes.
+- `scripts/cook_route.py`: new `explain()` and `index_reasons()` give the reasons: route tag with the matched alias, `_INDEX.md` file pattern or keyword, flag, P0.
+- `README.md`, `ARCHITECTURE.md`, `FLAG-LIST.md`, `llms.txt`, `refs/telemetry.md`: describe the single call, `--args`, `--explain` and `protocol-manual.md`; step-by-step lookup/classify/write/compile/heal text aimed at the model removed.
+- Protocol bytes read per call (SKILL body + protocol-cook): auto 5,958 B and flags 10,243 B before, 3,285 B for both now. Routing parity unchanged (0 fixtures changed); payloads byte-identical.
+
+---
+
+## [v1.2.0] — 2026-10-23 · a /cook run now costs one script call instead of five or six
+
+**perf(scripts): add cook_run.py single-call resolver.**
+
+- `scripts/cook_run.py` (new): one process does lookup, classify, skill derivation, compile with `--manifest`, cache write with `--payload`, and the telemetry record. Auto and explicit-flags runs take 1 call on a miss and on a hit (from 6 and 4). Prose mode is one call too and never writes the cache. A run that needs the model stops with `needs_llm` and `llm_input`; `--resume <fingerprint> --tags <list>` finishes it (2 calls, the only two-call path). Telemetry is best-effort and never changes the exit code or the envelope.
+- `scripts/cook_route.py` (new): the skill-list rules (auto routes plus `_INDEX.md` pattern and keyword matches; explicit-flag path list). `verify/routing_parity.py` now imports it, so the gate and the product share one implementation. Routing parity is unchanged (0 fixtures changed).
+- `scripts/cook_cache.py`: `cmd_lookup`, `cmd_classify` and `cmd_write` split into callable `do_lookup`, `do_classify`, `do_write` plus thin CLI wrappers. CLI flags and output are unchanged. New `CookError` for user-facing failures.
+- `scripts/cook_compile.py`: `compile_to_file()` extracted from `main()`; CLI output unchanged.
+- `scripts/cook_telemetry.py`: `record_fire()` extracted from `cmd_record`; CLI unchanged.
+- `SKILL.md`, `refs/protocol-cook.md`: Steps 1–6 replaced by "run `cook_run.py`, branch on `needs_llm`, return the envelope". Protocol text read per auto call: 11,103 B to 5,958 B.
+- `refs/protocol-manual.md` (new): the previous step-by-step text, kept for Codex and humans.
+- `refs/protocol-explicit.md`: flags go to `cook_run.py --flag`; flag grammar and path-list rules kept. Explicit call: 15,542 B to 10,243 B.
+- `refs/telemetry.md`: notes that `cook_run.py` records the fire itself.
+- `install.sh`: manifest now ships `cook_run.py`, `cook_route.py` and `protocol-manual.md`.
+
+---
+
+## [v1.2.0] — 2026-10-23 · A repeat /cook run returns the finished standards payload without recompiling
+
+**perf(cache): reuse the compiled payload on a cache hit.**
+
+- `scripts/cook_cache.py`: `write --payload <file>` stores `payload_path`, `payload_sha256`, `payload_bytes`, `payload_sections`, per-skill `source_checksums` and a `compiler_checksum`. `lookup` returns `status: "hit"` with `compile_needed: false` and a `payload` object when every checksum still matches. A missing payload file, an edited source standard, a changed compiler, a different `--budget` or a payload path outside `.agent-skills/` returns `stale` with a `stale_reason`. Entries written before this change stay valid and return `compile_needed: true`. The fingerprint basis is unchanged.
+- `scripts/cook_compile.py`: `--manifest [PATH]` writes `payload-<fp>.json` beside the payload, one `{header, rel, bucket, byte_start, byte_end}` row per section. The envelope gains `manifest_path` and keeps all existing fields.
+- `refs/protocol-cook.md`, `refs/protocol-explicit.md`: on `compile_needed: false`, skip compile and `heal` and return the stored envelope. On a miss, compile first, then `write --payload`.
+- `ARCHITECTURE.md`: cache-hit line notes the skipped compile and the stale triggers.
+- Round trips on the `node-api` hit path: 4 → 2 (lookup, optional telemetry record). Miss path unchanged at 6.
+
+---
+
 ## [v1.1.0] — 2026-10-23 · Next.js standards match Next.js 16.4 and stop repeating React rules
 
 **perf(standards): refresh and condense the nextjs shelf.**

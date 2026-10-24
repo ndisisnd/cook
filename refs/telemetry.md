@@ -23,12 +23,12 @@ gitignored and never shipped by the installer — purely local, runtime artifact
 The mechanical work lives in `scripts/cook_telemetry.py`; this ref is the
 protocol contract around it.
 
-## Management flags (intercept before Steps 1–6)
+## Management flags (intercept before the run)
 
 When a `/cook` invocation carries **only** one of the flags below — no other
 flags, no prose to compile — treat it as a management command: run the matching
-script call, print its stdout to the user, and **terminate**. Do not run the
-resolver, classifier, or compiler.
+script call, print its stdout to the user, and **terminate**. Do not run
+`cook_run.py`.
 
 | Flag | Action |
 |---|---|
@@ -49,6 +49,9 @@ stripped and never treated as a standards flag.
 
 ## Record step (after a successful compile)
 
+`cook_run.py` runs this step itself, best-effort. Run it by hand only in the
+manual flow (`protocol-manual.md`).
+
 This is the final action of every fire that reached the compile step (core
 Step 6), in **all** modes. It is best-effort: `record` is a silent no-op when
 telemetry is disabled and never fails a fire, so it is always safe to call.
@@ -59,6 +62,7 @@ python3 scripts/cook_telemetry.py record \
   --prompt <raw task summary> \
   --mode <auto|explicit-flags|explicit-prose> \
   --skills <the exact comma-separated paths passed to cook_compile.py> \
+  [--consumer <label>] \
   --project <project dir>
 ```
 
@@ -70,6 +74,10 @@ python3 scripts/cook_telemetry.py record \
 - **`--mode`** — the invocation mode from the mode branch table.
 - **`--skills`** — reuse the same value passed to `cook_compile.py --skills` so
   the logged standards match exactly what was compiled.
+- **`--consumer`** — optional label for who the payload is for (for example
+  `eng-build`, `reviewer`). It is stored on the record. `--status` lists fires
+  per consumer, so the labels show which consumers asked for a payload. `cook_run.py` takes the
+  same `--consumer` and passes it on. Omit it and the record carries no label.
 - **`--project`** — the project dir, so the record lands in the local store when
   the repo has been `--init`-ed, else the global one.
 
@@ -82,5 +90,5 @@ user-facing output for this step; the fire's return envelope is unchanged.
 `status` prints, to the console: the enabled/disabled state **and scope**
 (local/global), the store path, the total fire count and time window, then
 ranked breakdowns — the top individual standards, by folder (how many fires
-touched each), and by intent. With no records it prints a short "nothing logged
+touched each), by intent, and (when any fire carries a label) by consumer. With no records it prints a short "nothing logged
 yet" hint.

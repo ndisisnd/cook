@@ -23,7 +23,7 @@ Usage
   python3 scripts/cook_telemetry.py disable    [--project DIR] [--global]
   python3 scripts/cook_telemetry.py status     [--project DIR] [--global]
   python3 scripts/cook_telemetry.py record --intent <label> --prompt <text> \
-      --skills P[,P...] [--mode M] [--project DIR] [--global]
+      --skills P[,P...] [--mode M] [--consumer LABEL] [--project DIR] [--global]
 
 `record` is a no-op when telemetry is disabled — it never fails a fire. All
 subcommands exit 0 on the happy path; telemetry must never block cook.
@@ -180,21 +180,34 @@ def cmd_disable(store: Path, scope: str, _args) -> int:
     return 0
 
 
-def cmd_record(store: Path, _scope: str, args) -> int:
+def record_fire(store: Path, *, intent: str = "", prompt: str = "",
+                skills: list[str] | None = None, mode: str = "auto",
+                consumer: str = "") -> bool:
+    """Append one fire to `store`. Returns False (writes nothing) when telemetry
+    is disabled. May raise on I/O errors; the CLI wrapper swallows them."""
     data = _load(store)
     if not data.get("enabled"):
-        return 0  # opt-in: silent no-op when disabled
-    skills = [s for s in (args.skills or "").split(",") if s.strip()]
-    intent = (args.intent or "").strip()
+        return False  # opt-in: silent no-op when disabled
+    intent = (intent or "").strip()
     entry = {
         "ts": _now(),
         "intent": intent if intent in intent_labels() else "unspecified",
-        "prompt": args.prompt or "",
-        "mode": args.mode or "auto",
-        "standards": group_standards(skills),
+        "prompt": prompt or "",
+        "mode": mode or "auto",
+        "standards": group_standards(skills or []),
     }
+    consumer = (consumer or "").strip()
+    if consumer:
+        entry["consumer"] = consumer
     data["records"].append(entry)
     _save(store, data)
+    return True
+
+
+def cmd_record(store: Path, _scope: str, args) -> int:
+    skills = [s for s in (args.skills or "").split(",") if s.strip()]
+    record_fire(store, intent=args.intent, prompt=args.prompt, skills=skills,
+                mode=args.mode, consumer=getattr(args, "consumer", "") or "")
     return 0
 
 
@@ -248,6 +261,9 @@ def cmd_status(store: Path, scope: str, _args) -> int:
     _section("Top standards", standards, 15)
     _section("By folder (fires touching it)", folders, 20)
     _section("By intent", intents, 20)
+    consumers = Counter(r.get("consumer") or "(none)" for r in records)
+    if set(consumers) != {"(none)"}:
+        _section("By consumer (labelled fires: reuse vs reinjection)", consumers, 20)
     return 0
 
 
@@ -282,6 +298,8 @@ def main() -> int:
                      help="comma-separated skill paths that were compiled")
     rec.add_argument("--mode", default="auto",
                      help="invocation mode: auto | explicit-flags | explicit-prose")
+    rec.add_argument("--consumer", default="",
+                     help="who the payload is for (label); status counts fires per consumer")
 
     args = p.parse_args()
     cook_root = Path(args.cook_root).resolve() if args.cook_root else COOK_ROOT_DEFAULT

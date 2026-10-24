@@ -28,13 +28,17 @@ RESET='\033[0m'
 FILES=(
   SKILL.md
   agents/openai.yaml
+  refs/payload-reuse.md
   refs/protocol-cook.md
   refs/protocol-explicit.md
+  refs/protocol-manual.md
   refs/telemetry.md
   scripts/check_freshness.py
   scripts/check_index_routes.py
   scripts/cook_cache.py
   scripts/cook_compile.py
+  scripts/cook_route.py
+  scripts/cook_run.py
   scripts/cook_telemetry.py
   scripts/gen_install_files.py
   standards/css/SKILL.md

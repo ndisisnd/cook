@@ -7,13 +7,14 @@ cook holds no rules of its own. It reads a task surface (file paths, prose, git 
 ## Docs
 
 - [README](https://raw.githubusercontent.com/ndisisnd/cook/main/README.md): what it does, install, how it works, the full flag and telemetry surface
-- [SKILL.md](https://raw.githubusercontent.com/ndisisnd/cook/main/SKILL.md): the router — start here to change behavior; it delegates to the protocols below
-- [protocol-cook.md](https://raw.githubusercontent.com/ndisisnd/cook/main/refs/protocol-cook.md): the default auto path — mode branch table and fingerprint/cache/route logic
-- [protocol-explicit.md](https://raw.githubusercontent.com/ndisisnd/cook/main/refs/protocol-explicit.md): how flags and prose arguments resolve to specific rule files
+- [SKILL.md](https://raw.githubusercontent.com/ndisisnd/cook/main/SKILL.md): the router — start here to change behavior; the one command is `python3 scripts/cook_run.py`
+- [protocol-cook.md](https://raw.githubusercontent.com/ndisisnd/cook/main/refs/protocol-cook.md): telemetry flags, the run command with `--args`/`--explain`, and the `needs_llm` rule
+- [protocol-explicit.md](https://raw.githubusercontent.com/ndisisnd/cook/main/refs/protocol-explicit.md): the flag and prose grammar, for parsing `/cook` args by hand
+- [protocol-manual.md](https://raw.githubusercontent.com/ndisisnd/cook/main/refs/protocol-manual.md): the step-by-step flow and explicit path-list rules, for Codex and humans
 
 ## Reference
 
-- [ARCHITECTURE.md](https://raw.githubusercontent.com/ndisisnd/cook/main/ARCHITECTURE.md): how the scan → classify → route → load → compile pipeline is wired
+- [ARCHITECTURE.md](https://raw.githubusercontent.com/ndisisnd/cook/main/ARCHITECTURE.md): how `cook_run.py` runs the scan → classify → route → load → compile pipeline in one call
 - [FLAG-LIST.md](https://raw.githubusercontent.com/ndisisnd/cook/main/FLAG-LIST.md): the full flag namespace (shelf, concerns, domains, sub-refs)
 - [vocab/tag-vocabulary.json](https://raw.githubusercontent.com/ndisisnd/cook/main/vocab/tag-vocabulary.json): source of truth for the flag namespace
 - [standards/global/SKILL.md](https://raw.githubusercontent.com/ndisisnd/cook/main/standards/global/SKILL.md): the always-loaded global floor (SOLID, DRY, security, and the 9 concern refs)

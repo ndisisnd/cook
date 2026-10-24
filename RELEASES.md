@@ -2,6 +2,34 @@
 
 What's new for you, release by release.
 
+## v1.2.0 — 2026-10-24
+
+> cook is now cheaper to run. Each task takes one script call instead of four to six, your agent reads about a third of the instructions it read before, and the standards it receives are 18% smaller. Quality held: the blind test that checks cook still catches every planted defect scored 36 of 36.
+
+### ✨ New
+
+- One script call per task. The script does scanning, matching, routing and compiling in a single step. Before, your agent made four to six calls. A repeat task returns the finished payload straight from cache.
+- Subagents read slices of one payload. Pass the payload path, and each subagent reads only the sections it needs. On a three-slice test, the subagents read 35% of the full payload.
+- Core rules in auto mode. A React review always sees the hooks, performance and security rules. A TypeScript review always sees the error-handling rules. In testing, a plain task summary used to miss these.
+- `--explain` shows why each rule was loaded or left out.
+
+### 📈 Improved
+
+- The protocol your agent reads per call is about 3 KB, down from 6 to 10 KB.
+- Bare domain flags are precise. `--react` now loads the domain core plus only the rules that match the files you touched. On the react-nextjs test, that is 55 KB instead of 80 KB, a 31% cut.
+- Keywords are precise. 210 loose keywords were replaced or removed, so short everyday words such as "index" and "layout" no longer load a whole shelf. Test code inside a normal file still loads the testing rules.
+- In auto mode, the payload is 18.4% smaller than v1.1.0, measured on the six test fixtures (257,354 bytes against 315,536).
+- Quality check: the blind test scored 36 of 36 at release. Two misses were found and fixed on the way. Test code inside a normal file skipped the testing rules, and Phase 5b fixed this. One review missed a finding by its line number, and a fresh review scored 36 of 36.
+
+### Behaviour change
+
+- A bare `--<domain>` flag no longer loads the full shelf. If you want the old behaviour, pass `--<domain>:all`, for example `--react:all`.
+- With no file signals, a bare flag still falls back to the full shelf.
+
+### Not in this release
+
+- Moved to v1.2.1: Node 26 LTS standards, shorter "why" prose in the rules, and more compact output.
+
 ## v1.1.0 — 2026-10-23
 
 > cook now covers iPhone and iPad apps, and it ships a full set of security rules, including a new one for encryption. The standards were brought up to date with the tools and versions current in October 2026, and several are much shorter, so your agent reads less to get the same guidance. This release takes cook to thirteen technology areas and nine cross-cutting concerns.

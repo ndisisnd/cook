@@ -40,6 +40,7 @@ COOK_ROOT_DEFAULT = Path(__file__).resolve().parent.parent
 SKILLS_RE = re.compile(r"<SKILLS>/([A-Za-z0-9_\-./]+\.md)")
 BACKTICK_RE = re.compile(r"`([^`]+)`")
 REFS_TOKEN_RE = re.compile(r"refs/[A-Za-z0-9_\-]+\.md")          # refs/x.md
+CORE_RE = re.compile(r"^\s*>?\s*Core refs \(auto mode\):\s*(.+?)\s*$", re.M)
 BARE_MD_RE = re.compile(r"[A-Za-z0-9_\-]+\.md")                   # x.md (no slash)
 
 
@@ -79,6 +80,16 @@ def extract_targets(index_path: Path, standards_root: Path) -> list[tuple[str, P
                 # bare sibling on a line that already anchored a refs/ dir
                 add(tok, refs_dir_ctx / tok)
 
+    # 3. `Core refs (auto mode): a, b, global/c` line: every name must be a ref.
+    m = CORE_RE.search(index_path.read_text(encoding="utf-8"))
+    if m:
+        for raw in m.group(1).split(","):
+            name = raw.strip().strip("`").rstrip(".").strip()
+            if not name:
+                continue
+            shelf, _, ref = name.rpartition("/")
+            base = standards_root / shelf if shelf else domain_dir
+            add(f"core:{name}", base / "refs" / f"{ref}.md")
     return targets
 
 
