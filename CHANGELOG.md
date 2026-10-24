@@ -4,6 +4,20 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-24 · Short everyday words no longer load whole shelves; test code inside a normal file still loads the testing rules
+
+**fix(routing): precise vocab aliases; file names no longer trigger shelves.**
+
+- `vocab/tag-vocabulary.json`: 210 loose aliases replaced or removed (85 replaced by specific forms, 125 removed). Examples: `index` to `create index`, `db index`, `btree`; `Layout` to `layout.tsx`, `root layout`; `error` to `error handling`, `try/catch`, `error boundary`; `profile` to `profiling`, `profiler`; `validate` to `input validation`, `validate input`; `package.json` removed. The tag name `database` no longer matches on its own (`match_name: false`). Real signals stay (`.ts`, `tsx`, `sql`, `Package.swift`). Decisions are listed in `improve/perf-v1.2.0/alias-audit.md`.
+- `scripts/cook_cache.py`: `classify` matches aliases against prose, extensions, frameworks and whole path segments, never a part of a file name. `index.html` is not `index` and `layout.scss` is not `Layout`. An alias that starts with a dot (`.d.ts`) also matches the end of a file name.
+- `standards/{react,nodejs,typescript,css}/_INDEX.md`: file patterns on structural refs only, so a bare `--<domain>` can filter them. react `tooling`: `vite.config.*`, `eslint.config.*`, `.eslintrc*`, `webpack.config.*`, `babel.config.*`, `.babelrc*`. nodejs gains rows for `tooling` (`package.json`, `.nvmrc`, `.node-version`, `.npmrc`, `.env.example`) and `testing` (`*.test.*`, `*.spec.*`, `__tests__`). typescript `testing`: `*.test.*`, `*.spec.*`, `__tests__`. css `tooling`: `.stylelintrc*`, `stylelint.config.*`, `postcss.config.*`, `.browserslistrc`, `lightningcss.config.*`. Concept refs (hooks, security, state, performance, component patterns, async-errors, runtime-safety) stay pattern-free and always load under a bare flag.
+- `scripts/cook_route.py`: new `content:<token>` signals in the file-pattern column. `scan_contents()` reads the first 256 KB of each touched source file (ts, tsx, js, jsx, mjs, cjs, mts, cts) once per run; a ref loads when its token is found. Manifests are never scanned. Test code in a normal file (`@testing-library`, `msw`, `vitest`, `jest`, `describe(`, `renderHook`) now loads `react/testing` under a bare `--react`. The cache key gains the hit list only when a hit exists.
+- `scripts/cook_route.py`: `--explain` gives the right reason for a ref a bare flag left out. With task text: no file pattern matched and no keyword occurs in the task text. Without task text: no file pattern matched and no keyword was checked. A content signal is named when the ref has one.
+- `standards/*/_INDEX.md` keywords: `index`, `explain`, `Layout`, `slices`, `render`, `screen`, `act`, `store`, `profile`, `dialog`, `tabs`, `menu` tightened. `verify/done/check-vocab-parity.py` gains `IN_SHELF_ONLY`: loose words that stay as ref selectors inside an already-routed shelf.
+- `standards/database/_INDEX.md`: new row `database -> sql-gotchas ref` with file pattern `**/*.sql` and keywords `timestamptz`, `ilike`, `jsonb`, `pg_trgm` (added as database aliases). The ref had no row before, so it never loaded in auto mode.
+- `refs/protocol-manual.md`, `ARCHITECTURE.md`, `FLAG-LIST.md`: describe path-segment matching and content signals.
+- Effect on the 6 fixtures: `css-only` 38,807 B to 20,396 B (no database or nextjs file), `node-api` 43,595 B to 29,636 B, `flutter-screen` 56,969 B to 52,023 B, `react-nextjs` 79,996 B to 52,532 B, `supabase-migration` 58,660 B to 60,274 B (gains `sql-gotchas`), `swift-macos` unchanged. Total 315,536 B to 252,370 B (20.0% cut). 4 new true-positive fixtures route as before. Rule inventory diff: 0 lost. Blind eval: 36/36 in auto mode and with bare flags.
+
 ## [Unreleased] — 2026-10-24 · A bare domain flag loads only the refs the touched files match; `--<domain>:all` keeps the full shelf
 
 **feat(routing): bare domain flags match refs from touched files; --<domain>:all keeps the full shelf.**

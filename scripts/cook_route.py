@@ -23,6 +23,12 @@ Auto mode (protocol-manual.md Steps 3-5):
         backticked globs: `**` crosses directories, `*` does not cross `/`,
         `{a,b}` is alternation, `**/` may match zero directories. A pattern
         with no `/` also matches any file basename. Pattern `—` means none.
+      - one of its content signals occurs in a touched file. A content signal
+        is a backticked token `content:<literal>` in the file-pattern cell
+        (for example `content:@testing-library`). It is a case-sensitive
+        literal, word-bounded on any side that is a word character. The scan is
+        done once per run by `scan_contents` (first 256 KB of each touched source file)
+        and reaches this module as `hits`.
       - one of its keywords occurs in the task text (case-insensitive,
         word-bounded). Keywords are comma-separated cells.
 
@@ -33,8 +39,9 @@ Explicit mode (protocol-explicit.md "Path list"; no P0):
     (the full shelf; `all` is reserved and no ref may use that stem).
   * bare domain flag `<d>`: `standards/<d>/SKILL.md`; with any `<d>:<ref>`
     flag for the same domain -> plus only those refs (plus prose keyword
-    matches); otherwise plus every ref with NO file pattern in the index (always
-    loads), plus the patterned refs whose pattern matches `paths`, plus the
+    matches); otherwise plus every ref with NO file pattern and NO content signal in the
+    index (always loads), plus the patterned refs whose pattern matches
+    `paths` or whose content signal is in `hits`, plus the
     refs whose index keywords occur in the prose. Bare, no prose, no files
     -> every ref of the shelf, reported as a `no_file_signals` fallback.
   * `<d>:<ref>` with no bare `<d>` -> that ref only.
@@ -43,6 +50,11 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+
+CONTENT_PREFIX = "content:"
+SCAN_BYTES = 256 * 1024
+SCAN_FILES = 200
+SCAN_EXTS = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"}
 
 COOK_ROOT = Path(__file__).resolve().parent.parent
 
@@ -130,16 +142,83 @@ def index_rows(domain: str) -> list[dict]:
         else:
             prefix = name.lower().replace(" ", "-") + "-"
             names = [r for r in have if r.startswith(prefix)]
-        pats = re.findall(r"`([^`]+)`", cells[1])
+        toks = re.findall(r"`([^`]+)`", cells[1])
+        pats = [t for t in toks if not t.startswith(CONTENT_PREFIX)]
+        cont = [t[len(CONTENT_PREFIX):] for t in toks if t.startswith(CONTENT_PREFIX)]
         kws = [k.strip() for k in cells[2].split(",") if k.strip()]
-        rows.append({"refs": names, "patterns": pats, "keywords": kws})
+        rows.append({"refs": names, "patterns": pats, "contents": cont, "keywords": kws})
     return rows
 
 
-def domain_refs_auto(domain: str, paths: list[str], prose: str) -> list[str]:
+# ------------------------------------------------------------- content scan
+
+def _token_regex(tok: str) -> re.Pattern:
+    left = r"(?<![A-Za-z0-9_])" if re.match(r"\w", tok[0]) else ""
+    right = r"(?![A-Za-z0-9_])" if re.match(r"\w", tok[-1]) else ""
+    return re.compile(left + re.escape(tok) + right)
+
+
+def content_tokens() -> list[str]:
+    """Every `content:` token of every shelf index, sorted and unique."""
+    out = set()
+    for idx in sorted((COOK_ROOT / "standards").glob("*/_INDEX.md")):
+        for row in index_rows(idx.parent.name):
+            out.update(t for t in row["contents"] if t)
+    return sorted(out)
+
+
+def scan_contents(project: Path, files: list[str]) -> dict[str, list[str]]:
+    """{path: [tokens]} for touched files that contain an index content signal.
+
+    Reads at most SCAN_FILES source files (SCAN_EXTS: ts, tsx, js, jsx, mjs, cjs,
+    mts, cts; never manifests or lockfiles, whose dependency lists name every
+    test tool) and SCAN_BYTES bytes of each; skips files that are missing,
+    outside the project, or binary. Deterministic: the result depends
+    only on the file bytes and the index tokens. Empty dict when nothing matches.
+    """
+    toks = content_tokens()
+    if not toks:
+        return {}
+    rx = {t: _token_regex(t) for t in toks}
+    root = Path(project).resolve()
+    hits: dict[str, list[str]] = {}
+    for f in [x for x in sorted(files) if Path(x).suffix.lower() in SCAN_EXTS][:SCAN_FILES]:
+        try:
+            p = (root / f).resolve()
+            if root != p and root not in p.parents:
+                continue
+            if not p.is_file():
+                continue
+            with p.open("rb") as fh:
+                raw = fh.read(SCAN_BYTES)
+        except OSError:
+            continue
+        if b"\0" in raw[:1024]:
+            continue
+        text = raw.decode("utf-8", errors="ignore")
+        found = [t for t in toks if rx[t].search(text)]
+        if found:
+            hits[f] = found
+    return hits
+
+
+def content_hit(row: dict, hits: dict | None) -> str | None:
+    """`<token> in <path>` for the first content signal of `row` found, else None."""
+    if not hits or not row["contents"]:
+        return None
+    for path in sorted(hits):
+        for tok in row["contents"]:
+            if tok in hits[path]:
+                return f"`{tok}` in {path}"
+    return None
+
+
+def domain_refs_auto(domain: str, paths: list[str], prose: str,
+                     hits: dict | None = None) -> list[str]:
     chosen = set()
     for row in index_rows(domain):
         hit = (any(pattern_matches(p, paths) for p in row["patterns"])
+               or content_hit(row, hits) is not None
                or any(keyword_matches(k, prose) for k in row["keywords"]))
         if hit:
             chosen.update(row["refs"])
@@ -155,7 +234,7 @@ def rel(domain: str, ref: str | None = None) -> str:
 
 
 def skill_list_auto(routes: list[str], paths: list[str], prose: str,
-                    p0: bool = True) -> list[str]:
+                    p0: bool = True, hits: dict | None = None) -> list[str]:
     """Auto-mode list. p0=False drops global/SKILL.md (prose-without-flags
     explicit mode has no automatic P0)."""
     out = [rel("global")] if p0 else []
@@ -163,7 +242,7 @@ def skill_list_auto(routes: list[str], paths: list[str], prose: str,
     out += [rel("global", c) for c in concerns]
     for d in sorted({r.split(":", 1)[1] for r in routes if r.startswith("domain:")}):
         out.append(rel(d))
-        out += [rel(d, r) for r in domain_refs_auto(d, paths, prose)]
+        out += [rel(d, r) for r in domain_refs_auto(d, paths, prose, hits)]
     return _dedupe(out)
 
 
@@ -185,12 +264,13 @@ def refs_by_files(domain: str, paths: list[str]) -> list[tuple[str, str, str]]:
 
 
 def patternless_refs(domain: str) -> list[str]:
-    """Refs of the shelf that no `_INDEX.md` row ties to a file pattern."""
-    patterned = {r for row in index_rows(domain) if row["patterns"] for r in row["refs"]}
+    """Refs of the shelf that no `_INDEX.md` row ties to a file pattern or content signal."""
+    patterned = {r for row in index_rows(domain) if row["patterns"] or row["contents"]
+                 for r in row["refs"]}
     return [r for r in refs_of(domain) if r not in patterned]
 
 
-def _explicit(flags: list[str], prose: str, paths: list[str]):
+def _explicit(flags: list[str], prose: str, paths: list[str], hits: dict | None = None):
     names = [f.lstrip("-") for f in flags]
     global_refs = refs_of("global")
     glob_part: list[str] = []
@@ -225,7 +305,7 @@ def _explicit(flags: list[str], prose: str, paths: list[str]):
                 refs = sorted(info["subs"] | (set(domain_refs_auto(d, [], prose))
                                               if prose else set()))
             elif prose or paths:
-                refs = sorted(set(domain_refs_auto(d, paths, prose))
+                refs = sorted(set(domain_refs_auto(d, paths, prose, hits))
                               | set(patternless_refs(d)))
             else:
                 refs = refs_of(d)               # no prose, no file signals
@@ -237,14 +317,16 @@ def _explicit(flags: list[str], prose: str, paths: list[str]):
 
 
 def skill_list_explicit(flags: list[str], prose: str = "",
-                        paths: list[str] | None = None) -> list[str]:
-    return _explicit(flags, prose, paths or [])[0]
+                        paths: list[str] | None = None,
+                        hits: dict | None = None) -> list[str]:
+    return _explicit(flags, prose, paths or [], hits)[0]
 
 
 def explicit_fallbacks(flags: list[str], prose: str = "",
-                       paths: list[str] | None = None) -> list[str]:
+                       paths: list[str] | None = None,
+                       hits: dict | None = None) -> list[str]:
     """Domains whose bare flag fell back to the full shelf (no prose, no files)."""
-    return _explicit(flags, prose, paths or [])[1]
+    return _explicit(flags, prose, paths or [], hits)[1]
 
 
 def broad_routes(routes: list[str], domain_hints: list[str]) -> list[str]:
@@ -287,7 +369,7 @@ def _split_skill(path: str):
 
 
 def index_reasons(domain: str, ref: str, paths: list[str], prose: str,
-                  bare: bool = False) -> list[str]:
+                  bare: bool = False, hits: dict | None = None) -> list[str]:
     """Why a domain _INDEX.md row selects `ref`: the file pattern + file, or keyword."""
     out: list[str] = []
     if bare and ref in patternless_refs(domain):
@@ -301,10 +383,27 @@ def index_reasons(domain: str, ref: str, paths: list[str], prose: str,
                 hit = next((p for p in paths if rx.match(p)
                             or ("/" not in pat and rx.match(p.rsplit("/", 1)[-1]))), "")
                 out.append(f"file pattern `{pat}` matches {hit}")
+        ch = content_hit(row, hits)
+        if ch:
+            out.append(f"content signal {ch}")
         for kw in row["keywords"]:
             if keyword_matches(kw, prose):
                 out.append(f"keyword '{kw}' in the task text")
     return out
+
+
+def _bare_drop_reason(domain: str, ref: str, has_prose: bool) -> str:
+    """Why a bare domain flag left `ref` out. Bare flags load pattern-free refs, so a
+    dropped ref always has a file pattern or content signal that did not match.
+    With prose the keywords were checked as well, without prose they were not."""
+    kinds = "file pattern"
+    if any(ref in row["refs"] and row["contents"] for row in index_rows(domain)):
+        kinds = "file pattern or content signal"
+    if has_prose:
+        return (f"no {kinds} matched the touched files and no keyword "
+                f"of its _INDEX.md row occurs in the task text")
+    return (f"no {kinds} matched the touched files "
+            f"(bare flags without task text check no keywords)")
 
 
 def _tags_for(matched: dict, route: str) -> list[str]:
@@ -313,7 +412,7 @@ def _tags_for(matched: dict, route: str) -> list[str]:
 
 
 def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
-            matched: dict, fallback: bool = False) -> dict:
+            matched: dict, fallback: bool = False, hits: dict | None = None) -> dict:
     """Why each skill file loaded and why sibling candidates did not.
 
     Read-only: it never changes the skill list. `paths` and `text` must be the
@@ -327,7 +426,7 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
         if ":" in f:
             d, r = f.split(":", 1)
             subs.setdefault(d, set()).add(r)
-    fb = explicit_fallbacks(flags, text, paths) if names else []
+    fb = explicit_fallbacks(flags, text, paths, hits) if names else []
     loaded, domains = [], []
     for s in skills:
         d, ref = _split_skill(s)
@@ -351,7 +450,8 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
                                f"(fallback_reason no_file_signals)")
                 elif d in names:
                     why += index_reasons(d, ref, paths if not subs.get(d) else [], text,
-                                         bare=not subs.get(d))
+                                         bare=not subs.get(d),
+                                         hits=hits if not subs.get(d) else None)
         else:                                       # routed (auto or prose)
             if d == "global" and ref is None:
                 why.append("P0: global SKILL.md loads on every auto run")
@@ -364,7 +464,7 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
                 if not why and fallback:
                     why.append("broad fallback: domain named by a signal hint")
             else:
-                why += index_reasons(d, ref, paths, text)
+                why += index_reasons(d, ref, paths, text, hits=hits)
         if not why:
             why.append("kept from the cached routing entry (not re-derived)")
         loaded.append({"path": s, "why": why})
@@ -378,10 +478,8 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
             if names:
                 if subs.get(d):
                     why = f"shelf suppressed: only the named --{d}:<ref> flags load"
-                elif d in names and text:
-                    why = "has file patterns and none matched the touched files"
                 elif d in names:
-                    why = "has file patterns and none matched the touched files"
+                    why = _bare_drop_reason(d, r, bool(text))
                 else:
                     why = "no flag names it"
             elif d == "global":

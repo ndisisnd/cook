@@ -63,8 +63,8 @@ Each concern flag loads a single ref from `standards/global/refs/`. No P0 SKILL.
 
 ## Domains
 
-A bare domain flag **alone** loads `standards/<domain>/SKILL.md` + every ref that has no file pattern in the domain `_INDEX.md` (these always load) + every ref whose file pattern matches the files the task touches (`--path`, else the git diff).  
-A ref with file patterns and no match is skipped.  
+A bare domain flag **alone** loads `standards/<domain>/SKILL.md` + every ref that has no file pattern in the domain `_INDEX.md` (these always load) + every ref whose file pattern matches the files the task touches (`--path`, else the git diff) or whose `content:` signal occurs in a touched source file (for example `@testing-library` in a normal `.tsx` file loads `react/testing`).  
+A ref with file patterns or content signals and no match is skipped. Structural refs (tooling, testing) carry patterns; concept refs (hooks, security, state) do not and always load.  
 With no file signals it falls back to the full shelf and the envelope carries `fallback_reason: "no_file_signals"`.  
 With prose, the refs matched by the prose keywords are added.  
 `--<domain>:all` loads the full shelf: `standards/<domain>/SKILL.md` + all refs. Use it when you want every ref regardless of the files.  

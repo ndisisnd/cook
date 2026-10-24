@@ -92,7 +92,8 @@ def build_explain(ctx: dict, skills, fallback: bool) -> dict:
         matched = cook_cache.do_classify(text, sig, ctx.get("resume_tags"))["matched"]
     paths = sig["files"]
     return cook_route.explain(list(skills), flags=flags, text=text, paths=paths,
-                              matched=matched, fallback=fallback)
+                              matched=matched, fallback=fallback,
+                              hits=sig.get("content_hits"))
 
 
 def pending_file(fp: str) -> Path:
@@ -107,7 +108,7 @@ def manifest_of(payload_path: str) -> str | None:
 def fallback_reason(ctx: dict) -> str | None:
     """`no_file_signals` when a bare domain flag had no prose and no touched files."""
     if ctx["flags"] and not ctx["prose"] and cook_route.explicit_fallbacks(
-            ctx["flags"], "", ctx["signals"]["files"]):
+            ctx["flags"], "", ctx["signals"]["files"], ctx["signals"].get("content_hits")):
         return "no_file_signals"
     return None
 
@@ -153,11 +154,13 @@ def derive_auto(cl: dict, signals: dict, task: str, p0: bool):
     """Skills for a classified task. Returns (skills, confidence, fallback)."""
     routes = cl["routes"]
     if any(r.startswith("domain:") for r in routes):
-        return (cook_route.skill_list_auto(routes, signals["files"], task, p0=p0),
+        return (cook_route.skill_list_auto(routes, signals["files"], task, p0=p0,
+                                           hits=signals.get("content_hits")),
                 signals["confidence"], False)
     # nothing resolved even after the model's tags: load broad, never empty-handed
     routes = cook_route.broad_routes(routes, signals["domain_hints"])
-    return (cook_route.skill_list_auto(routes, signals["files"], task, p0=p0),
+    return (cook_route.skill_list_auto(routes, signals["files"], task, p0=p0,
+                                           hits=signals.get("content_hits")),
             "low", True)
 
 
@@ -242,7 +245,8 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
         fp = resume_fp or cook_cache.fingerprint(signals, flags or None)
         ctx["prompt"] = prose
         if flags:
-            skills = cook_route.skill_list_explicit(flags, prose, signals["files"])
+            skills = cook_route.skill_list_explicit(flags, prose, signals["files"],
+                                                  signals.get("content_hits"))
             return finish(ctx, status=lk["status"], fp=fp, skills=skills, tags=[],
                           confidence=lk["confidence"], fallback=False, cacheable=False)
         cl = cook_cache.do_classify(prose, signals, resume_tags)
@@ -261,7 +265,8 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
         cl = cook_cache.do_classify(ctx["task"], signals, resume_tags)
         if flags:
             skills, tags, conf, fb = (cook_route.skill_list_explicit(
-                                          flags, "", signals["files"]), [],
+                                          flags, "", signals["files"],
+                                          signals.get("content_hits")), [],
                                       signals["confidence"], False)
         else:
             skills, conf, fb = derive_auto(cl, signals, ctx["task"], p0=True)
@@ -296,11 +301,13 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
 
     if status == "fallback":                      # corrupt cache: greedy, no write
         if flags:
-            skills = cook_route.skill_list_explicit(flags, "", signals["files"])
+            skills = cook_route.skill_list_explicit(flags, "", signals["files"],
+                                                    signals.get("content_hits"))
         else:
             routes = cook_route.broad_routes([], signals["domain_hints"])
             skills = cook_route.skill_list_auto(routes, signals["files"],
-                                                ctx["task"], p0=True)
+                                                ctx["task"], p0=True,
+                                                hits=signals.get("content_hits"))
         env = finish(ctx, status="miss", fp=fp, skills=skills, tags=[],
                      confidence="low", fallback=True, cacheable=False)
         env["cache_corrupt"] = True
@@ -318,7 +325,8 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
     if flags:
         return finish(ctx, status=status, fp=fp,
                       skills=cook_route.skill_list_explicit(
-                          flags, "", signals["files"]), tags=[],
+                          flags, "", signals["files"],
+                          signals.get("content_hits")), tags=[],
                       confidence=signals["confidence"], fallback=False,
                       stale_reason=stale_reason)
     cl = cook_cache.do_classify(ctx["task"], signals)

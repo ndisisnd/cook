@@ -73,7 +73,8 @@ Branch on `status`:
 python3 scripts/cook_cache.py classify [--path <file> ...] [--project <dir>]
 ```
 
-The script matches signals against `vocab/tag-vocabulary.json` aliases and
+The script matches signals against `vocab/tag-vocabulary.json` aliases (prose,
+extensions, frameworks and whole path segments; never a part of a file name) and
 prints `canonical_tags`, `routes`, and `needs_llm`. Only when
 `needs_llm: true` (no `domain:*` route resolved): read the vocab yourself and
 canonicalize the raw signals onto its tags — never invent a tag; drop and note
@@ -229,7 +230,8 @@ manual flow. The text below is verbatim.
   - **Alone** — no prose and no `--<domain>:<ref>` for it → the SKILL.md plus
     every ref with **no** file pattern in the `_INDEX.md` (always loads) and
     every ref whose file pattern matches a touched file (the paths from
-    `--path`, else git). A ref with patterns and no match is skipped. With **zero** file signals → every
+    `--path`, else git) or whose `content:` signal occurs in a touched source file
+    (an inline test still loads the testing ref). A ref with patterns and no match is skipped. With **zero** file signals → every
     `standards/<domain>/refs/*.md` (the full shelf) and the envelope sets
     `fallback_reason: "no_file_signals"`.
   - **`--<domain>:all`** → the SKILL.md plus every ref (the **full shelf**),

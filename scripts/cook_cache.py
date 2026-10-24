@@ -75,6 +75,9 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cook_route  # noqa: E402
+
 COOK_ROOT = Path(__file__).resolve().parent.parent
 VOCAB_FILE = COOK_ROOT / "vocab" / "tag-vocabulary.json"
 STATE_DIR = COOK_ROOT / ".agent-skills"
@@ -420,6 +423,7 @@ def gather(explicit_paths: list[str], project: Path) -> dict:
     return {
         "source": source,
         "files": files,
+        "content_hits": cook_route.scan_contents(project, files),
         "extensions": extensions(files),
         "frameworks": frameworks,
         "domain_hints": domain_hints,
@@ -479,6 +483,10 @@ def fingerprint(signals: dict, flags=None) -> str:
         "domain_hints": signals["domain_hints"],
         "concern_hints": signals["concern_hints"],
     }
+    if signals.get("content_hits"):
+        # v1.2.0 P5b: a file's content can select a ref (an inline test), so the
+        # key must change with it. Absent when nothing matched: old keys stay valid.
+        basis["content_hits"] = signals["content_hits"]
     if flags:
         basis["flags"] = sorted(flags)
         # v1.2.0 P5: a bare domain flag now selects refs from `files`; entries
@@ -677,21 +685,27 @@ def do_classify(prose, signals, extra_tags=None) -> dict:
     """
     prose = (prose or "").strip()
 
-    hay = " ".join(
-        [prose]
-        + signals["files"]
-        + signals["extensions"]
-        + signals["frameworks"]
-    ).lower()
+    # Aliases match prose, extensions, frameworks and whole path segments. A path
+    # segment is one `/`-separated part of a touched path, compared in full
+    # (`package.json`, `layout.tsx`, `Dockerfile`). An alias never matches inside a
+    # file name, so `index.html` is not `index` and `layout.scss` is not `Layout`.
+    # Aliases that start with `.` also match the end of a file name (`.d.ts`).
+    files = signals["files"]
+    hay = " ".join([prose] + signals["extensions"] + signals["frameworks"]).lower()
+    segments = {seg.lower() for f in files for seg in f.split("/") if seg}
+    names = [f.rsplit("/", 1)[-1].lower() for f in files]
 
     tags = json.loads(VOCAB_FILE.read_text())["tags"]
     matched: dict[str, dict] = {}
     for tag, data in tags.items():
-        for needle in [tag] + data.get("aliases", []):
+        needles = ([tag] if data.get("match_name", True) else []) + data.get("aliases", [])
+        for needle in needles:
             n = needle.lower()
             if len(n) < 2:
                 continue  # single-char aliases ('!') match everything — noise
-            if re.search(r"(?<![a-z0-9])" + re.escape(n) + r"(?![a-z0-9])", hay):
+            if (re.search(r"(?<![a-z0-9])" + re.escape(n) + r"(?![a-z0-9])", hay)
+                    or n in segments
+                    or (n.startswith(".") and any(x.endswith(n) for x in names))):
                 matched[tag] = {"routes_to": data["routes_to"], "matched_on": needle}
                 break
 

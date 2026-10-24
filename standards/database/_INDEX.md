@@ -6,7 +6,8 @@
 | Skill | File pattern | Keywords |
 | ----- | ------------ | -------- |
 | **database** | `**/*.entity.ts`, `prisma/schema.prisma`, `prisma/migrations/*/migration.sql`, `**/migrations/*.sql`, `drizzle.config.ts`, `drizzle/**/*.sql`, `**/redis.config.ts` | postgres, postgresql, prisma, TypeOrmModule, PrismaService, PostgresModule, redis, ttl, eviction |
-| database → PostgreSQL refs | `**/*.entity.ts`, `prisma/schema.prisma`, `prisma/migrations/*/migration.sql`, `**/migrations/*.sql`, `drizzle/**/*.sql` | index, RLS, transaction, query plan, explain, sql |
+| database → PostgreSQL refs | `**/*.entity.ts`, `prisma/schema.prisma`, `prisma/migrations/*/migration.sql`, `**/migrations/*.sql`, `drizzle/**/*.sql` | create index, add index, db index, btree, composite index, unique index, RLS, transaction, query plan, explain analyze, explain plan, sql |
+| database → sql-gotchas ref | `**/*.sql` | timestamptz, ilike, jsonb, pg_trgm |
 | database → Redis refs | `**/redis.config.ts` | redis, ttl, eviction, scan |
 
 > Load `<SKILLS>/database/SKILL.md` for PostgreSQL schema work, migrations, query tuning, and Redis/Valkey configuration or caching changes.

@@ -5,18 +5,18 @@
 
 | Skill | File pattern | Keywords |
 | ----- | ------------ | -------- |
-| **react** | `**/*.tsx`, `**/*.jsx` | component, props, children, JSX, hooks, useEffect, useEffectEvent, useState, useCallback, useMemo, useRef, useContext, useReducer, useSyncExternalStore, useId, useLayoutEffect, ReactNode |
-| react → testing ref | `**/*.test.tsx`, `**/*.spec.tsx` | render, screen, userEvent, MSW, mock service worker, waitFor, queryBy, fake timers, act |
-| react → tooling ref | — | vite, webpack, StrictMode, exhaustive-deps, React Compiler, eslint |
-| react → state-management ref | — | zustand, redux, RTK, RTK Query, react-query, TanStack Query, SWR, Jotai, store |
-| react → performance ref | — | waterfall, lazy, Suspense, virtualize, react-window, TanStack Virtual, bundle size, profile, React Compiler |
+| **react** | `**/*.tsx`, `**/*.jsx` | react component, function component, props, children prop, JSX, react hooks, useEffect, useEffectEvent, useState, useCallback, useMemo, useRef, useContext, useReducer, useSyncExternalStore, useId, useLayoutEffect, ReactNode |
+| react → testing ref | `**/*.test.tsx`, `**/*.spec.tsx`, `**/*.test.jsx`, `**/*.spec.jsx`, `**/__tests__/**`, `content:@testing-library`, `content:msw`, `content:vitest`, `content:jest`, `content:describe(`, `content:renderHook` | renderHook, getByRole, getByTestId, getByText, findByRole, userEvent, MSW, mock service worker, waitFor, queryBy, fake timers, act() |
+| react → tooling ref | `vite.config.*`, `eslint.config.*`, `.eslintrc*`, `webpack.config.*`, `babel.config.*`, `.babelrc*` | vite, webpack, StrictMode, exhaustive-deps, React Compiler, eslint |
+| react → state-management ref | — | zustand, redux, RTK, RTK Query, react-query, TanStack Query, SWR, Jotai |
+| react → performance ref | — | waterfall, lazy, Suspense, virtualize, react-window, TanStack Virtual, bundle size, profiler, profiling, React Compiler |
 | react → security ref | — | dangerouslySetInnerHTML, XSS, DOMPurify, Trusted Types, JWT, CSRF, sanitize, SameSite |
-| react → component-patterns ref | — | compound component, HOC, render prop, composition, controlled, uncontrolled, accessibility, ARIA, dialog, tabs, menu |
+| react → component-patterns ref | — | compound component, HOC, render prop, composition, controlled, uncontrolled, accessibility, ARIA, dialog component, tabs component, menu component |
 | react → hooks ref | — | useEffectEvent, useSyncExternalStore, useLayoutEffect, useLocalStorage, useDebounce, useOnClickOutside, useIntersectionObserver, usePrevious, custom hook |
 
 > Load `<SKILLS>/react/SKILL.md` for any `.tsx` or `.jsx` file — covers hook correctness, component basics, React 19 APIs, boundary safety (P0), TypeScript and conventions (P1).
 >
-> Refs route by keyword only (rows marked `—`), except testing, which also matches test files.
+> Concept refs (hooks, performance, security, state, component patterns) have no file pattern: they route by keyword in auto mode and always load under a bare `--react`. Structural refs carry a file pattern, and testing also carries `content:` signals (test-library imports in a touched source file, so an inline test in a normal file still loads it).
 >
 > Load `<SKILLS>/react/refs/testing.md` when touching test files or writing RTL/MSW tests, async queries, absence checks, fake timers, or `userEvent`.
 >
