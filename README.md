@@ -132,6 +132,10 @@ Your agent does not parse these flags. It passes the text after `/cook` to `cook
 
 Add `--explain` to `cook_run.py` to see the reason for every file. The envelope gains an `explain` object: for each loaded file, the route tag and matched alias, the `_INDEX.md` file pattern or keyword, or the flag that loaded it; for each file in the same shelf that did not load, why not. Nothing else in the envelope changes.
 
+In auto mode a shelf can name core refs in its `_INDEX.md` (`Core refs (auto mode): ...`). They load whenever the domain routes, with no keyword needed: react loads hooks, performance and security; typescript loads `global/error-handling`.
+
+A pipeline compiles one payload and hands subagents its path. A subagent reads only the sections it needs with `python3 scripts/cook_compile.py slice --payload <path> --section "<header|rel>"`; the envelope `sections` list gives the names and sizes. See `refs/payload-reuse.md`.
+
 ```bash
 python3 scripts/cook_run.py --project . --task "add a POST /orders route" --explain
 ```

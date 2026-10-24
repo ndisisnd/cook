@@ -13,8 +13,8 @@ refs sorted by name). A path appears once.
 Auto mode (protocol-manual.md Steps 3-5):
   * `standards/global/SKILL.md` always (P0).
   * For each `concern:<c>` route: `standards/global/refs/<c>.md`.
-  * For each `domain:<d>` route: `standards/<d>/SKILL.md`, plus the refs the
-    domain `_INDEX.md` selects. Each markdown table row of the index whose
+  * For each `domain:<d>` route: `standards/<d>/SKILL.md`, plus the shelf's
+    core refs (see below), plus the refs the domain `_INDEX.md` selects. Each markdown table row of the index whose
     first cell reads `<d> -> <ref> ref` (or `<d> -> <ref>`) names
     `refs/<ref>.md`. A row such as `database -> PostgreSQL refs` names every
     ref whose stem starts with `postgresql-`. The SKILL row (`**<d>**`) never
@@ -31,6 +31,14 @@ Auto mode (protocol-manual.md Steps 3-5):
         and reaches this module as `hits`.
       - one of its keywords occurs in the task text (case-insensitive,
         word-bounded). Keywords are comma-separated cells.
+
+Core refs (auto mode only): a shelf `_INDEX.md` may carry one line
+`Core refs (auto mode): hooks, performance, global/error-handling`. Each name is
+a ref of that shelf (`hooks` -> `refs/hooks.md`) or `global/<concern>` (a global
+concern ref). The listed refs load whenever the domain routes in auto mode (or
+explicit prose without flags), with no keyword or file match needed. Explicit
+flags ignore the line: a bare flag already loads every pattern-free ref, and
+`:all` loads the full shelf.
 
 Explicit mode (protocol-explicit.md "Path list"; no P0):
   * `global` -> global SKILL.md + every global ref.
@@ -150,6 +158,38 @@ def index_rows(domain: str) -> list[dict]:
     return rows
 
 
+CORE_RE = re.compile(r"^\s*>?\s*Core refs \(auto mode\):\s*(.+?)\s*$", re.M)
+
+
+def core_names(domain: str) -> list[str]:
+    """Names on the shelf's `Core refs (auto mode):` line, as written (no validation)."""
+    idx = COOK_ROOT / "standards" / domain / "_INDEX.md"
+    if not idx.exists():
+        return []
+    m = CORE_RE.search(idx.read_text(encoding="utf-8"))
+    if not m:
+        return []
+    return [t.strip().strip("`").rstrip(".").strip() for t in m.group(1).split(",")
+            if t.strip().strip("`").rstrip(".").strip()]
+
+
+def core_refs(domain: str) -> list[str]:
+    """Own-shelf core refs of `domain` (stems that exist in standards/<d>/refs)."""
+    have = set(refs_of(domain))
+    return sorted(n for n in core_names(domain) if "/" not in n and n in have)
+
+
+def core_concerns(domain: str) -> list[str]:
+    """Global concern refs the shelf lists as core (`global/<concern>`)."""
+    have = set(refs_of("global"))
+    out = []
+    for n in core_names(domain):
+        d, _, r = n.partition("/")
+        if d == "global" and r in have:
+            out.append(r)
+    return sorted(out)
+
+
 # ------------------------------------------------------------- content scan
 
 def _token_regex(tok: str) -> re.Pattern:
@@ -238,11 +278,15 @@ def skill_list_auto(routes: list[str], paths: list[str], prose: str,
     """Auto-mode list. p0=False drops global/SKILL.md (prose-without-flags
     explicit mode has no automatic P0)."""
     out = [rel("global")] if p0 else []
-    concerns = sorted({r.split(":", 1)[1] for r in routes if r.startswith("concern:")})
-    out += [rel("global", c) for c in concerns]
-    for d in sorted({r.split(":", 1)[1] for r in routes if r.startswith("domain:")}):
+    domains = sorted({r.split(":", 1)[1] for r in routes if r.startswith("domain:")})
+    concerns = {r.split(":", 1)[1] for r in routes if r.startswith("concern:")}
+    for d in domains:
+        concerns.update(core_concerns(d))
+    out += [rel("global", c) for c in sorted(concerns)]
+    for d in domains:
         out.append(rel(d))
-        out += [rel(d, r) for r in domain_refs_auto(d, paths, prose, hits)]
+        out += [rel(d, r) for r in sorted(set(domain_refs_auto(d, paths, prose, hits))
+                                          | set(core_refs(d)))]
     return _dedupe(out)
 
 
@@ -369,11 +413,14 @@ def _split_skill(path: str):
 
 
 def index_reasons(domain: str, ref: str, paths: list[str], prose: str,
-                  bare: bool = False, hits: dict | None = None) -> list[str]:
+                  bare: bool = False, hits: dict | None = None,
+                  core: bool = False) -> list[str]:
     """Why a domain _INDEX.md row selects `ref`: the file pattern + file, or keyword."""
     out: list[str] = []
     if bare and ref in patternless_refs(domain):
         out.append("no file patterns: always loads")
+    if core and ref in core_refs(domain):
+        out.append("core ref of the shelf (_INDEX.md): loads whenever the domain routes in auto mode")
     for row in index_rows(domain):
         if ref not in row["refs"]:
             continue
@@ -427,6 +474,7 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
             d, r = f.split(":", 1)
             subs.setdefault(d, set()).add(r)
     fb = explicit_fallbacks(flags, text, paths, hits) if names else []
+    domains_in = sorted({_split_skill(s)[0] for s in skills} - {"global"})
     loaded, domains = [], []
     for s in skills:
         d, ref = _split_skill(s)
@@ -457,6 +505,9 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
                 why.append("P0: global SKILL.md loads on every auto run")
             elif d == "global":
                 why += _tags_for(matched, f"concern:{ref}")
+                why += [f"core ref of the {x} shelf (its _INDEX.md lists global/{ref}): "
+                        f"loads whenever {x} routes in auto mode"
+                        for x in domains_in if ref in core_concerns(x)]
                 if not why and fallback:
                     why.append("broad fallback: no domain resolved, every concern loads")
             elif ref is None:
@@ -464,7 +515,7 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
                 if not why and fallback:
                     why.append("broad fallback: domain named by a signal hint")
             else:
-                why += index_reasons(d, ref, paths, text, hits=hits)
+                why += index_reasons(d, ref, paths, text, hits=hits, core=True)
         if not why:
             why.append("kept from the cached routing entry (not re-derived)")
         loaded.append({"path": s, "why": why})
@@ -483,7 +534,8 @@ def explain(skills: list[str], *, flags: list[str], text: str, paths: list[str],
                 else:
                     why = "no flag names it"
             elif d == "global":
-                why = f"no concern:{r} route"
+                why = (f"no concern:{r} route, and no loaded shelf lists global/{r} "
+                       f"as a core ref")
             else:
                 why = ("no _INDEX.md file pattern or keyword matched"
                        if any(r in row["refs"] for row in index_rows(d))

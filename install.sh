@@ -28,6 +28,7 @@ RESET='\033[0m'
 FILES=(
   SKILL.md
   agents/openai.yaml
+  refs/payload-reuse.md
   refs/protocol-cook.md
   refs/protocol-explicit.md
   refs/protocol-manual.md

@@ -63,7 +63,7 @@ The only model-side branching is Step 0 (the telemetry management flags `--init`
 1. **Resolve.** Builds a fingerprint from raw observable signals (files, frameworks, domain hints, concern hints) and checks the cache. Extensions are emitted as signals for classification but are not part of the fingerprint.
 2. **Hit.** The routing is cached and fresh, and the entry stores a finished payload: the script returns that payload with no classification, no compile and no `heal`. A changed source standard, a missing payload file or a changed compiler makes the entry `stale`.
 3. **Miss or stale.** Matches the signals against the aliases in `vocab/tag-vocabulary.json`. The resulting canonical tags route to `concern:*` and `domain:*` targets.
-4. **Skill list.** `cook_route.py` derives it: global `SKILL.md` (P0, auto mode only), each routed concern ref, each routed domain `SKILL.md` plus the refs its `_INDEX.md` selects by file pattern, content signal (`content:<token>` in a touched source file, scanned once by `scan_contents`) or keyword. Aliases match prose, extensions, frameworks and whole path segments, never part of a file name. Explicit flags use the path-list rules in `cook_route.py` instead.
+4. **Skill list.** `cook_route.py` derives it: global `SKILL.md` (P0, auto mode only), each routed concern ref, each routed domain `SKILL.md` plus the refs its `_INDEX.md` selects by file pattern, content signal (`content:<token>` in a touched source file, scanned once by `scan_contents`) or keyword, plus the shelf's core refs: an `_INDEX.md` line `Core refs (auto mode): ...` (react: hooks, performance, security; typescript: `global/error-handling`) loads whenever that domain routes in auto mode. Aliases match prose, extensions, frameworks and whole path segments, never part of a file name. Explicit flags use the path-list rules in `cook_route.py` instead.
 5. **Compile.** `cook_compile.py` deduplicates, buckets by layer (Universal → Domain → Concern), strips YAML frontmatter, concatenates with terse section headers, and writes the markdown and a section manifest. The payload content never transits the model's context.
 6. **Persist.** Writes the routing entry with the payload path (miss path only; never on a corrupt cache or for prose). Read failures are not routing failures and do not suppress the write; the compiler's `degraded` list is stamped onto the entry.
 7. **Record.** Best-effort telemetry; a failure never changes the exit code or the envelope.
@@ -76,7 +76,9 @@ When no `domain:*` route resolves, or shared Apple vocabulary is ambiguous betwe
 
 ### The envelope
 
-`mode`, `status` (`hit|miss|stale|skip|needs_llm`), `fingerprint`, `payload` (`path`, `bytes`, `sections`), `manifest_path`, `degraded`, `dropped_for_budget`, `needs_llm`, `platform_ambiguous`. Optional: `stale_reason`, `llm_input`, `cache_corrupt`, `ignored_tags`, `skills` (`--show-skills`) and `explain` (`--explain`).
+`mode`, `status` (`hit|miss|stale|skip|needs_llm`), `fingerprint`, `payload` (`path`, `bytes`, `sections`), `manifest_path`, `sections` (`header`, `rel`, `bytes` per payload section), `degraded`, `dropped_for_budget`, `needs_llm`, `platform_ambiguous`. Optional: `stale_reason`, `llm_input`, `cache_corrupt`, `ignored_tags`, `skills` (`--show-skills`) and `explain` (`--explain`).
+
+Subagents do not get copies of the payload. A caller passes the payload path, and a subagent runs `python3 scripts/cook_compile.py slice --payload <path> --section <header|rel>` to read only the sections it needs (contract: `refs/payload-reuse.md`). `cook_run.py --consumer <label>` tags the telemetry record so `--status` shows reuse against reinjection.
 
 `--explain` adds one object: `loaded` (per file, why it loaded: route tag and matched alias, `_INDEX.md` file pattern or keyword, flag, P0, or "kept from the cached routing entry") and `dropped` (per sibling file in the loaded shelves, why not). It changes no other envelope field and not the payload.
 

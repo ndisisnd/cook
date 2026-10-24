@@ -31,6 +31,8 @@ Usage
   --explain     adds an `explain` object: per loaded skill file why it loaded
                 (route tag + matched alias, file pattern, keyword, or flag), and
                 per dropped sibling why not. No other envelope field changes.
+  --consumer L  who the payload is for (label, e.g. eng-build, reviewer). Stored
+                with the telemetry record so --status shows reuse vs reinjection.
   --resume/--tags
                 finish a run that stopped with needs_llm. --tags are canonical
                 tags from vocab/tag-vocabulary.json; they are added to the
@@ -39,7 +41,9 @@ Usage
 
 Output: one compact JSON envelope on stdout:
   mode, status (hit|miss|stale|skip|needs_llm), fingerprint,
-  payload {path, bytes, sections}, manifest_path, degraded,
+  payload {path, bytes, sections}, manifest_path, sections [{header, rel,
+  bytes}] (one per payload section, from the manifest; feed a header or rel to
+  `cook_compile.py slice`), degraded,
   dropped_for_budget, needs_llm, platform_ambiguous,
   stale_reason (when stale), fallback_reason ("no_file_signals" when a bare
   domain flag had no prose and no touched files, so it loaded the full shelf),
@@ -122,6 +126,7 @@ def envelope(*, mode, status, fp, payload, manifest, degraded, dropped,
         "fingerprint": fp,
         "payload": payload,
         "manifest_path": manifest,
+        "sections": cook_compile.sections_of(manifest) if manifest else [],
         "degraded": degraded,
         "dropped_for_budget": dropped,
         "needs_llm": False,
@@ -140,12 +145,13 @@ def from_compile(comp: dict) -> dict:
     return {"path": comp["path"], "bytes": comp["bytes"], "sections": comp["sections"]}
 
 
-def record_telemetry(project: Path, intent: str, prompt: str, skills, mode: str):
+def record_telemetry(project: Path, intent: str, prompt: str, skills, mode: str,
+                     consumer: str = ""):
     """Best-effort: never raises, never alters the envelope."""
     try:
         store, _scope = cook_telemetry.resolve_store(cook_cache.COOK_ROOT, project)
         cook_telemetry.record_fire(store, intent=intent, prompt=prompt,
-                                   skills=list(skills), mode=mode)
+                                   skills=list(skills), mode=mode, consumer=consumer)
     except Exception:  # noqa: BLE001 - telemetry must never block a fire
         pass
 
@@ -187,7 +193,8 @@ def finish(ctx: dict, *, status, fp, skills, tags, confidence, fallback,
                 payload_budget=ctx["budget"])
         except (cook_cache.CookError, OSError) as exc:
             cache_error = str(exc)
-    record_telemetry(ctx["project"], ctx["intent"], ctx["prompt"], skills, ctx["mode"])
+    record_telemetry(ctx["project"], ctx["intent"], ctx["prompt"], skills, ctx["mode"],
+                     ctx.get("consumer", ""))
     env = envelope(mode=ctx["mode"], status=status, fp=fp, payload=from_compile(comp),
                    manifest=comp.get("manifest_path"), degraded=comp["degraded"],
                    dropped=comp["metadata"]["dropped_for_budget"],
@@ -207,7 +214,7 @@ def needs_llm_envelope(ctx, fp, cl, signals):
         "project": str(ctx["project"]), "paths": ctx["paths"], "flags": ctx["flags"],
         "prose": ctx["prose"], "task": ctx["task"], "budget": ctx["budget"],
         "intent": ctx["intent"], "show_skills": ctx["show_skills"],
-        "explain": ctx.get("explain", False),
+        "explain": ctx.get("explain", False), "consumer": ctx.get("consumer", ""),
     }), encoding="utf-8")
     env = envelope(mode=ctx["mode"], status="needs_llm", fp=fp, payload=None,
                    manifest=None, degraded=[], dropped=[],
@@ -293,7 +300,7 @@ def run(ctx: dict, resume_tags=None, resume_fp: str | None = None) -> dict:
                        skills=lk["routing"]["skills"] if ctx["show_skills"] else None,
                        fallback_reason=fallback_reason(ctx))
         record_telemetry(project, ctx["intent"], ctx["prompt"],
-                         lk["routing"]["skills"], ctx["mode"])
+                         lk["routing"]["skills"], ctx["mode"], ctx.get("consumer", ""))
         if ctx.get("explain"):
             env["explain"] = build_explain(ctx, lk["routing"]["skills"],
                                            lk["routing"].get("fallback", False))
@@ -350,6 +357,7 @@ def main(argv=None) -> int:
     ap.add_argument("--intent", default="unspecified")
     ap.add_argument("--show-skills", action="store_true")
     ap.add_argument("--explain", action="store_true")
+    ap.add_argument("--consumer", default="")
     ap.add_argument("--args", dest="raw_args", default=None, metavar="RAW")
     ap.add_argument("--resume", metavar="FINGERPRINT")
     ap.add_argument("--tags", default="")
@@ -377,7 +385,8 @@ def main(argv=None) -> int:
                    "task": pend["task"], "budget": pend["budget"],
                    "intent": pend["intent"],
                    "show_skills": pend["show_skills"] or args.show_skills,
-                   "explain": pend.get("explain", False) or args.explain}
+                   "explain": pend.get("explain", False) or args.explain,
+                   "consumer": args.consumer or pend.get("consumer", "")}
         else:
             raw_flags, raw_prose = [], ""
             if args.raw_args is not None:
@@ -392,6 +401,7 @@ def main(argv=None) -> int:
                 "task": args.task.strip(),
                 "budget": args.budget, "intent": args.intent,
                 "show_skills": args.show_skills, "explain": args.explain,
+                "consumer": args.consumer.strip(),
             }
             if ctx["flags"]:
                 cook_cache.check_flags(ctx["flags"])

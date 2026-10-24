@@ -114,6 +114,10 @@ For each route `domain:<name>`, load `standards/<name>/SKILL.md`, then use that
 domain's `_INDEX.md` to pick which `refs/*.md` match the task. Multiple
 domains may match (e.g. Next.js UI + Postgres schema → both shelves).
 
+If the `_INDEX.md` has a `Core refs (auto mode):` line, also load every ref it
+names (`hooks` is `refs/hooks.md`; `global/error-handling` is the global concern
+ref), whenever the domain routes. They need no keyword.
+
 Persist the decision (miss path only — skip on hit and on the corrupt-cache
 fallback). Run it **after** Step 6's compile, so the payload file exists, and
 add `--payload` (see Step 6):
@@ -137,6 +141,8 @@ python3 scripts/cook_compile.py --skills <comma-separated paths> \
 
 `--manifest` also writes `payload-<fingerprint>.json` beside the payload (one
 `{header, rel, bucket, byte_start, byte_end}` row per section).
+`cook_compile.py slice --payload <file> --section <header|rel>` prints only the
+named sections from that manifest (see `payload-reuse.md`).
 
 (Use `payload-prose.md` on the explicit-prose path, which has no fingerprint.)
 The compiler deduplicates, buckets (Universal → Domain → Concern), strips

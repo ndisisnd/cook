@@ -10,6 +10,8 @@
 | typescript → testing ref | `**/*.test.{ts,tsx}`, `**/*.spec.{ts,tsx}`, `**/__tests__/**`, `content:vitest`, `content:jest`, `content:describe(` | test, tests, vitest, jest |
 | typescript → security ref | — | validate, validation, sanitize, auth, token, jwt, secret, cookie, rbac |
 
+Core refs (auto mode): global/error-handling
+
 > Load matched skills: `<SKILLS>/typescript/SKILL.md`.
 > Load `<SKILLS>/typescript/refs/tooling.md` for tsconfig, ESLint, Vitest/Jest config, build tools, or CI.
 > Load `<SKILLS>/typescript/refs/testing.md` for writing, debugging, or reviewing tests.

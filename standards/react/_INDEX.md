@@ -14,9 +14,11 @@
 | react → component-patterns ref | — | compound component, HOC, render prop, composition, controlled, uncontrolled, accessibility, ARIA, dialog component, tabs component, menu component |
 | react → hooks ref | — | useEffectEvent, useSyncExternalStore, useLayoutEffect, useLocalStorage, useDebounce, useOnClickOutside, useIntersectionObserver, usePrevious, custom hook |
 
+Core refs (auto mode): hooks, performance, security
+
 > Load `<SKILLS>/react/SKILL.md` for any `.tsx` or `.jsx` file — covers hook correctness, component basics, React 19 APIs, boundary safety (P0), TypeScript and conventions (P1).
 >
-> Concept refs (hooks, performance, security, state, component patterns) have no file pattern: they route by keyword in auto mode and always load under a bare `--react`. Structural refs carry a file pattern, and testing also carries `content:` signals (test-library imports in a touched source file, so an inline test in a normal file still loads it).
+> Concept refs (hooks, performance, security, state, component patterns) have no file pattern: they always load under a bare `--react`. In auto mode they route by keyword, except the core refs on the `Core refs` line above (hooks, performance, security), which load whenever react routes. Structural refs carry a file pattern, and testing also carries `content:` signals (test-library imports in a touched source file, so an inline test in a normal file still loads it).
 >
 > Load `<SKILLS>/react/refs/testing.md` when touching test files or writing RTL/MSW tests, async queries, absence checks, fake timers, or `userEvent`.
 >

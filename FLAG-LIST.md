@@ -16,6 +16,8 @@ python3 scripts/cook_run.py --project <dir> --args '--react --react:hooks fix re
 - `--flag <name>` (no dashes) and `--prose <text>` still work and merge with `--args`.
 - An unknown flag exits 1 with `Error: unknown flag '<x>'` and the valid flag list on stderr.
 - `--explain` adds an `explain` object to the envelope: why each file loaded, and why sibling files did not.
+- `--consumer <label>` on `cook_run.py` names who the payload is for. It is stored on the telemetry record, and `--status` shows a "By consumer" block. It is not a `/cook` flag: callers pass it to the script.
+- `python3 scripts/cook_compile.py slice --payload <file> --section <header|rel>` prints only the named sections of a compiled payload (see `refs/payload-reuse.md`).
 - Grammar for parsing by hand: [`refs/protocol-explicit.md`](refs/protocol-explicit.md). Path-list rules for building the list by hand: [`refs/protocol-manual.md`](refs/protocol-manual.md).
 
 ---

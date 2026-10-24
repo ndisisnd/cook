@@ -4,6 +4,21 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
+## [Unreleased] — 2026-10-24 · Subagents read slices of one payload; a React or TypeScript review always sees its core rules
+
+**feat(compile): payload manifest and slice command for per-subagent reads; core concept refs in auto mode.**
+
+- `scripts/cook_compile.py`: new `slice --payload <file> --section <header|rel> [...]` prints only the named sections of a compiled payload, read through its manifest. Output is byte-identical to the section in the payload. No LLM, no recompile. Exit 1 for an unknown or ambiguous section (the list is on stderr), exit 2 for a missing, corrupt or stale manifest. `--list` prints the sections.
+- `scripts/cook_run.py`: the envelope gains a top-level `sections` list of `{header, rel, bytes}` beside `manifest_path`. A cache hit carries the same list. New `--consumer <label>`.
+- `scripts/cook_telemetry.py`: `record --consumer <label>` stores the label. `--status` gains a "By consumer" breakdown, so reuse and reinjection are visible.
+- `refs/payload-reuse.md` (new): the caller contract. Pass the payload path. A subagent runs `slice` for its sections. Inject the full payload only when the caller sets `inject: full`.
+- `standards/react/_INDEX.md`, `standards/typescript/_INDEX.md`: new `Core refs (auto mode):` line. react loads `hooks`, `performance`, `security`; typescript loads `global/error-handling`, whenever the domain routes in auto mode. No rule text changed.
+- `scripts/cook_route.py`: `skill_list_auto` reads the core line. Explicit flags ignore it. `--explain` names the core line as the reason.
+- `scripts/check_index_routes.py`: every name on a `Core refs` line must resolve to a ref file.
+- `refs/telemetry.md`, `refs/protocol-cook.md`, `refs/protocol-manual.md`, `ARCHITECTURE.md`, `README.md`: describe `sections`, `slice`, `--consumer` and the core line. `install.sh`: manifest gains `refs/payload-reuse.md`.
+- Why: in the Phase 5b blind test, a plain task summary loaded none of the concept refs, so 5 findings (R8, R9, R10, R11, T10) were caught only by generic rules. With the core set all 5 cite their own rule. Strict blind score: 35/36 on the first pass. The one miss (N5, nextjs) was a line attribution, not a missed rule. 36/36 on the rerun of that one reviewer. Both numbers are in `eval-6.md`.
+- Effect: 3 slices (global, react, nextjs SKILLs) read 15,359 of 43,571 B (35.3%) on `layout-tsx`. Auto routing only adds files: react auto +15,177 B, typescript and nextjs auto +2,492 B. Size cost: 6 original fixtures go from 252,370 B to 257,354 B, +4,984 B (+2.0%) vs 5b. Total is still 18.4% below Phase 0 (315,536 B), down from 20.0% after 5b. Rule inventory diff: 0 lost.
+
 ## [Unreleased] — 2026-10-24 · Short everyday words no longer load whole shelves; test code inside a normal file still loads the testing rules
 
 **fix(routing): precise vocab aliases; file names no longer trigger shelves.**

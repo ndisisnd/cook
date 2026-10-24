@@ -4,7 +4,7 @@ Read this file when `/cook` carries args or a telemetry flag. `SKILL.md` covers 
 
 ## Step 0: telemetry flags
 
-If the invocation carries `--init`, `--enable-telemetry`, `--disable-telemetry` or `--status`, read [`telemetry.md`](telemetry.md) and run its command with `--project <dir>`. If the flag is the whole invocation, print the output and stop. Otherwise strip the flag and continue with the remaining args. Telemetry is opt-in and off by default. `cook_run.py` records the fire itself.
+If the invocation carries `--init`, `--enable-telemetry`, `--disable-telemetry` or `--status`, read [`telemetry.md`](telemetry.md) and run its command with `--project <dir>`. If the flag is the whole invocation, print the output and stop. Otherwise strip the flag and continue with the remaining args. `cook_run.py` records the fire itself.
 
 ## Run
 
@@ -19,7 +19,7 @@ python3 scripts/cook_run.py --project <dir> [--path <file> ...] [--task "<summar
 - An unknown flag exits 1 and prints the valid flags on stderr. Report that message; do not guess a flag.
 - `--explain` adds an `explain` object that says why each file loaded. Use it only when asked why.
 
-Stdout is one JSON envelope: `mode`, `status` (`hit|miss|stale|skip|needs_llm`), `fingerprint`, `payload` (`path`, `bytes`, `sections`), `manifest_path`, `degraded`, `dropped_for_budget`, `needs_llm`, `platform_ambiguous`.
+Stdout is one JSON envelope: `mode`, `status` (`hit|miss|stale|skip|needs_llm`), `fingerprint`, `payload` (`path`, `bytes`, `sections`), `manifest_path`, `sections`, `degraded`, `dropped_for_budget`, `needs_llm`, `platform_ambiguous`.
 
 ## needs_llm
 
@@ -29,10 +29,8 @@ Stdout is one JSON envelope: `mode`, `status` (`hit|miss|stale|skip|needs_llm`),
 python3 scripts/cook_run.py --resume <fingerprint> --tags <tag,tag,...>
 ```
 
-This is the only two-call path.
-
 ## Return
 
-Return the envelope (`payload`, `degraded`, `dropped_for_budget`) to the invoking agent. Never inline or restate the payload. A non-empty `degraded` is a partial load: the surviving sections are on disk and P0 always loads.
+Return the envelope (`payload`, `degraded`, `dropped_for_budget`) to the invoking agent. Never inline or restate the payload. Subagents slice it: [`payload-reuse.md`](payload-reuse.md). A non-empty `degraded` is a partial load: the surviving sections are on disk and P0 always loads.
 
 `cache_corrupt: true` in the envelope means the script loaded broad and skipped the cache write. Standards still apply; only efficiency is lost.

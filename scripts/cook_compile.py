@@ -31,6 +31,22 @@ With --out (content lands in FILE, not stdout):
   {"path": "FILE", "bytes": N, "sections": [...], "degraded": [...], "metadata": {...}}
 
 Exit codes: 0 always (a partial load is not a failure).
+
+Slice (v1.2.0 Phase 6)
+----------------------
+  python3 scripts/cook_compile.py slice --payload FILE --section S [--section S ...]
+                                        [--manifest PATH] [--list]
+
+  Prints only the named sections of an already compiled payload, read through
+  its manifest. No LLM, no recompile. Each S is a header ("## React — Hooks" or
+  "React — Hooks" without the "## ") or a standards-relative path
+  (standards/react/refs/hooks.md). Output is the raw bytes of each section
+  (header line included), in payload order, joined by the payload's own
+  separator, so one section is byte-identical to its range in the payload.
+  --manifest defaults to the .json beside FILE. --list prints the sections
+  (header, rel, bytes) as JSON instead and takes no --section.
+  Exit 0 ok; 1 unknown or ambiguous section (the available sections are
+  listed on stderr); 2 missing or stale manifest, or missing payload.
 """
 from __future__ import annotations
 
@@ -225,7 +241,127 @@ def compile_to_file(skills: list[str], cook_root: Path, out: str,
     return envelope
 
 
+SEP = "\n\n---\n\n"
+
+
+class SliceError(Exception):
+    def __init__(self, msg: str, code: int):
+        super().__init__(msg)
+        self.code = code
+
+
+def load_manifest(payload: Path, manifest: Path | None = None) -> tuple[bytes, list[dict]]:
+    """Return (payload bytes, manifest rows) after checking the manifest still
+    describes the payload. Raises SliceError(code 2) when it does not."""
+    mpath = manifest or payload.with_suffix(".json")
+    try:
+        raw = payload.read_bytes()
+    except OSError as exc:
+        raise SliceError(f"Error: cannot read payload {payload}: {exc.strerror}", 2)
+    try:
+        rows = json.loads(mpath.read_text(encoding="utf-8"))
+    except OSError:
+        raise SliceError(f"Error: no manifest at {mpath}. Recompile the payload "
+                         f"(cook_run.py or cook_compile.py --out ... --manifest).", 2)
+    except ValueError:
+        raise SliceError(f"Error: manifest {mpath} is not valid JSON; recompile the payload.", 2)
+    sep = SEP.encode("utf-8")
+    stale = None
+    if not isinstance(rows, list) or not rows:
+        stale = "manifest holds no sections"
+    else:
+        try:
+            pos = 0
+            for i, r in enumerate(rows):
+                start, end = r["byte_start"], r["byte_end"]
+                if start != pos or end < start:
+                    stale = f"section {i} offsets do not follow the previous section"
+                    break
+                if not raw[start:end].startswith(r["header"].encode("utf-8") + b"\n"):
+                    stale = f"section {r['header']!r} header not found at byte {start}"
+                    break
+                pos = end
+                if i < len(rows) - 1:
+                    if raw[pos:pos + len(sep)] != sep:
+                        stale = f"separator missing after section {r['header']!r}"
+                        break
+                    pos += len(sep)
+            else:
+                if pos != len(raw):
+                    stale = f"manifest ends at byte {pos}, payload is {len(raw)} bytes"
+        except (KeyError, TypeError):
+            stale = "manifest rows lack header or byte offsets"
+    if stale:
+        raise SliceError(f"Error: stale manifest {mpath} ({stale}). The payload changed "
+                         f"after the manifest was written; recompile the payload.", 2)
+    return raw, rows
+
+
+def pick_sections(rows: list[dict], wanted: list[str]) -> list[dict]:
+    """Rows matching `wanted` (header, header without '## ', or rel), payload order."""
+    chosen: set[int] = set()
+    for w in wanted:
+        key = w.strip()
+        hits = [i for i, r in enumerate(rows)
+                if key in (r["header"], r["header"].removeprefix("## "), r["rel"])]
+        avail = "; ".join(f"{r['header']} ({r['rel']})" for r in rows)
+        if not hits:
+            raise SliceError(f"Error: unknown section {w!r}. Available: {avail}", 1)
+        if len(hits) > 1:
+            raise SliceError(f"Error: section {w!r} is ambiguous; use the path. "
+                             f"Available: {avail}", 1)
+        chosen.add(hits[0])
+    return [rows[i] for i in sorted(chosen)]
+
+
+def slice_payload(payload: Path, wanted: list[str], manifest: Path | None = None) -> bytes:
+    raw, rows = load_manifest(payload, manifest)
+    picked = pick_sections(rows, wanted)
+    return SEP.encode("utf-8").join(raw[r["byte_start"]:r["byte_end"]] for r in picked)
+
+
+def sections_of(manifest_path: str | Path) -> list[dict]:
+    """[{header, rel, bytes}] from a manifest file; [] when it cannot be read."""
+    try:
+        rows = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+        return [{"header": r["header"], "rel": r["rel"],
+                 "bytes": r["byte_end"] - r["byte_start"]} for r in rows]
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
+
+
+def slice_main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser(prog="cook_compile.py slice",
+                                 description="print named sections of a compiled payload")
+    ap.add_argument("--payload", required=True)
+    ap.add_argument("--section", action="append", default=[], metavar="HEADER|REL")
+    ap.add_argument("--manifest", default=None)
+    ap.add_argument("--list", action="store_true", dest="list_only")
+    a = ap.parse_args(argv)
+    payload = Path(a.payload)
+    mpath = Path(a.manifest) if a.manifest else None
+    try:
+        if a.list_only:
+            raw, rows = load_manifest(payload, mpath)
+            out = [{"header": r["header"], "rel": r["rel"],
+                    "bytes": r["byte_end"] - r["byte_start"]} for r in rows]
+            print(json.dumps(out, separators=(",", ":")))
+            return 0
+        if not a.section:
+            print("Error: give at least one --section (or --list).", file=sys.stderr)
+            return 2
+        data = slice_payload(payload, a.section, mpath)
+    except SliceError as exc:
+        print(str(exc), file=sys.stderr)
+        return exc.code
+    sys.stdout.buffer.write(data)
+    sys.stdout.buffer.flush()
+    return 0
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "slice":
+        sys.exit(slice_main(sys.argv[2:]))
     p = argparse.ArgumentParser(description="cook compiler (Phase 2)")
     p.add_argument("--skills", required=True,
                    help="Comma-separated skill paths relative to cook root")
