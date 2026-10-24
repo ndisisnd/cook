@@ -4,7 +4,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-24 · Subagents read slices of one payload; a React or TypeScript review always sees its core rules
+## [v1.2.0] — 2026-10-24 · Subagents read slices of one payload; a React or TypeScript review always sees its core rules
 
 **feat(compile): payload manifest and slice command for per-subagent reads; core concept refs in auto mode.**
 
@@ -19,7 +19,7 @@ All notable changes to this project are documented here, newest first.
 - Why: in the Phase 5b blind test, a plain task summary loaded none of the concept refs, so 5 findings (R8, R9, R10, R11, T10) were caught only by generic rules. With the core set all 5 cite their own rule. Strict blind score: 35/36 on the first pass. The one miss (N5, nextjs) was a line attribution, not a missed rule. 36/36 on the rerun of that one reviewer. Both numbers are in `eval-6.md`.
 - Effect: 3 slices (global, react, nextjs SKILLs) read 15,359 of 43,571 B (35.3%) on `layout-tsx`. Auto routing only adds files: react auto +15,177 B, typescript and nextjs auto +2,492 B. Size cost: 6 original fixtures go from 252,370 B to 257,354 B, +4,984 B (+2.0%) vs 5b. Total is still 18.4% below Phase 0 (315,536 B), down from 20.0% after 5b. Rule inventory diff: 0 lost.
 
-## [Unreleased] — 2026-10-24 · Short everyday words no longer load whole shelves; test code inside a normal file still loads the testing rules
+## [v1.2.0] — 2026-10-24 · Short everyday words no longer load whole shelves; test code inside a normal file still loads the testing rules
 
 **fix(routing): precise vocab aliases; file names no longer trigger shelves.**
 
@@ -33,7 +33,7 @@ All notable changes to this project are documented here, newest first.
 - `refs/protocol-manual.md`, `ARCHITECTURE.md`, `FLAG-LIST.md`: describe path-segment matching and content signals.
 - Effect on the 6 fixtures: `css-only` 38,807 B to 20,396 B (no database or nextjs file), `node-api` 43,595 B to 29,636 B, `flutter-screen` 56,969 B to 52,023 B, `react-nextjs` 79,996 B to 52,532 B, `supabase-migration` 58,660 B to 60,274 B (gains `sql-gotchas`), `swift-macos` unchanged. Total 315,536 B to 252,370 B (20.0% cut). 4 new true-positive fixtures route as before. Rule inventory diff: 0 lost. Blind eval: 36/36 in auto mode and with bare flags.
 
-## [Unreleased] — 2026-10-24 · A bare domain flag loads only the refs the touched files match; `--<domain>:all` keeps the full shelf
+## [v1.2.0] — 2026-10-24 · A bare domain flag loads only the refs the touched files match; `--<domain>:all` keeps the full shelf
 
 **feat(routing): bare domain flags match refs from touched files; --<domain>:all keeps the full shelf.**
 
@@ -44,7 +44,7 @@ All notable changes to this project are documented here, newest first.
 - `refs/protocol-explicit.md`, `refs/protocol-manual.md`, `FLAG-LIST.md`, `README.md`: describe bare-flag matching, the fallback and `:all`.
 - Effect on `react-nextjs` with `--react --nextjs`: 79,996 B (`:all`) to 55,157 B, 69% of the full shelves (31% cut). Auto-mode fixtures: 0 skill lists changed, payloads byte-identical.
 
-## [Unreleased] — 2026-10-23 · The model reads about 3 KB of protocol per /cook call instead of 6–10 KB
+## [v1.2.0] — 2026-10-23 · The model reads about 3 KB of protocol per /cook call instead of 6–10 KB
 
 **perf(protocol): move routing steps into cook_run, slim the protocol docs.**
 
@@ -60,7 +60,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-23 · a /cook run now costs one script call instead of five or six
+## [v1.2.0] — 2026-10-23 · a /cook run now costs one script call instead of five or six
 
 **perf(scripts): add cook_run.py single-call resolver.**
 
@@ -77,7 +77,7 @@ All notable changes to this project are documented here, newest first.
 
 ---
 
-## [Unreleased] — 2026-10-23 · A repeat /cook run returns the finished standards payload without recompiling
+## [v1.2.0] — 2026-10-23 · A repeat /cook run returns the finished standards payload without recompiling
 
 **perf(cache): reuse the compiled payload on a cache hit.**
 

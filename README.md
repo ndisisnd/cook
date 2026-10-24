@@ -39,11 +39,11 @@ With little to zero software engineering knowledge, expertise, and skills, you c
 
 </div>
 
-<!-- mkpub:release v1.1.0 -->
+<!-- mkpub:release v1.2.0 -->
 > [!NOTE]
-> **🚀 New in v1.1.0 · iPhone and iPad standards, a cryptography concern, and smaller payloads**
+> **🚀 New in v1.2.0 · One script call per task, smaller payloads, and slices for subagents**
 >
-> cook now covers iOS/iPadOS, ships its security rules in the public install, and refreshes the standards to October 2026 versions. Re-run the installer to pick it up.
+> cook now runs in one script call, reads about 3 KB of protocol per call, and loads only the rules your files touch. A bare `--<domain>` flag no longer loads the full shelf; use `--<domain>:all` for that. Re-run the installer to pick it up.
 > Update with `curl -fsSL https://raw.githubusercontent.com/ndisisnd/cook/main/install.sh | bash` · [Release notes](RELEASES.md)
 <!-- /mkpub:release -->
 
